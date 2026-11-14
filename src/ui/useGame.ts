@@ -142,6 +142,10 @@ export function useGame() {
     setFeedback((list) => [{ id: game.log.length, agreed, text }, ...list].slice(0, 3))
   }
 
+  const selectCard = useCallback((id: number, on: boolean) => {
+    setSelected((ids) => (on ? (ids.includes(id) ? ids : [...ids, id]) : ids.filter((other) => other !== id)))
+  }, [])
+
   const playSelected = () => {
     const check = checkPlay(game, HUMAN, chosen)
     if (!check.ok) return setNotice({ kind: "error", text: check.reason })
@@ -268,6 +272,7 @@ export function useGame() {
     mustReturn,
     canPass: myTurn && game.lastPlay !== null,
     toggle,
+    selectCard,
     clearSelection: () => setSelected([]),
     playSelected,
     passTurn,

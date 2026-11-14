@@ -1,7 +1,8 @@
 import { Button } from "@ui-sdk/react/button"
 import { Dialog, DialogBackdrop, DialogContent, DialogDescription, DialogTitle } from "@ui-sdk/react/dialog"
 import { Toggle, ToggleGroup } from "@ui-sdk/react/toggle"
-import { useState } from "react"
+import { useRef, useState } from "react"
+import type { PointerEvent as ReactPointerEvent } from "react"
 import { cardShort, rankLabel, sortHand } from "./engine/cards"
 import type { Suit } from "./engine/cards"
 import { describeCombo } from "./engine/combos"
@@ -182,8 +183,61 @@ function useSaved(key: string, fallback: boolean): [boolean, (value: boolean) =>
   return [value, save]
 }
 
+function cardIdAt(x: number, y: number): number | null {
+  const card = document.elementFromPoint(x, y)?.closest<HTMLElement>("[data-card-id]")
+  return card ? Number(card.dataset.cardId) : null
+}
+
+/** Sliding a finger or the mouse across cards selects (or deselects) each one it crosses. */
+function useSwipeSelect(selected: number[], selectCard: (id: number, on: boolean) => void) {
+  const swipe = useRef<{ start: number; on: boolean; seen: Set<number>; moved: boolean } | null>(null)
+  const swallowClick = useRef(false)
+  const apply = (id: number) => {
+    const current = swipe.current
+    if (!current || current.seen.has(id)) return
+    current.seen.add(id)
+    selectCard(id, current.on)
+  }
+  return {
+    onPointerDown: (event: ReactPointerEvent) => {
+      swallowClick.current = false
+      const id = cardIdAt(event.clientX, event.clientY)
+      swipe.current = id === null ? null : { start: id, on: !selected.includes(id), seen: new Set(), moved: false }
+    },
+    onPointerMove: (event: ReactPointerEvent) => {
+      const current = swipe.current
+      if (!current) return
+      const id = cardIdAt(event.clientX, event.clientY)
+      if (id === null || (!current.moved && id === current.start)) return
+      if (!current.moved) {
+        current.moved = true
+        swallowClick.current = true
+        apply(current.start)
+      }
+      apply(id)
+    },
+    onPointerUp: () => {
+      swipe.current = null
+      setTimeout(() => {
+        swallowClick.current = false
+      }, 0)
+    },
+    onPointerCancel: () => {
+      swipe.current = null
+      swallowClick.current = false
+    },
+    onClickCapture: (event: { preventDefault: () => void; stopPropagation: () => void }) => {
+      if (!swallowClick.current) return
+      swallowClick.current = false
+      event.preventDefault()
+      event.stopPropagation()
+    },
+  }
+}
+
 function App() {
   const g = useGame()
+  const swipe = useSwipeSelect(g.selected, g.selectCard)
   const [coachOn, setCoachOn] = useSaved("guandan.coach", true)
   const [trackerOn, setTrackerOn] = useSaved("guandan.tracker", true)
   const [coachOpen, setCoachOpen] = useState(false)
@@ -209,7 +263,7 @@ function App() {
         <header data-slot="topbar">
           <div data-slot="scores">
             <span data-slot="level-badge">
-              本局打 <b>{rankLabel(game.level)}</b>
+              <span data-slot="badge-long">本局</span>打 <b>{rankLabel(game.level)}</b>
             </span>
             <span data-slot="score">
               {TEAM_NAMES[0]} <b>{rankLabel(game.levels[0])}</b>
@@ -230,7 +284,7 @@ function App() {
             <LogDialog game={game} />
             <SettingsDialog skills={g.skills} onChange={g.setSkills} onStartOver={g.startOver} />
             <Button data-variant="coach" aria-pressed={coachOn} onClick={pressCoach}>
-              {coachOn ? "教练" : "显示教练"}
+              {coachOn ? null : <span data-slot="badge-long">显示</span>}教练
             </Button>
           </div>
         </header>
@@ -287,7 +341,13 @@ function App() {
               <PlayZone game={game} record={g.table[HUMAN]} seat={HUMAN} />
             </section>
           )}
-          <div data-slot="hand" data-filter={suit[0]} role="group" aria-label={`你的手牌，共 ${g.hand.length} 张`}>
+          <div
+            data-slot="hand"
+            data-filter={suit[0]}
+            role="group"
+            aria-label={`你的手牌，共 ${g.hand.length} 张`}
+            {...swipe}
+          >
             {columns.map((column) => (
               <div
                 key={column.key}
@@ -309,6 +369,7 @@ function App() {
                   <Toggle
                     key={card.id}
                     {...cardAttributes(card, game.level)}
+                    data-card-id={card.id}
                     aria-label={cardLabel(card, game.level)}
                     pressed={g.selected.includes(card.id)}
                     onPressedChange={(pressed) => g.toggle(card, pressed)}
@@ -329,7 +390,7 @@ function App() {
             <span>{myPlace >= 0 ? PLACE_NAMES[myPlace] : `剩 ${g.hand.length} 张`}</span>
             {acting ? <span data-slot="me-turn">{g.mustReturn ? "请还贡" : "轮到你出牌"}</span> : null}
           </div>
-          <div data-slot="tools">
+          <div data-slot="tools" data-pile-selected={g.pileSelected ? "" : undefined}>
             <ToggleGroup aria-label="按花色查看" value={suit} onValueChange={setSuit}>
               {SUITS.map(([value, symbol, label]) => (
                 <Toggle key={value} value={value} aria-label={label} data-suit-filter={value}>
@@ -337,7 +398,7 @@ function App() {
                 </Toggle>
               ))}
             </ToggleGroup>
-            <Button data-variant="text" onClick={g.findFlush} disabled={g.hand.length < 5}>
+            <Button data-variant="text" data-find-flush="" onClick={g.findFlush} disabled={g.hand.length < 5}>
               同花顺
             </Button>
             <Button data-variant="text" onClick={g.arrange} disabled={g.selected.length === 0}>
