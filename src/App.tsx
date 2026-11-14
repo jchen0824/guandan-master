@@ -1,0 +1,374 @@
+import { Button } from "@ui-sdk/react/button"
+import { Dialog, DialogBackdrop, DialogContent, DialogDescription, DialogTitle } from "@ui-sdk/react/dialog"
+import { Toggle, ToggleGroup } from "@ui-sdk/react/toggle"
+import { useState } from "react"
+import { cardShort, rankLabel, sortHand } from "./engine/cards"
+import type { Suit } from "./engine/cards"
+import { describeCombo } from "./engine/combos"
+import type { GameState, PlayRecord } from "./engine/game"
+import { CardFace, CardRow, cardLabel } from "./ui/CardFace"
+import { cardAttributes } from "./ui/cardAttributes"
+import { Coach, describeSituation } from "./ui/Coach"
+import { Tracker } from "./ui/Tracker"
+import { LogDialog, ResumeDialog, RulesDialog, SettingsDialog } from "./ui/Dialogs"
+import { buildColumns } from "./ui/columns"
+import { HUMAN, PLACE_NAMES, SEAT_NAMES, TEAM_NAMES } from "./ui/names"
+import { useGame } from "./ui/useGame"
+
+const SIDES = ["me", "right", "top", "left"]
+
+function PlayZone({ game, record, seat }: { game: GameState; record: PlayRecord | null; seat: number }) {
+  return (
+    <div data-slot="play-zone" data-side={SIDES[seat]}>
+      {record === null ? null : record.combo === null ? (
+        <span data-slot="pass-mark">不出</span>
+      ) : (
+        <CardRow
+          cards={record.combo.cards}
+          level={game.level}
+          label={`${SEAT_NAMES[seat]}出的牌：${describeCombo(record.combo, game.level)}`}
+        />
+      )}
+    </div>
+  )
+}
+
+function Player({ game, seat }: { game: GameState; seat: number }) {
+  const place = game.finished.indexOf(seat)
+  const active = game.phase === "play" && game.turn === seat
+  const left = game.hands[seat].length
+  return (
+    <div
+      data-slot="player"
+      data-side={SIDES[seat]}
+      data-team={seat % 2 === 0 ? "us" : "them"}
+      data-active={active ? "" : undefined}
+    >
+      <span data-slot="avatar" aria-hidden="true">
+        {SEAT_NAMES[seat].slice(0, 1)}
+      </span>
+      <strong data-slot="player-name">
+        {SEAT_NAMES[seat]}
+        <span data-slot="player-role">{seat % 2 === 0 ? "队友" : "对手"}</span>
+      </strong>
+      {place >= 0 ? (
+        <span data-slot="place">{PLACE_NAMES[place]}</span>
+      ) : (
+        <span data-slot="count" data-low={left <= 10 ? "" : undefined}>
+          剩 {left} 张
+        </span>
+      )}
+    </div>
+  )
+}
+
+function TributeLine({ game }: { game: GameState }) {
+  if (game.handNumber === 1 || game.log.length > 3) return null
+  if (game.tributeResisted) return <span data-slot="tribute">抗贡：输家持有两张大王，本局不进贡。</span>
+  return (
+    <span data-slot="tribute">
+      {game.tributes.map((t) => (
+        <span key={t.from}>
+          {SEAT_NAMES[t.from]}向{SEAT_NAMES[t.to]}进贡 {cardShort(t.card)}
+          {t.returned ? `，还贡 ${cardShort(t.returned)}` : "，等待还贡"}。
+        </span>
+      ))}
+    </span>
+  )
+}
+
+function Review({ game }: { game: GameState }) {
+  return (
+    <div data-slot="review">
+      <h3>四家起手牌</h3>
+      {game.dealt.map((cards, seat) => (
+        <div key={SEAT_NAMES[seat]} data-slot="review-hand">
+          <strong>{SEAT_NAMES[seat]}</strong>
+          <CardRow cards={sortHand(cards, game.level)} level={game.level} label={`${SEAT_NAMES[seat]}的起手牌`} />
+        </div>
+      ))}
+      <h3>出牌记录</h3>
+      <ol data-slot="review-log">
+        {game.log.map((record, index) => (
+          <li key={index} data-pass={record.combo ? undefined : ""}>
+            {SEAT_NAMES[record.player]}：
+            {record.combo
+              ? `${describeCombo(record.combo, game.level)}（${record.combo.cards.map(cardShort).join(" ")}）`
+              : "不出"}
+          </li>
+        ))}
+      </ol>
+    </div>
+  )
+}
+
+function ResultDialog({ game, onNext, saveFailed }: { game: GameState; onNext: () => void; saveFailed: boolean }) {
+  const result = game.result
+  const over = game.phase === "handOver" || game.phase === "matchOver"
+  return (
+    <Dialog open={over && result !== null} dismissible={false}>
+      <DialogBackdrop />
+      <DialogContent>
+        {result ? (
+          <>
+            <DialogTitle>
+              {result.matchWinner !== null
+                ? `${TEAM_NAMES[result.matchWinner]}过A，赢得整场比赛！`
+                : `第 ${game.handNumber} 局结束：${TEAM_NAMES[result.winnerTeam]}获胜`}
+            </DialogTitle>
+            <DialogDescription>
+              名次：{result.order.map((seat, i) => `${PLACE_NAMES[i]} ${SEAT_NAMES[seat]}`).join("，")}。
+              {result.matchWinner === null && result.levelsAfter[result.winnerTeam] !== result.levelsBefore[result.winnerTeam]
+                ? `${TEAM_NAMES[result.winnerTeam]}升 ${result.gain} 级。`
+                : ""}
+            </DialogDescription>
+            <dl data-slot="levels">
+              {TEAM_NAMES.map((name, team) => (
+                <div key={name}>
+                  <dt>{name}</dt>
+                  <dd>
+                    {rankLabel(result.levelsBefore[team])} → {rankLabel(result.levelsAfter[team])}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+            {result.notes.map((note) => (
+              <p key={note} data-slot="result-note">
+                {note}
+              </p>
+            ))}
+            <Button data-variant="play" onClick={onNext}>
+              {result.matchWinner !== null ? "再来一场" : "下一局"}
+            </Button>
+            {result.matchWinner === null ? (
+              <p data-slot="save-status" data-failed={saveFailed ? "" : undefined} role="status">
+                {saveFailed
+                  ? "进度没能保存：这个浏览器禁止了本地存储。"
+                  : "进度已保存在这个浏览器里，关掉页面后下次可以接着打。"}
+              </p>
+            ) : null}
+            <Review game={game} />
+          </>
+        ) : null}
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+const SUITS: [Suit, string, string][] = [
+  ["S", "♠", "只看黑桃"],
+  ["H", "♥", "只看红桃"],
+  ["C", "♣", "只看梅花"],
+  ["D", "♦", "只看方块"],
+]
+
+function useSaved(key: string, fallback: boolean): [boolean, (value: boolean) => void] {
+  const [value, setValue] = useState(() => {
+    try {
+      const saved = localStorage.getItem(key)
+      return saved === null ? fallback : saved === "1"
+    } catch {
+      return fallback
+    }
+  })
+  const save = (next: boolean) => {
+    setValue(next)
+    try {
+      localStorage.setItem(key, next ? "1" : "0")
+    } catch {
+      return
+    }
+  }
+  return [value, save]
+}
+
+function App() {
+  const g = useGame()
+  const [coachOn, setCoachOn] = useSaved("guandan.coach", true)
+  const [trackerOn, setTrackerOn] = useSaved("guandan.tracker", true)
+  const [coachOpen, setCoachOpen] = useState(false)
+  const pressCoach = () => {
+    if (!coachOn) return setCoachOn(true)
+    if (window.matchMedia("(max-width: 1000px)").matches) return setCoachOpen(true)
+    setCoachOn(false)
+  }
+  const hideCoach = () => {
+    setCoachOn(false)
+    setCoachOpen(false)
+  }
+  const [suit, setSuit] = useState<Suit[]>([])
+  const { game } = g
+  const columns = buildColumns(g.hand, g.groups, game.level)
+  const myPlace = game.finished.indexOf(HUMAN)
+  const situation = describeSituation(game, g.myTurn, g.mustReturn)
+  const acting = g.myTurn || g.mustReturn
+
+  return (
+    <main data-slot="app" data-coach-on={coachOn ? "" : undefined} data-coach-open={coachOn && coachOpen ? "" : undefined}>
+      <div data-slot="board">
+        <header data-slot="topbar">
+          <div data-slot="scores">
+            <span data-slot="level-badge">
+              本局打 <b>{rankLabel(game.level)}</b>
+            </span>
+            <span data-slot="score">
+              {TEAM_NAMES[0]} <b>{rankLabel(game.levels[0])}</b>
+            </span>
+            <span data-slot="score">
+              {TEAM_NAMES[1]} <b>{rankLabel(game.levels[1])}</b>
+            </span>
+          </div>
+          <section data-slot="seat-top" aria-label={SEAT_NAMES[2]}>
+            <Player game={game} seat={2} />
+            <PlayZone game={game} record={g.table[2]} seat={2} />
+          </section>
+          <div data-slot="menu">
+            <span data-slot="round">
+              第 {game.handNumber} 局 · 逢人配 <b>♥{rankLabel(game.level)}</b>
+            </span>
+            <RulesDialog />
+            <LogDialog game={game} />
+            <SettingsDialog skills={g.skills} onChange={g.setSkills} onStartOver={g.startOver} />
+            <Button data-variant="coach" aria-pressed={coachOn} onClick={pressCoach}>
+              {coachOn ? "教练" : "显示教练"}
+            </Button>
+          </div>
+        </header>
+
+        <div data-slot="table">
+          <section data-slot="seat-left" aria-label={SEAT_NAMES[3]}>
+            <Player game={game} seat={3} />
+            <PlayZone game={game} record={g.table[3]} seat={3} />
+          </section>
+          <div data-slot="center">
+            {trackerOn ? <Tracker game={game} /> : null}
+            <div data-slot="bubble">
+              <p role="status">
+                {coachOn ? <strong>教练</strong> : null}
+                {coachOn ? situation.short : situation.plain} <TributeLine game={game} />
+              </p>
+              {g.notice ? (
+                <p data-slot="notice" data-kind={g.notice.kind} role={g.notice.kind === "error" ? "alert" : "status"}>
+                  {g.notice.kind === "hint" ? "提示：" : ""}
+                  {g.notice.text}
+                </p>
+              ) : null}
+            </div>
+          </div>
+          <section data-slot="seat-right" aria-label={SEAT_NAMES[1]}>
+            <PlayZone game={game} record={g.table[1]} seat={1} />
+            <Player game={game} seat={1} />
+          </section>
+        </div>
+
+        <section data-slot="controls" aria-label="你的操作">
+          {acting ? (
+            <div data-slot="pills">
+              {g.mustReturn ? (
+                <Button data-variant="play" onClick={g.giveBack}>
+                  还贡
+                </Button>
+              ) : (
+                <>
+                  <Button data-variant="pass" onClick={g.passTurn} disabled={!g.canPass}>
+                    不出
+                  </Button>
+                  <Button data-variant="hint" onClick={g.hint}>
+                    提示
+                  </Button>
+                  <Button data-variant="play" onClick={g.playSelected}>
+                    出牌
+                  </Button>
+                </>
+              )}
+            </div>
+          ) : (
+            <section data-slot="pills" aria-label="你出的牌">
+              <PlayZone game={game} record={g.table[HUMAN]} seat={HUMAN} />
+            </section>
+          )}
+          <div data-slot="hand" data-filter={suit[0]} role="group" aria-label={`你的手牌，共 ${g.hand.length} 张`}>
+            {columns.map((column) => (
+              <div
+                key={column.key}
+                data-slot="hand-column"
+                data-custom={column.custom ? "" : undefined}
+                role="group"
+                aria-label={`${column.label}，${column.cards.length} 张`}
+              >
+                {column.custom ? (
+                  <Button
+                    data-variant="pile"
+                    aria-label={`选中这组牌（${column.label}）`}
+                    onClick={() => g.selectPile(column.cards.map((c) => c.id))}
+                  >
+                    {column.name}
+                  </Button>
+                ) : null}
+                {column.cards.map((card) => (
+                  <Toggle
+                    key={card.id}
+                    {...cardAttributes(card, game.level)}
+                    aria-label={cardLabel(card, game.level)}
+                    pressed={g.selected.includes(card.id)}
+                    onPressedChange={(pressed) => g.toggle(card, pressed)}
+                  >
+                    <CardFace card={card} level={game.level} />
+                  </Toggle>
+                ))}
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <footer data-slot="bottombar">
+          <div data-slot="me-chip" data-active={acting ? "" : undefined}>
+            <span data-slot="avatar" aria-hidden="true">
+              你
+            </span>
+            <span>{myPlace >= 0 ? PLACE_NAMES[myPlace] : `剩 ${g.hand.length} 张`}</span>
+            {acting ? <span data-slot="me-turn">{g.mustReturn ? "请还贡" : "轮到你出牌"}</span> : null}
+          </div>
+          <div data-slot="tools">
+            <ToggleGroup aria-label="按花色查看" value={suit} onValueChange={setSuit}>
+              {SUITS.map(([value, symbol, label]) => (
+                <Toggle key={value} value={value} aria-label={label} data-suit-filter={value}>
+                  {symbol}
+                </Toggle>
+              ))}
+            </ToggleGroup>
+            <Button data-variant="text" onClick={g.findFlush} disabled={g.hand.length < 5}>
+              同花顺
+            </Button>
+            <Button data-variant="text" onClick={g.arrange} disabled={g.selected.length === 0}>
+              理牌
+            </Button>
+            {g.pileSelected ? (
+              <>
+                <Button data-variant="text" aria-label="把这组牌左移" onClick={() => g.movePile(-1)} disabled={!g.canMoveLeft}>
+                  ←
+                </Button>
+                <Button data-variant="text" aria-label="把这组牌右移" onClick={() => g.movePile(1)} disabled={!g.canMoveRight}>
+                  →
+                </Button>
+              </>
+            ) : null}
+            <Button data-variant="text" onClick={g.restore} disabled={g.groups.length === 0}>
+              {g.selected.length > 0 ? "拆开" : "恢复"}
+            </Button>
+            <Toggle data-tool-toggle="" pressed={trackerOn} onPressedChange={setTrackerOn}>
+              记牌器
+            </Toggle>
+          </div>
+        </footer>
+      </div>
+
+      <button type="button" data-slot="scrim" aria-label="收起教练" onClick={() => setCoachOpen(false)} />
+      <Coach g={g} onClose={() => setCoachOpen(false)} onHide={hideCoach} />
+      <ResultDialog game={game} onNext={g.nextHand} saveFailed={g.saveFailed} />
+      <ResumeDialog save={g.offer} onResume={g.resume} onNew={g.startOver} />
+    </main>
+  )
+}
+
+export { App }
