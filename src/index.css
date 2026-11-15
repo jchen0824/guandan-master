@@ -191,6 +191,9 @@ button {
 }
 
 [data-slot="bubble"] {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -1010,39 +1013,142 @@ button {
   }
 }
 
-@media (max-height: 480px) {
-  [data-slot="topbar"] {
-    padding: 4px 12px 0;
+/* Phone held sideways: very little height, so tools sit left of the hand and the action buttons right of it. */
+@media (max-height: 480px) and (min-width: 621px) {
+  [data-slot="board"] {
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-areas: "top top" "table table" "tools controls";
   }
-  [data-slot="controls"] {
-    --cw: clamp(30px, 5.3cqw, 50px);
-    gap: 4px;
+  [data-slot="topbar"] {
+    grid-area: top;
+    padding: 2px 12px 0;
   }
   [data-slot="table"] {
-    padding: 0 14px;
+    grid-area: table;
+    align-items: start;
+    align-content: start;
+    padding: 2px 12px;
   }
-  [data-slot="avatar"] {
-    width: 38px;
-    height: 38px;
-    font-size: 16px;
-  }
+  [data-slot="avatar"],
   [data-side="top"] [data-slot="avatar"] {
-    width: 34px;
-    height: 34px;
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
   }
   [data-slot="player-role"] {
     display: none;
   }
+  [data-slot="seat-left"] [data-slot="player"],
+  [data-slot="seat-right"] [data-slot="player"] {
+    flex-direction: row;
+    gap: 6px;
+  }
+  [data-slot="seat-left"] {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  [data-slot="seat-right"] {
+    flex-direction: column-reverse;
+    align-items: flex-end;
+    gap: 4px;
+  }
+  [data-slot="play-zone"] {
+    --cw: 28px;
+  }
+  [data-slot="center"] {
+    gap: 4px;
+  }
+  [data-slot="bubble"] {
+    padding: 4px 12px;
+    font-size: 12px;
+  }
+  [data-slot="controls"] {
+    grid-area: controls;
+    --cw: clamp(30px, 4.5cqw, 46px);
+    flex-direction: row-reverse;
+    align-items: flex-end;
+    gap: 8px;
+    min-width: 0;
+    padding: 0 10px 4px 6px;
+  }
+  [data-slot="pills"] {
+    --cw: 26px;
+    flex: none;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 6px;
+    width: 100px;
+    min-height: 0;
+  }
+  [data-slot="pills"] [data-slot="play-zone"] {
+    min-height: 0;
+  }
+  [data-variant="pass"],
+  [data-variant="hint"],
+  [data-variant="play"] {
+    min-width: 0;
+    width: 100%;
+    min-height: 38px;
+    padding: 0;
+    font-size: 16px;
+  }
   [data-slot="hand"] {
-    min-height: calc(var(--cw) * 2.9);
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
     padding-top: calc(var(--cw) * 0.26);
   }
   [data-slot="hand-column"] [data-card] + [data-card] {
     margin-top: calc(var(--cw) * -0.8);
   }
-  [data-slot="bottombar"] {
-    min-height: 44px;
+  [data-slot="hand-column"]:has([data-card]:nth-of-type(5)) [data-card] + [data-card] {
+    margin-top: calc(var(--cw) * -0.98);
   }
+  [data-slot="hand-column"]:has([data-card]:nth-of-type(7)) [data-card] + [data-card] {
+    margin-top: calc(var(--cw) * -1.1);
+  }
+  [data-slot="hand-column"]:last-child {
+    flex-shrink: 0;
+  }
+  [data-slot="bottombar"] {
+    grid-area: tools;
+    align-items: flex-end;
+    min-height: 0;
+    padding: 4px 4px 4px 8px;
+    background: none;
+  }
+  [data-slot="me-chip"] {
+    display: none;
+  }
+  [data-slot="tools"] {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 2px;
+    padding: 4px;
+    border-radius: 10px;
+    background: var(--rail);
+  }
+  [data-slot="tools"] [data-slot="toggle-group"] {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(4, 32px);
+  }
+  [data-suit-filter] {
+    width: 32px;
+    height: 36px;
+  }
+  [data-slot="tools"] [data-variant="text"],
+  [data-tool-toggle] {
+    min-height: 36px;
+    padding: 0 4px;
+  }
+  [data-pile-selected] [data-find-flush],
+  [data-slot="tools"][data-pile-selected] [data-slot="toggle-group"] {
+    display: none;
+  }
+}
 }
 
 [data-slot="dialog-actions"] {
@@ -1117,10 +1223,13 @@ button {
   }
   [data-slot="table"] {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    grid-template-areas: "left right" "center center";
-    align-content: start;
-    gap: 10px;
-    padding: 8px 10px;
+    grid-template-rows: minmax(0, 1fr) auto auto minmax(0, 1fr);
+    grid-template-areas: ". ." "left right" "center center" ". .";
+    gap: 0 10px;
+    padding: 0 10px;
+  }
+  [data-slot="center"] {
+    margin-top: 10px;
   }
   [data-slot="seat-left"] {
     grid-area: left;
@@ -1173,6 +1282,9 @@ button {
   }
   [data-slot="hand-column"] [data-card] + [data-card] {
     margin-top: calc(var(--cw) * -0.58);
+  }
+  [data-slot="hand-column"]:has([data-card]:nth-of-type(6)) [data-card] + [data-card] {
+    margin-top: calc(var(--cw) * -0.82);
   }
   [data-slot="hand"] [data-slot="card-suit"] {
     margin: 1px 0 0;
@@ -1236,8 +1348,21 @@ button {
     display: none;
   }
   [data-slot="table"] {
-    gap: 6px;
-    padding: 4px 10px;
+    gap: 0 6px;
+  }
+  [data-slot="center"] {
+    margin-top: 6px;
+  }
+  [data-slot="avatar"],
+  [data-side="top"] [data-slot="avatar"],
+  [data-slot="seat-left"] [data-slot="avatar"],
+  [data-slot="seat-right"] [data-slot="avatar"] {
+    width: 30px;
+    height: 30px;
+    font-size: 13px;
+  }
+  [data-slot="seat-top"] {
+    min-height: 40px;
   }
   [data-slot="hand-column"] [data-card] + [data-card] {
     margin-top: calc(var(--cw) * -0.7);

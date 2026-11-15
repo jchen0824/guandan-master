@@ -39,7 +39,7 @@ Seats: 0 is the human, 1 is 下家, 2 is the partner, 3 is 上家. `teamOf(p) = 
 - **`ui/useGame.ts`** owns all game state. It wraps `GameState` in a view that also tracks each seat's last play in the current trick, runs bot turns on an 800 ms timer, and exposes the human's actions.
 - **`ui/columns.ts`** turns the hand into rank columns plus hand-made piles (理牌).
 - Components come from `@ui-sdk/react` (Button, Toggle, ToggleGroup, Dialog, SegmentedControl, Field). Read `node_modules/@ui-sdk/react/docs/llms.txt` and the component page before using one. Styling is plain CSS in `src/index.css`, keyed on `data-slot` and state attributes such as `data-pressed`; card sizes derive from a `--cw` custom property in container-query units.
-- Three layouts share one stylesheet: desktop (coach docked), short landscape (`max-height: 480px`) and upright phone (`max-width: 620px`, where hand columns overlap and the table area scrolls so the hand and controls stay on screen). Check a UI change at about 375×550, 844×390 and 1280×720.
+- Three layouts share one stylesheet: desktop (coach docked), phone landscape (`max-height: 480px`) and upright phone (`max-width: 620px`, where hand columns overlap and the table area scrolls so the hand and controls stay on screen). Check a UI change at about 375×550, 852×300 and 1280×720: phone browsers leave only about 300px of height in landscape, so that layout puts the tools left of the hand and the action buttons right of it.
 - Dialogs render inside the top bar, so `[data-slot="dialog-content"]` resets inherited text styles such as `white-space`.
 - Browser storage keys: `guandan.match`, `guandan.skills`, `guandan.coach`, `guandan.tracker`.
 
