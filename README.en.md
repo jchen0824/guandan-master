@@ -4,7 +4,7 @@
 
 [![CI](https://github.com/jchen0824/guandan-master/actions/workflows/ci.yml/badge.svg)](https://github.com/jchen0824/guandan-master/actions/workflows/ci.yml)
 
-A browser game for learning Guandan (掼蛋), the Chinese four-player climbing card game: you play with three computer players while a coach explains what is going on.
+Guandan Coach is a single-player practice game for Guandan (掼蛋), the four-player Chinese card game, for people who have just started. You play in the browser against three computer players, with hints, comments on each play and a card counter.
 
 Play it: https://guandan-iota.vercel.app
 
