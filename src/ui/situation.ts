@@ -1,6 +1,6 @@
 import { bombPower, describeCombo, legalPlays } from "../engine/combos"
 import type { GameState } from "../engine/game"
-import { HUMAN, SEAT_NAMES } from "./names"
+import { HUMAN, SEAT_NAMES, TEAM_NAMES } from "./names"
 
 interface Situation {
   /** Status only, with no advice. */
@@ -19,7 +19,9 @@ export function describeSituation(game: GameState, myTurn: boolean, mustReturn: 
     }
   }
   if (game.phase !== "play") {
-    return { plain: "本局结束。", short: "本局结束。", long: "本局结束，看看复盘里四家的起手牌和出牌记录。" }
+    const won = game.result ? `${TEAM_NAMES[game.result.winnerTeam]}获胜。` : ""
+    const short = `本局结束，${won}看完牌桌再点“查看结果”。`
+    return { plain: short, short, long: `本局结束，${won}不用急：先看看牌桌上最后几手牌，再点“查看结果”看名次、升级和四家的起手牌。` }
   }
   if (!myTurn) {
     const short = game.finished.includes(HUMAN) ? "你已出完牌，等待本局结束。" : `等待${SEAT_NAMES[game.turn]}出牌…`

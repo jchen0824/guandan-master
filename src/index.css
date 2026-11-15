@@ -1164,6 +1164,10 @@ button {
     padding: 0;
     font-size: 16px;
   }
+  [data-slot="dialog-actions"] [data-variant="play"] {
+    width: auto;
+    padding: 0 22px;
+  }
   [data-slot="hand"] {
     flex: 1;
     min-width: 0;
