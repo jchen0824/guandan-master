@@ -47,7 +47,15 @@ A skill is a folder of instructions under `.agents/skills/`. If your agent does 
 | When you touch | Read first |
 | --- | --- |
 | Game rules, bots, hints, coach text, the 记牌器, or any Chinese wording about play | [.agents/skills/guandan-play/SKILL.md](.agents/skills/guandan-play/SKILL.md) |
-| Anything under `src/ui`, `src/App.tsx` or `src/index.css` | [.agents/skills/guandan-ui/SKILL.md](.agents/skills/guandan-ui/SKILL.md), which sends you to the ui-sdk skill shipped in `node_modules/@ui-sdk/core/skills/ui-sdk/SKILL.md` |
+| Anything under `src/ui`, `src/App.tsx` or `src/index.css` | [.agents/skills/guandan-ui/SKILL.md](.agents/skills/guandan-ui/SKILL.md), then the `ui-sdk` skill it points to |
+
+The two skills above live in this repo, so a fresh clone already has them. The `ui-sdk` skill belongs to the ui-sdk project and is set up per machine:
+
+```bash
+npx skills add vercel-labs/ui --skill ui-sdk   # once on a new machine, for agents that load skills
+```
+
+Without that install, read the same skill at `node_modules/@ui-sdk/core/skills/ui-sdk/SKILL.md` after `npm ci`. Source and docs: [github.com/vercel-labs/ui](https://github.com/vercel-labs/ui), [ui-sdk.dev/docs](https://ui-sdk.dev/docs).
 
 `.claude/skills` is a link to `.agents/skills`, so agents that look there find the same files. Add a new skill as `.agents/skills/<name>/SKILL.md` with `name` and `description` frontmatter, and list it in the table above; `npm run check:conventions` enforces both.
 

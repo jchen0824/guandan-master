@@ -1,21 +1,31 @@
 ---
 name: guandan-ui
-description: Use before changing anything a player sees in 掼蛋教练 - files under src/ui, src/App.tsx, src/index.css or a UI test. Sends you to the ui-sdk skill that ships with the installed package and adds this repo's layout, styling and testing rules.
+description: Use before changing anything a player sees in 掼蛋教练 - files under src/ui, src/App.tsx, src/index.css or a UI test. Says how to install or find the ui-sdk skill and adds this repo's layout, styling and testing rules.
 ---
 
 # Changing the 掼蛋教练 interface
 
 The interface is built from `@ui-sdk/react` components and styled with one plain CSS file. Two sets of rules apply: ui-sdk's own, and this repo's.
 
-## 1. Read the ui-sdk skill first
+## 1. Get the ui-sdk skill, then read it
 
-It ships inside the installed package, so it always matches the version in `package-lock.json`:
+**If your agent loads skills, install it once per machine.** A new laptop does not have it yet:
+
+```bash
+npx skills add vercel-labs/ui --skill ui-sdk
+```
+
+That is the official install from the ui-sdk project ([github.com/vercel-labs/ui](https://github.com/vercel-labs/ui), docs at [ui-sdk.dev/docs](https://ui-sdk.dev/docs)). After it, the agent finds the skill as `ui-sdk` and loads it whenever it works on ui-sdk code. Update it with the same command when you upgrade `@ui-sdk/*`.
+
+**If your agent does not load skills, or you have not installed it, read the copy that ships with the package.** It arrives with `npm ci`, needs no extra step, and always matches the version in `package-lock.json`:
 
 ```
 node_modules/@ui-sdk/core/skills/ui-sdk/SKILL.md
 ```
 
-Run `npm ci` if that path does not exist. Read `SKILL.md`, then only the reference it points you to:
+If the installed skill and the packaged copy disagree, the packaged copy wins: it is the one written for the version this repo runs.
+
+Either way, read `SKILL.md`, then only the reference it points you to:
 
 - Composing existing components: `references/build-interface.md`
 - A component ui-sdk does not ship: `references/create-component.md`
@@ -23,8 +33,6 @@ Run `npm ci` if that path does not exist. Read `SKILL.md`, then only the referen
 - Tests: `references/testing.md`
 
 Then read the page for each component you use, for example `node_modules/@ui-sdk/react/docs/components/dialog.md`. The index is `node_modules/@ui-sdk/react/docs/llms.txt`. Do not read compiled files in `dist/`.
-
-If your agent already has a `ui-sdk` skill installed, the packaged copy still wins: it matches the installed version.
 
 ## 2. Rules CI enforces
 

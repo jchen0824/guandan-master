@@ -13,6 +13,12 @@ npm ci
 npm run dev
 ```
 
+If you work with a coding agent that loads skills, also install the ui-sdk skill once on each machine. The game's own skills are already in the repo under `.agents/skills`.
+
+```bash
+npx skills add vercel-labs/ui --skill ui-sdk
+```
+
 ## Workflow
 
 1. Create a branch from `main` named `<type>/<short-name>`, for example `feat/pile-counter`.
