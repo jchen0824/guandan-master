@@ -95,7 +95,7 @@ if (exists(SKILLS)) {
 
 // 7. Relative links in the docs resolve.
 const docs = [
-  ...["AGENTS.md", "CONTRIBUTING.md", "README.md", "README.en.md", ".github/pull_request_template.md"].filter(exists),
+  ...["AGENTS.md", "CONTRIBUTING.md", "CHANGELOG.md", "README.md", "README.en.md", ".github/pull_request_template.md"].filter(exists),
   ...(exists(SKILLS) ? walk(SKILLS, (p) => p.endsWith(".md")) : []),
 ]
 for (const file of docs) {
@@ -112,6 +112,16 @@ for (const file of docs) {
 if (exists("README.md") && exists("README.en.md")) {
   if (!read("README.md").includes("(README.en.md)")) fail("README.md", "no link to the English README", "Keep the language switcher line at the top.")
   if (!read("README.en.md").includes("(README.md)")) fail("README.en.md", "no link to the Chinese README", "Keep the language switcher line at the top.")
+}
+
+// 9. Every version has its changelog entry, so a release never ships without notes.
+const { version } = JSON.parse(read("package.json"))
+if (!exists("CHANGELOG.md") || !read("CHANGELOG.md").includes(`\n## [${version}] - `)) {
+  fail(
+    "CHANGELOG.md",
+    `no section for version ${version}`,
+    `Add "## [${version}] - YYYY-MM-DD" above the previous release and list what changed for players.`,
+  )
 }
 
 if (failures.length > 0) {

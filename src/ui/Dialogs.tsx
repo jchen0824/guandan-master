@@ -14,6 +14,7 @@ import { Button } from "@ui-sdk/react/button"
 import { useState } from "react"
 import { rankLabel } from "../engine/cards"
 import type { GameState, MatchSave } from "../engine/game"
+import { APP_VERSION, BUILD_DATE, REPO_URL } from "./buildInfo"
 import { TEAM_NAMES } from "./names"
 import { PlayLog } from "./PlayLog"
 import type { Skills } from "./useGame"
@@ -162,6 +163,20 @@ function SettingsDialog({
             </Button>
           )}
         </Field>
+        <section data-slot="about" aria-label="关于">
+          <div>
+            <h3>关于</h3>
+            <p>
+              掼蛋教练 <b>v{APP_VERSION}</b> · {BUILD_DATE} 更新
+            </p>
+          </div>
+          <a href={REPO_URL} target="_blank" rel="noreferrer">
+            GitHub 源代码
+            <svg aria-hidden="true" width="14" height="14" viewBox="0 0 16 16">
+              <path d="M6 3H3v10h10v-3M9 2h5v5M14 2 7.5 8.5" />
+            </svg>
+          </a>
+        </section>
         <DialogClose data-variant="play">好了</DialogClose>
       </DialogContent>
     </Dialog>

@@ -46,6 +46,10 @@ npm run build   # production build
 - `src/ui`, `src/App.tsx`: the interface, built with React and `@ui-sdk/react`
 - `.agents/skills`: Guandan rules, play skills and UI conventions written for coding agents
 
+## Versions
+
+The current version is shown in the game under 设置 → 关于. What changed in each release is in [CHANGELOG.md](CHANGELOG.md).
+
 ## Contributing
 
 Issues and pull requests are welcome. The workflow and commit format are in [CONTRIBUTING.md](CONTRIBUTING.md); the architecture and what CI checks are in [AGENTS.md](AGENTS.md). `main` is protected, so every change lands through a pull request.
