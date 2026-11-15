@@ -67,6 +67,19 @@ CI runs the same script on the pull request title and on every commit in the pul
 - **Text**: everything the player reads is Chinese.
 - **Rule variants**: this trainer uses a few house rules on purpose (listed in AGENTS.md). Open an issue before changing one.
 
+## Releases
+
+A release is a version number the players can see (in 设置 → 关于), a tag, and a changelog entry. The maintainer decides when to cut one; contributors and agents do not bump the version in ordinary pull requests.
+
+1. Create a branch `chore/release-vX.Y.Z`.
+2. Bump the version without tagging: `npm version minor --no-git-tag-version` for new features, `patch` for fixes only.
+3. Add a section to the top of [CHANGELOG.md](CHANGELOG.md): `## [X.Y.Z] - YYYY-MM-DD`, then what changed **for players**, grouped under `### Added`, `### Changed` and `### Fixed`. Use the pull request titles merged since the last tag as the source: `git log --oneline vA.B.C..main`.
+4. Open a pull request titled `chore: release vX.Y.Z` and merge it.
+5. The Release workflow tags `vX.Y.Z` and publishes a GitHub Release with that changelog section.
+6. Deploy (`vercel deploy --prod --yes`). The site shows the version and the build date.
+
+`npm run check:conventions` fails when `package.json` has a version with no changelog section.
+
 ## Reporting a bug
 
 Open an issue with the hand number, what you played, what happened and what you expected. A screenshot of the 复盘 dialog helps: it shows the full play log.

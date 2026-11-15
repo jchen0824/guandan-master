@@ -1,0 +1,37 @@
+name: Release
+
+# When a merge to main carries a package.json version that has no tag yet, tag it and publish a
+# GitHub Release with that version's CHANGELOG.md section. Deploying to Vercel stays a manual step.
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  tag:
+    name: tag-release
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+      - name: Publish the release if this version is new
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          if gh release view "v$version" >/dev/null 2>&1; then
+            echo "v$version is already released. Nothing to do."
+            exit 0
+          fi
+          node scripts/changelog-section.mjs "$version" > "$RUNNER_TEMP/notes.md"
+          gh release create "v$version" --target "$GITHUB_SHA" --title "v$version" --notes-file "$RUNNER_TEMP/notes.md"

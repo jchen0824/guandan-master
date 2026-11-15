@@ -56,6 +56,16 @@ describe("the game screen", () => {
     expect(within(dialog).getByText("掼蛋规则速查")).toBeTruthy()
   })
 
+  it("shows the version and a link to the source in settings", () => {
+    render(<App />)
+    fireEvent.click(screen.getByRole("button", { name: "设置" }))
+    const about = within(screen.getByRole("dialog")).getByRole("region", { name: "关于" })
+    expect(about.textContent).toMatch(/v\d+\.\d+\.\d+ · \d{4}-\d{2}-\d{2} 更新/)
+    const link = within(about).getByRole("link", { name: "GitHub 源代码" })
+    expect(link.getAttribute("href")).toBe("https://github.com/jchen0824/guandan-master")
+    expect(link.getAttribute("target")).toBe("_blank")
+  })
+
   it("keeps the match in browser storage under documented keys only", () => {
     render(<App />)
     waitForMyTurn()

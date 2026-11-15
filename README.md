@@ -44,6 +44,10 @@ npm run build   # 生产构建
 - `src/ui`、`src/App.tsx`：界面，使用 React 和 `@ui-sdk/react`
 - `.agents/skills`：给编程智能体看的掼蛋规则、打法要点和界面开发约定
 
+## 版本
+
+当前版本号显示在游戏的“设置 → 关于”里。每个版本的改动见 [CHANGELOG.md](CHANGELOG.md)。
+
 ## 参与贡献
 
 欢迎提交 Issue 和 Pull Request。流程和提交格式见 [CONTRIBUTING.md](CONTRIBUTING.md)，架构说明和 CI 检查项见 [AGENTS.md](AGENTS.md)。`main` 分支受保护，所有改动都通过 Pull Request 合并。
