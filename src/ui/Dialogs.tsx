@@ -64,6 +64,7 @@ function LogDialog({ game }: { game: GameState }) {
         </DialogDescription>
         <ol data-slot="review-log">
           {game.log.map((record, index) => (
+            // oxlint-disable-next-line react/no-array-index-key -- the log only grows, so position is identity
             <li key={index} data-pass={record.combo ? undefined : ""}>
               {SEAT_NAMES[record.player]}：
               {record.combo

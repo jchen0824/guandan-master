@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { advise, chooseReturn } from "./bot"
+import type { Skill } from "./bot"
+import { shuffle } from "./cards"
 import type { Card, Suit } from "./cards"
 import { beats, classify, legalPlays, readPlay } from "./combos"
 import { canReturn, checkPlay, newMatch, parseSave, pass, play, resumeMatch, returnTribute, startNextHand, toSave } from "./game"
@@ -297,3 +299,57 @@ describe("saving a match between hands", () => {
   })
 })
 
+
+describe("rules a linter cannot check", () => {
+  const SKILLS: Skill[] = ["novice", "basic", "advanced"]
+
+  /** The same position with the cards the player cannot see dealt differently among the other seats. */
+  function reshuffleHidden(state: GameState, player: number, random: () => number): GameState {
+    const hidden = shuffle(state.hands.flatMap((hand, p) => (p === player ? [] : hand)), random)
+    let taken = 0
+    const hands = state.hands.map((hand, p) => {
+      if (p === player) return hand
+      taken += hand.length
+      return hidden.slice(taken - hand.length, taken)
+    })
+    return { ...state, hands, dealt: state.dealt.map((hand, p) => (p === player ? hand : [])) }
+  }
+
+  it("bots do not peek: advice ignores which hidden cards the other players hold", () => {
+    let checked = 0
+    for (const seed of [11, 12, 13, 14]) {
+      let state = newMatch(seeded(seed))
+      while (state.phase === "play") {
+        const player = state.turn
+        for (const deal of [1, 2, 3]) {
+          const other = reshuffleHidden(state, player, seeded(seed * 1000 + checked * 10 + deal))
+          for (const skill of SKILLS) {
+            const here = advise(state, player, skill, seeded(checked))
+            const there = advise(other, player, skill, seeded(checked))
+            expect(there.reason).toBe(here.reason)
+            expect(there.combo?.cards.map((c) => c.id)).toEqual(here.combo?.cards.map((c) => c.id))
+          }
+        }
+        const { combo } = advise(state, player)
+        state = combo ? play(state, player, combo.cards) : pass(state, player)
+        checked++
+      }
+    }
+    expect(checked).toBeGreaterThan(100)
+  })
+
+  it("every reason shown to the player is written in Chinese", () => {
+    let state = newMatch(seeded(12))
+    const reasons = new Set<string>()
+    while (state.phase === "play") {
+      for (const skill of SKILLS) reasons.add(advise(state, state.turn, skill, seeded(3)).reason)
+      const hand = state.hands[state.turn]
+      const check = checkPlay(state, state.turn, [hand[0], hand[hand.length - 1]])
+      if (!check.ok) reasons.add(check.reason)
+      const { combo } = advise(state, state.turn)
+      state = combo ? play(state, state.turn, combo.cards) : pass(state, state.turn)
+    }
+    expect(reasons.size).toBeGreaterThan(5)
+    for (const reason of reasons) expect(reason).toMatch(/[\u4e00-\u9fff]/)
+  })
+})

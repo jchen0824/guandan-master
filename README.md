@@ -1,5 +1,9 @@
 # 掼蛋教练
 
+**简体中文** | [English](README.en.md)
+
+[![CI](https://github.com/jchen0824/guandan-master/actions/workflows/ci.yml/badge.svg)](https://github.com/jchen0824/guandan-master/actions/workflows/ci.yml)
+
 一个帮新手练习掼蛋的网页小游戏：你和三位电脑玩家打牌，教练在旁边讲解。
 
 在线试玩：https://guandan-iota.vercel.app
@@ -12,22 +16,24 @@
 - 记牌器、花色筛选、找同花顺、理牌（自己组牌并调整顺序）
 - 每局结束后复盘四家起手牌和出牌记录
 - 进度保存在浏览器本地，不需要账号，也没有服务器
+- 电脑和手机浏览器都能玩，横屏竖屏均可
 
 电脑玩家和教练都是基于规则的程序，没有使用大语言模型。
 
 ## 本地运行
 
-需要 Node.js 20 或更高版本。
+需要 Node.js 22.12 或更高版本。
 
 ```bash
-npm install
+npm ci
 npm run dev
 ```
 
 ## 其他命令
 
 ```bash
-npm test        # 规则引擎测试
+npm run check   # 提交前跑这一条：代码检查、约定检查、测试、构建、包体积
+npm test        # 规则引擎和界面测试
 npm run bench   # 三档电脑玩家互相对打的基准测试
 npm run build   # 生产构建
 ```
@@ -36,3 +42,12 @@ npm run build   # 生产构建
 
 - `src/engine`：规则引擎、对局流程和电脑玩家，不依赖界面
 - `src/ui`、`src/App.tsx`：界面，使用 React 和 `@ui-sdk/react`
+- `.agents/skills`：给编程智能体看的掼蛋规则、打法要点和界面开发约定
+
+## 参与贡献
+
+欢迎提交 Issue 和 Pull Request。流程和提交格式见 [CONTRIBUTING.md](CONTRIBUTING.md)，架构说明和 CI 检查项见 [AGENTS.md](AGENTS.md)。`main` 分支受保护，所有改动都通过 Pull Request 合并。
+
+## 许可
+
+[MIT](LICENSE)

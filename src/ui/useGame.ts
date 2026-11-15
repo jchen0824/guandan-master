@@ -40,13 +40,13 @@ function loadSave(): MatchSave | null {
     return null
   }
 }
-const LEVELS: Skill[] = ["novice", "basic", "advanced"]
+const LEVELS = new Set<unknown>(["novice", "basic", "advanced"] satisfies Skill[])
 
 function loadSkills(): Skills {
   const fallback: Skills = { opponents: "basic", partner: "basic" }
   try {
     const saved = JSON.parse(localStorage.getItem(SKILLS_KEY) ?? "null")
-    if (saved && LEVELS.includes(saved.opponents) && LEVELS.includes(saved.partner)) return saved
+    if (saved && LEVELS.has(saved.opponents) && LEVELS.has(saved.partner)) return saved
   } catch {
     return fallback
   }
@@ -89,8 +89,10 @@ export function useGame() {
       const save = toSave(game)
       if (save) localStorage.setItem(SAVE_KEY, JSON.stringify(save))
       else if (game.phase === "matchOver") localStorage.removeItem(SAVE_KEY)
+      // oxlint-disable-next-line react/set-state-in-effect -- reports whether the write to browser storage worked
       setSaveFailed(false)
     } catch {
+      // oxlint-disable-next-line react/set-state-in-effect -- reports whether the write to browser storage worked
       setSaveFailed(true)
     }
   }, [game])

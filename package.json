@@ -1,15 +1,30 @@
 {
-  "name": "guandan",
+  "name": "guandan-master",
+  "description": "掼蛋教练: a single-player Guandan trainer with rule-based bots and a coach",
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jchen0824/guandan-master.git"
+  },
+  "homepage": "https://guandan-iota.vercel.app",
+  "engines": {
+    "node": ">=22.12"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "lint": "oxlint",
     "preview": "vite preview",
+    "lint": "oxlint --deny-warnings",
+    "typecheck": "tsc -b",
     "test": "vitest run",
-    "bench": "VITE_BENCH=1 vitest run src/engine/benchmark.test.ts --reporter=verbose"
+    "bench": "VITE_BENCH=1 vitest run src/engine/benchmark.test.ts --reporter=verbose",
+    "check:conventions": "node scripts/check-conventions.mjs",
+    "check:bundle": "node scripts/check-bundle.mjs",
+    "check:commits": "node scripts/check-commits.mjs",
+    "check": "npm run lint && npm run check:conventions && npm test && npm run build && npm run check:bundle"
   },
   "dependencies": {
     "@ui-sdk/core": "^0.1.0-beta.1",
@@ -18,10 +33,12 @@
     "react-dom": "^19.3.1"
   },
   "devDependencies": {
+    "@testing-library/react": "^16.3.3",
     "@types/node": "^24.19.2",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",
+    "jsdom": "^29.1.1",
     "oxlint": "^1.90.0",
     "typescript": "~7.0.2",
     "vite": "^8.3.6",

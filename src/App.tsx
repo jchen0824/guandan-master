@@ -7,9 +7,10 @@ import { cardShort, rankLabel, sortHand } from "./engine/cards"
 import type { Suit } from "./engine/cards"
 import { describeCombo } from "./engine/combos"
 import type { GameState, PlayRecord } from "./engine/game"
-import { CardFace, CardRow, cardLabel } from "./ui/CardFace"
-import { cardAttributes } from "./ui/cardAttributes"
-import { Coach, describeSituation } from "./ui/Coach"
+import { CardFace, CardRow } from "./ui/CardFace"
+import { cardAttributes, cardLabel } from "./ui/cardAttributes"
+import { Coach } from "./ui/Coach"
+import { describeSituation } from "./ui/situation"
 import { Tracker } from "./ui/Tracker"
 import { LogDialog, ResumeDialog, RulesDialog, SettingsDialog } from "./ui/Dialogs"
 import { buildColumns } from "./ui/columns"
@@ -91,6 +92,7 @@ function Review({ game }: { game: GameState }) {
       <h3>出牌记录</h3>
       <ol data-slot="review-log">
         {game.log.map((record, index) => (
+          // oxlint-disable-next-line react/no-array-index-key -- the log only grows, so position is identity
           <li key={index} data-pass={record.combo ? undefined : ""}>
             {SEAT_NAMES[record.player]}：
             {record.combo
