@@ -84,6 +84,40 @@ describe("the game screen", () => {
     expect(link.getAttribute("target")).toBe("_blank")
   })
 
+  it("waits for the player before showing the result of a hand", () => {
+    render(<App />)
+    const button = (name: string) => screen.queryByRole("button", { name })
+    for (let step = 0; step < 600 && !button("查看结果"); step++) {
+      if (button("提示")) {
+        fireEvent.click(screen.getByRole("button", { name: "提示" }))
+        const picked = [...hand()].some((card) => card.getAttribute("aria-pressed") === "true")
+        fireEvent.click(screen.getByRole("button", { name: picked ? "出牌" : "不出" }))
+      }
+      act(() => {
+        vi.advanceTimersByTime(1000)
+      })
+    }
+    expect(screen.queryByRole("dialog")).toBeNull()
+    expect(screen.getAllByRole("status").some((status) => status.textContent?.includes("本局结束"))).toBe(true)
+
+    fireEvent.click(screen.getByRole("button", { name: "查看结果" }))
+    expect(within(screen.getByRole("dialog")).getByRole("button", { name: "下一局" })).toBeTruthy()
+
+    fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "再看看牌桌" }))
+    act(() => {
+      vi.advanceTimersByTime(1000)
+    })
+    expect(screen.queryByRole("dialog")).toBeNull()
+
+    fireEvent.click(screen.getByRole("button", { name: "查看结果" }))
+    fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "下一局" }))
+    act(() => {
+      vi.advanceTimersByTime(1000)
+    })
+    expect(screen.queryByRole("button", { name: "查看结果" })).toBeNull()
+    expect(screen.queryByRole("dialog")).toBeNull()
+  })
+
   it("keeps the match in browser storage under documented keys only", () => {
     render(<App />)
     waitForMyTurn()

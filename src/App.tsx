@@ -1,5 +1,12 @@
 import { Button } from "@ui-sdk/react/button"
-import { Dialog, DialogBackdrop, DialogContent, DialogDescription, DialogTitle } from "@ui-sdk/react/dialog"
+import {
+  Dialog,
+  DialogBackdrop,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@ui-sdk/react/dialog"
 import { Toggle, ToggleGroup } from "@ui-sdk/react/toggle"
 import { useRef, useState } from "react"
 import type { PointerEvent as ReactPointerEvent } from "react"
@@ -87,11 +94,22 @@ function Review({ game }: { game: GameState }) {
   )
 }
 
-function ResultDialog({ game, onNext, saveFailed }: { game: GameState; onNext: () => void; saveFailed: boolean }) {
+function ResultDialog({
+  game,
+  open,
+  onOpenChange,
+  onNext,
+  saveFailed,
+}: {
+  game: GameState
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onNext: () => void
+  saveFailed: boolean
+}) {
   const result = game.result
-  const over = game.phase === "handOver" || game.phase === "matchOver"
   return (
-    <Dialog open={over && result !== null} dismissible={false}>
+    <Dialog open={open && result !== null} onOpenChange={onOpenChange}>
       <DialogBackdrop />
       <DialogContent>
         {result ? (
@@ -122,9 +140,12 @@ function ResultDialog({ game, onNext, saveFailed }: { game: GameState; onNext: (
                 {note}
               </p>
             ))}
-            <Button data-variant="play" onClick={onNext}>
-              {result.matchWinner !== null ? "再来一场" : "下一局"}
-            </Button>
+            <div data-slot="dialog-actions">
+              <Button data-variant="play" onClick={onNext}>
+                {result.matchWinner !== null ? "再来一场" : "下一局"}
+              </Button>
+              <DialogClose data-variant="outline">再看看牌桌</DialogClose>
+            </div>
             {result.matchWinner === null ? (
               <p data-slot="save-status" data-failed={saveFailed ? "" : undefined} role="status">
                 {saveFailed
@@ -240,6 +261,9 @@ function App() {
   const myPlace = game.finished.indexOf(HUMAN)
   const situation = describeSituation(game, g.myTurn, g.mustReturn)
   const acting = g.myTurn || g.mustReturn
+  const over = game.phase === "handOver" || game.phase === "matchOver"
+  // The result waits until the player asks for it, so the last plays stay in view. A new hand closes it.
+  const [resultFor, setResultFor] = useState<GameState | null>(null)
 
   return (
     <main data-slot="app" data-coach-on={coachOn ? "" : undefined} data-coach-open={coachOn && coachOpen ? "" : undefined}>
@@ -300,7 +324,13 @@ function App() {
         </div>
 
         <section data-slot="controls" aria-label="你的操作">
-          {acting ? (
+          {over ? (
+            <div data-slot="pills">
+              <Button data-variant="play" onClick={() => setResultFor(game)}>
+                查看结果
+              </Button>
+            </div>
+          ) : acting ? (
             <div data-slot="pills">
               {g.mustReturn ? (
                 <Button data-variant="play" onClick={g.giveBack}>
@@ -410,7 +440,13 @@ function App() {
 
       <button type="button" data-slot="scrim" aria-label="收起教练" onClick={() => setCoachOpen(false)} />
       <Coach g={g} onClose={() => setCoachOpen(false)} onHide={hideCoach} />
-      <ResultDialog game={game} onNext={g.nextHand} saveFailed={g.saveFailed} />
+      <ResultDialog
+        game={game}
+        open={over && resultFor === game}
+        onOpenChange={(open) => setResultFor(open ? game : null)}
+        onNext={g.nextHand}
+        saveFailed={g.saveFailed}
+      />
       <ResumeDialog save={g.offer} onResume={g.resume} onNew={g.startOver} />
     </main>
   )
