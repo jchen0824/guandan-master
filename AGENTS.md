@@ -4,7 +4,7 @@ Instructions for any coding agent (and any person) changing this repository. Thi
 
 ## What this is
 
-掼蛋教练 is a single-player Guandan (掼蛋) trainer for beginners: the human plays seat 0 against three rule-based bots, with a coach that explains positions and comments on each move. It is a static Vite + React + TypeScript site with no server, database or LLM. Live at https://guandan-iota.vercel.app.
+掼蛋教练 is a single-player Guandan (掼蛋) trainer for beginners: the human plays seat 0 against three rule-based bots, with a coach that explains positions and comments on each move. It is a static Vite + React + TypeScript site with no server, database or LLM. Live at https://guandan-playground.vercel.app.
 
 ## How to make a change
 

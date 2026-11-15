@@ -6,7 +6,7 @@
 
 Guandan Coach is a single-player practice game for Guandan (掼蛋), the four-player Chinese card game, for people who have just started. You play in the browser against three computer players, with hints, comments on each play and a card counter.
 
-Play it: https://guandan-iota.vercel.app
+Play it: https://guandan-playground.vercel.app
 
 The game itself is in Chinese.
 
