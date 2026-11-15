@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs"
 import { fileURLToPath } from "node:url"
 import { expect } from "@playwright/test"
 import type { Page } from "@playwright/test"
@@ -22,7 +23,7 @@ declare global {
   }
 }
 
-const PAGE_TOOLS = fileURLToPath(new URL("./page-tools.js", import.meta.url))
+const PAGE_TOOLS = readFileSync(fileURLToPath(new URL("./page-tools.js", import.meta.url)), "utf8")
 /** A little longer than the pause the game leaves between bot moves. */
 const BOT_MOVE = 900
 /** Cards overlap in the hand, so clicks aim at the corner that always shows. */
@@ -38,20 +39,21 @@ export const SAVE_AFTER_DOUBLE_WIN = JSON.stringify({
   result: { order: [0, 2, 1, 3], winnerTeam: 0, gain: 3, levelsBefore: [2, 2], levelsAfter: [5, 2], notes: [], matchWinner: null },
 })
 
+/** Runs in the page before the app starts. It needs the page tools, so both go into the page as one script. */
+function prepare({ seed, save }: { seed: number; save?: string }) {
+  window.guandanQa.seed(seed)
+  if (save && !sessionStorage.getItem("qa-save-used")) {
+    localStorage.setItem("guandan.match", save)
+    sessionStorage.setItem("qa-save-used", "1")
+  }
+}
+
 /** Opens the game with a fixed deal and a clock the test controls, so a whole hand takes seconds. */
 export async function openGame(page: Page, options: { seed?: number; save?: string } = {}) {
   await page.clock.install()
-  await page.addInitScript({ path: PAGE_TOOLS })
-  await page.addInitScript(
-    ({ seed, save }) => {
-      window.guandanQa.seed(seed)
-      if (save && !sessionStorage.getItem("qa-save-used")) {
-        localStorage.setItem("guandan.match", save)
-        sessionStorage.setItem("qa-save-used", "1")
-      }
-    },
-    { seed: options.seed ?? 5, save: options.save },
-  )
+  // One script, not two: Playwright does not promise the order in which separate init scripts run.
+  const settings = JSON.stringify({ seed: options.seed ?? 5, save: options.save })
+  await page.addInitScript({ content: `${PAGE_TOOLS}\n;(${prepare.toString()})(${settings});` })
   await page.goto("/")
   await expect(page.getByRole("region", { name: "你的操作" })).toBeVisible()
 }
