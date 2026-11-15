@@ -22,6 +22,21 @@ function waitForMyTurn() {
   return screen.getByRole("button", { name: "提示" })
 }
 
+/** Follows the hint every turn until the hand is decided. */
+function playToTheEnd() {
+  const button = (name: string) => screen.queryByRole("button", { name })
+  for (let step = 0; step < 600 && !button("查看结果"); step++) {
+    if (button("提示")) {
+      fireEvent.click(screen.getByRole("button", { name: "提示" }))
+      const picked = [...hand()].some((card) => card.getAttribute("aria-pressed") === "true")
+      fireEvent.click(screen.getByRole("button", { name: picked ? "出牌" : "不出" }))
+    }
+    act(() => {
+      vi.advanceTimersByTime(1000)
+    })
+  }
+}
+
 beforeEach(() => {
   vi.useFakeTimers()
   vi.spyOn(Math, "random").mockImplementation(seeded(5))
@@ -86,17 +101,7 @@ describe("the game screen", () => {
 
   it("waits for the player before showing the result of a hand", () => {
     render(<App />)
-    const button = (name: string) => screen.queryByRole("button", { name })
-    for (let step = 0; step < 600 && !button("查看结果"); step++) {
-      if (button("提示")) {
-        fireEvent.click(screen.getByRole("button", { name: "提示" }))
-        const picked = [...hand()].some((card) => card.getAttribute("aria-pressed") === "true")
-        fireEvent.click(screen.getByRole("button", { name: picked ? "出牌" : "不出" }))
-      }
-      act(() => {
-        vi.advanceTimersByTime(1000)
-      })
-    }
+    playToTheEnd()
     expect(screen.queryByRole("dialog")).toBeNull()
     expect(screen.getAllByRole("status").some((status) => status.textContent?.includes("本局结束"))).toBe(true)
 
@@ -116,6 +121,24 @@ describe("the game screen", () => {
     })
     expect(screen.queryByRole("button", { name: "查看结果" })).toBeNull()
     expect(screen.queryByRole("dialog")).toBeNull()
+  })
+
+  it("keeps the player's hand-ending play on the table beside the result button", () => {
+    // With this deal the player goes out last of the three, on a bomb, and that play decides the hand.
+    vi.spyOn(Math, "random").mockImplementation(seeded(4))
+    render(<App />)
+    playToTheEnd()
+    const controls = within(screen.getByLabelText("你的操作"))
+    expect(hand()).toHaveLength(0)
+    expect(controls.getByLabelText("你出的牌：4张9炸弹")).toBeTruthy()
+    expect(controls.getByRole("button", { name: "查看结果" })).toBeTruthy()
+
+    fireEvent.click(controls.getByRole("button", { name: "查看结果" }))
+    fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "再看看牌桌" }))
+    act(() => {
+      vi.advanceTimersByTime(1000)
+    })
+    expect(controls.getByLabelText("你出的牌：4张9炸弹")).toBeTruthy()
   })
 
   it("keeps the match in browser storage under documented keys only", () => {

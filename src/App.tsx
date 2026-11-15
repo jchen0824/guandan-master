@@ -326,6 +326,7 @@ function App() {
         <section data-slot="controls" aria-label="你的操作">
           {over ? (
             <div data-slot="pills">
+              {g.table[HUMAN] ? <PlayZone game={game} record={g.table[HUMAN]} seat={HUMAN} /> : null}
               <Button data-variant="play" onClick={() => setResultFor(game)}>
                 查看结果
               </Button>
