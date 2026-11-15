@@ -76,7 +76,7 @@ Seats: 0 is the human, 1 is 下家, 2 is the partner (对家), 3 is 上家. `tea
 ### UI
 
 - **`ui/useGame.ts`** owns all game state. It wraps `GameState` in a view that also tracks each seat's last play in the current trick, runs bot turns on an 800 ms timer, and exposes the human's actions.
-- **`ui/columns.ts`** turns the hand into rank columns plus hand-made piles (理牌). **`ui/situation.ts`** writes the coach's description of the position.
+- **`ui/columns.ts`** turns the hand into rank columns plus hand-made piles (理牌). **`ui/situation.ts`** writes the coach's description of the position. **`ui/unseen.ts`** counts the cards for the 记牌器, **`ui/tribute.ts`** and **`ui/PlayLog.tsx`** write the 复盘 record.
 - Components come from `@ui-sdk/react` (Button, Toggle, ToggleGroup, Dialog, SegmentedControl, Field). Styling is plain CSS in `src/index.css`, keyed on `data-slot` and state attributes such as `data-pressed`; card sizes derive from a `--cw` custom property in container-query units.
 - Three layouts share one stylesheet: desktop (coach docked), phone landscape (`max-height: 480px`) and upright phone (`max-width: 620px`, where hand columns overlap and the table area scrolls so the hand and controls stay on screen). Phone browsers leave only about 300px of height in landscape, so that layout puts the tools left of the hand and the action buttons right of it.
 - Dialogs render inside the top bar, so `[data-slot="dialog-content"]` resets inherited text styles such as `white-space`.

@@ -12,11 +12,11 @@ import { SegmentedControl, SegmentedControlItem } from "@ui-sdk/react/segmented-
 import type { Skill } from "../engine/bot"
 import { Button } from "@ui-sdk/react/button"
 import { useState } from "react"
-import { cardShort, rankLabel } from "../engine/cards"
-import { describeCombo } from "../engine/combos"
+import { rankLabel } from "../engine/cards"
 import type { GameState, MatchSave } from "../engine/game"
 import { APP_VERSION, BUILD_DATE, REPO_URL } from "./buildInfo"
-import { SEAT_NAMES, TEAM_NAMES } from "./names"
+import { TEAM_NAMES } from "./names"
+import { PlayLog } from "./PlayLog"
 import type { Skills } from "./useGame"
 
 const RULES: [string, string][] = [
@@ -59,21 +59,11 @@ function LogDialog({ game }: { game: GameState }) {
       <DialogTrigger data-variant="text">复盘</DialogTrigger>
       <DialogBackdrop />
       <DialogContent>
-        <DialogTitle>本局出牌记录</DialogTitle>
-        <DialogDescription>
-          {game.log.length === 0 ? "本局还没有人出牌。" : "从第一手到现在，按出牌顺序排列。本局结束后还能看到四家的起手牌。"}
-        </DialogDescription>
-        <ol data-slot="review-log">
-          {game.log.map((record, index) => (
-            // oxlint-disable-next-line react/no-array-index-key -- the log only grows, so position is identity
-            <li key={index} data-pass={record.combo ? undefined : ""}>
-              {SEAT_NAMES[record.player]}：
-              {record.combo
-                ? `${describeCombo(record.combo, game.level)}（${record.combo.cards.map(cardShort).join(" ")}）`
-                : "不出"}
-            </li>
-          ))}
-        </ol>
+        <DialogTitle>本局复盘</DialogTitle>
+        <DialogDescription>进贡和每一手出牌，按先后顺序排列。本局结束后还能看到四家的起手牌。</DialogDescription>
+        <div data-slot="review">
+          <PlayLog game={game} />
+        </div>
         <DialogClose data-variant="play">继续打牌</DialogClose>
       </DialogContent>
     </Dialog>

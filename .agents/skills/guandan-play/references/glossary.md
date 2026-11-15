@@ -51,8 +51,8 @@ Use these exact Chinese terms in anything the player reads. The same thing must 
 | 过A | Win the match at level A | `matchWinner` |
 | 提示 | The hint button | `hint` in `useGame.ts`, calls `advise` |
 | 理牌 | Group selected cards into a pile and reorder piles | `arrange`, `groups`, `ui/columns.ts` |
-| 记牌器 | The card counter panel | `ui/Tracker.tsx` |
-| 复盘 | Review the play log and the four starting hands | `LogDialog`, `Review` |
+| 记牌器 | The card counter panel; 逢人配 has its own cell | `ui/Tracker.tsx`, `ui/unseen.ts` |
+| 复盘 | Review the tribute, the play log and the four starting hands | `LogDialog`, `Review`, `ui/PlayLog.tsx` |
 
 ## Play skills
 

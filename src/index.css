@@ -732,7 +732,7 @@ button {
 [data-slot="tracker"] {
   margin: 0;
   display: grid;
-  grid-template-columns: repeat(15, minmax(0, 28px));
+  grid-template-columns: repeat(16, minmax(0, 28px));
   max-width: 100%;
   border-radius: 8px;
   overflow: hidden;
@@ -752,8 +752,13 @@ button {
   background: #ece6d8;
 }
 
-[data-slot="tracker"] div[data-joker] dt {
+[data-slot="tracker"] div[data-kind="joker"] dt {
   background: #f6c343;
+}
+
+[data-slot="tracker"] div[data-kind="wild"] dt {
+  background: #f9d9d6;
+  color: #9a1118;
 }
 
 [data-slot="tracker"] dd {
@@ -1018,6 +1023,19 @@ button {
   padding-left: 2em;
   font-size: 14px;
   columns: 2 280px;
+}
+
+[data-slot="review-tribute"] {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 14px;
+}
+
+[data-slot="review-empty"] {
+  margin: 0;
+  font-size: 14px;
+  color: var(--panel-soft);
 }
 
 [data-slot="review-log"] li[data-pass] {
@@ -1300,7 +1318,7 @@ button {
   }
   [data-slot="tracker"] {
     width: 100%;
-    grid-template-columns: repeat(15, minmax(0, 1fr));
+    grid-template-columns: repeat(16, minmax(0, 1fr));
   }
   [data-slot="bubble"] {
     width: 100%;

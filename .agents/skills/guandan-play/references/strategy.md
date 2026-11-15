@@ -38,7 +38,7 @@ Almost every decision is "which legal play leaves the remaining hand with the lo
 
 **Idea.** Track what has been played to know what can still beat you. Beginners should count, in this order: the four jokers, the level cards (especially the two wild hearts), the aces, then which ranks have had bombs or are exhausted. With that you know whether your king is the top single, and whether an opponent can still hold a bomb in a rank.
 
-**In code.** `readTable(state, player)` builds `unseen`: for every rank, how many copies are neither in this hand nor already played (key `-1` counts unseen wild cards). `higherExists` and `isTop` answer "can anything still beat this?". Only the `advanced` level counts cards. The human sees the same numbers in the 记牌器 (`src/ui/Tracker.tsx`, `unseen(game)`), so the bot never knows more than the player can.
+**In code.** `readTable(state, player)` builds `unseen`: for every rank, how many copies are neither in this hand nor already played (key `-1` counts unseen wild cards). `higherExists` and `isTop` answer "can anything still beat this?". Only the `advanced` level counts cards. The human sees the same numbers in the 记牌器 (`unseen(game)` in `src/ui/unseen.ts`), which shows the two wild hearts in a cell of their own and the other six level cards beside it, so the bot never knows more than the player can.
 
 **Not implemented.** Inference from behaviour: "下家 passed on a small pair, so they are short of pairs", or working out a specific opponent's holding. The bot counts cards but does not read players.
 

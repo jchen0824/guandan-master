@@ -56,6 +56,24 @@ describe("the game screen", () => {
     expect(within(dialog).getByText("掼蛋规则速查")).toBeTruthy()
   })
 
+  it("counts the wild hearts in their own cell of the card counter", () => {
+    render(<App />)
+    const tracker = screen.getByLabelText("记牌器：其他三家手里还剩的牌")
+    expect(tracker.querySelectorAll("dd")).toHaveLength(16)
+    const wild = within(tracker).getByLabelText("逢人配（红桃2）")
+    expect(wild.textContent).toBe("♥2")
+    expect(Number(wild.nextElementSibling?.textContent)).toBeLessThanOrEqual(2)
+  })
+
+  it("lists the plays under a heading in the review dialog", () => {
+    render(<App />)
+    waitForMyTurn()
+    fireEvent.click(screen.getByRole("button", { name: "复盘" }))
+    const dialog = screen.getByRole("dialog")
+    expect(within(dialog).getByRole("heading", { name: "出牌记录" })).toBeTruthy()
+    expect(within(dialog).queryByRole("heading", { name: "进贡记录" })).toBeNull()
+  })
+
   it("shows the version and a link to the source in settings", () => {
     render(<App />)
     fireEvent.click(screen.getByRole("button", { name: "设置" }))
