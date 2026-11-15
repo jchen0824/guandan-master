@@ -15,6 +15,8 @@ export default defineConfig({
   },
   test: {
     // Engine tests run in Node. A UI test opts in with `// @vitest-environment jsdom` on its first line.
+    // Browser tests live in e2e/ and run under Playwright, not here.
+    include: ['src/**/*.test.{ts,tsx}'],
     setupFiles: ['./src/test/setup.ts'],
     css: false,
   },
