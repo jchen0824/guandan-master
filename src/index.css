@@ -1149,7 +1149,6 @@ button {
     display: none;
   }
 }
-}
 
 [data-slot="dialog-actions"] {
   display: flex;
