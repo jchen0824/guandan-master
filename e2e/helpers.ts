@@ -40,8 +40,12 @@ export const SAVE_AFTER_DOUBLE_WIN = JSON.stringify({
 })
 
 /** Runs in the page before the app starts. It needs the page tools, so both go into the page as one script. */
-function prepare({ seed, save }: { seed: number; save?: string }) {
+function prepare({ seed, save, view }: { seed: number; save?: string; view?: string }) {
   window.guandanQa.seed(seed)
+  if (view && !sessionStorage.getItem("qa-view-used")) {
+    localStorage.setItem("guandan.view", view)
+    sessionStorage.setItem("qa-view-used", "1")
+  }
   if (save && !sessionStorage.getItem("qa-save-used")) {
     localStorage.setItem("guandan.match", save)
     sessionStorage.setItem("qa-save-used", "1")
@@ -49,10 +53,10 @@ function prepare({ seed, save }: { seed: number; save?: string }) {
 }
 
 /** Opens the game with a fixed deal and a clock the test controls, so a whole hand takes seconds. */
-export async function openGame(page: Page, options: { seed?: number; save?: string } = {}) {
+export async function openGame(page: Page, options: { seed?: number; save?: string; view?: "3d" } = {}) {
   await page.clock.install()
   // One script, not two: Playwright does not promise the order in which separate init scripts run.
-  const settings = JSON.stringify({ seed: options.seed ?? 5, save: options.save })
+  const settings = JSON.stringify({ seed: options.seed ?? 5, save: options.save, view: options.view })
   await page.addInitScript({ content: `${PAGE_TOOLS}\n;(${prepare.toString()})(${settings});` })
   await page.goto("/")
   await expect(page.getByRole("region", { name: "你的操作" })).toBeVisible()

@@ -19,6 +19,7 @@ The game itself is in Chinese.
 - A review of all four starting hands and the play log after each hand
 - Progress is saved in the browser. No account, no server
 - Works in desktop and phone browsers, upright or landscape
+- A switch between a 2D (flat) and a 3D table
 
 The computer players and the coach are rule-based programs. No large language model is involved.
 

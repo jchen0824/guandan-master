@@ -147,3 +147,62 @@ describe("the game screen", () => {
     for (let i = 0; i < localStorage.length; i++) expect(localStorage.key(i)).toMatch(/^guandan\./)
   })
 })
+
+describe("the 3D table", () => {
+  const board = () => document.querySelector('[data-slot="app"]')
+  const backs = (seat: string) => screen.getByRole("region", { name: seat }).querySelectorAll('[data-slot="fan-card"]')
+
+  it("starts on the flat table and switches from the top bar", () => {
+    render(<App />)
+    expect(board()?.getAttribute("data-view")).toBe("2d")
+    expect(document.querySelector('[data-slot="scene"]')).toBeNull()
+
+    fireEvent.click(screen.getByRole("radio", { name: "3D" }))
+    expect(board()?.getAttribute("data-view")).toBe("3d")
+    expect(localStorage.getItem("guandan.view")).toBe("3d")
+    expect(hand()).toHaveLength(27)
+    for (const seat of ["上家", "对家", "下家"]) expect(backs(seat)).toHaveLength(27)
+
+    fireEvent.click(screen.getByRole("radio", { name: "2D" }))
+    expect(board()?.getAttribute("data-view")).toBe("2d")
+    expect(localStorage.getItem("guandan.view")).toBe("2d")
+  })
+
+  it("opens on the 3D table when that was the last choice", () => {
+    localStorage.setItem("guandan.view", "3d")
+    render(<App />)
+    expect(board()?.getAttribute("data-view")).toBe("3d")
+    expect(screen.getByRole("region", { name: "比分" }).textContent).toContain("本局打")
+  })
+
+  it("offers the same switch in settings", () => {
+    render(<App />)
+    fireEvent.click(screen.getByRole("button", { name: "设置" }))
+    fireEvent.click(within(screen.getByRole("dialog")).getByRole("radio", { name: "3D" }))
+    expect(board()?.getAttribute("data-view")).toBe("3d")
+  })
+
+  it("shows one card back for every card a seat still holds, and each play on the felt", () => {
+    localStorage.setItem("guandan.view", "3d")
+    render(<App />)
+    fireEvent.click(waitForMyTurn())
+    const picked = [...hand()].filter((card) => card.getAttribute("aria-pressed") === "true").length
+    fireEvent.click(screen.getByRole("button", { name: "出牌" }))
+
+    const mine = screen.getByRole("region", { name: "你出的牌" })
+    expect(mine.querySelectorAll("[data-card]")).toHaveLength(picked)
+    expect(within(mine).getByRole("list").getAttribute("aria-label")).toMatch(/^你出的牌：/)
+    const counts = [...document.querySelectorAll('[data-layer="labels"] [data-slot="count"]')].map((el) => Number(/\d+/.exec(el.textContent ?? "")?.[0]))
+    expect(counts).toEqual(["上家", "对家", "下家"].map((seat) => backs(seat).length))
+  })
+
+  it("plays a whole hand and shows the result on request", () => {
+    localStorage.setItem("guandan.view", "3d")
+    render(<App />)
+    playToTheEnd()
+    expect(screen.queryByRole("dialog")).toBeNull()
+    expect(document.querySelector('[data-slot="turn-note"]')?.textContent).toBe("本局结束")
+    fireEvent.click(screen.getByRole("button", { name: "查看结果" }))
+    expect(within(screen.getByRole("dialog")).getByRole("button", { name: "下一局" })).toBeTruthy()
+  })
+})

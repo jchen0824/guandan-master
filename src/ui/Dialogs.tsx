@@ -18,6 +18,8 @@ import { APP_VERSION, BUILD_DATE, REPO_URL } from "./buildInfo"
 import { TEAM_NAMES } from "./names"
 import { PlayLog } from "./PlayLog"
 import type { Skills } from "./useGame"
+import type { View } from "./view"
+import { ViewSwitch } from "./ViewSwitch"
 
 const RULES: [string, string][] = [
   ["牌型", "单张、对子、三张、三带二、五张顺子、三连对（如 334455）、钢板（如 333444）。"],
@@ -129,10 +131,14 @@ function SettingsDialog({
   skills,
   onChange,
   onStartOver,
+  view,
+  onViewChange,
 }: {
   skills: Skills
   onChange: (skills: Skills) => void
   onStartOver: () => void
+  view: View
+  onViewChange: (view: View) => void
 }) {
   const [confirming, setConfirming] = useState(false)
   return (
@@ -148,6 +154,11 @@ function SettingsDialog({
           onChange={(opponents) => onChange({ ...skills, opponents })}
         />
         <SkillField label="你的对家" value={skills.partner} onChange={(partner) => onChange({ ...skills, partner })} />
+        <Field>
+          <FieldLabel>牌桌</FieldLabel>
+          <ViewSwitch view={view} onChange={onViewChange} />
+          <FieldDescription>2D 是平面牌桌，3D 是立体牌桌。规则、提示和教练都一样，随时可以换。</FieldDescription>
+        </Field>
         <Field>
           <FieldLabel>存档</FieldLabel>
           <FieldDescription>

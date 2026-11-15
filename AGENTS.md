@@ -82,8 +82,10 @@ Seats: 0 is the human, 1 is 下家, 2 is the partner (对家), 3 is 上家. `tea
 - **`ui/columns.ts`** turns the hand into rank columns plus hand-made piles (理牌). **`ui/situation.ts`** writes the coach's description of the position. **`ui/unseen.ts`** counts the cards for the 记牌器, **`ui/tribute.ts`** and **`ui/PlayLog.tsx`** write the 复盘 record.
 - Components come from `@ui-sdk/react` (Button, Toggle, ToggleGroup, Dialog, SegmentedControl, Field). Styling is plain CSS in `src/index.css`, keyed on `data-slot` and state attributes such as `data-pressed`; card sizes derive from a `--cw` custom property in container-query units.
 - Three layouts share one stylesheet: desktop (coach docked), phone landscape (`max-height: 480px`) and upright phone (`max-width: 620px`, where hand columns overlap and the table area scrolls so the hand and controls stay on screen). Phone browsers leave only about 300px of height in landscape, so that layout puts the tools left of the hand and the action buttons right of it.
-- Dialogs render inside the top bar, so `[data-slot="dialog-content"]` resets inherited text styles such as `white-space`.
-- Browser storage keys: `guandan.match`, `guandan.skills`, `guandan.coach`, `guandan.tracker`. A new key needs the `guandan.` prefix and an entry in this list.
+- Dialogs render inside the top bar, so `[data-slot="dialog-content"]` resets inherited text styles such as `white-space`. For the same reason a rule meant for a top-bar control must use the child selector (`[data-slot="menu"] > …`), or it also restyles the copy inside a dialog.
+- **Two tables, one game.** `ui/view.ts` keeps the player's choice of `2d` (the default) or `3d`, and `<main>` carries it as `data-view`. The 2D/3D switch is in the top bar and in 设置. Both views use the same hand, buttons, tools, dialogs and `useGame` state; only the table differs.
+- **The 3D table** is `ui/Table3D.tsx` plus the block at the end of `src/index.css` scoped to `[data-view="3d"]`. It is CSS 3D transforms, with no canvas or WebGL: a plane tilted away from the player, a fan of card backs per seat, and each seat's last play lying on the felt. Every length is a multiple of `--u`, one pixel of the design (1280×720 desktop, 852×300 phone landscape, 393×745 phone upright), and positions are plain numbers in custom properties at the top of that block. Three things break it silently: `overflow`, `opacity` or `filter` on an element between `[data-slot="world"]` and a card flattens the 3D space; a group between them without `transform-style: preserve-3d` does the same; and a seat label left in the table layer gets hidden behind a fan, which is why labels are drawn in the second `world` layer. Card ranks there use Barlow Condensed, bundled from `@fontsource/barlow-condensed`, so no request goes to a font host. Its browser tests are in `e2e/table3d.spec.ts`.
+- Browser storage keys: `guandan.match`, `guandan.skills`, `guandan.coach`, `guandan.tracker`, `guandan.view`. A new key needs the `guandan.` prefix and an entry in this list.
 
 ## What CI checks
 
@@ -99,6 +101,8 @@ Every pull request runs three required jobs: `quality`, `e2e` and `conventional-
 | `npm run test:e2e` | Anything a player cannot see or reach in a real browser: a button or card off screen, two things overlapping, a covered button, a squeezed table, a dialog that does not fit, a console error. Runs on desktop, phone upright, phone landscape (852×300) and a short phone, in Chromium and WebKit | Read the sentence in the failure, open the trace, fix the layout. See the browser-qa skill |
 | `npm run check:commits` (CI only, on the title and every commit) | Messages that are not Conventional Commits | Reword; see [CONTRIBUTING.md](CONTRIBUTING.md) |
 
+Inline `style` has one allowed use: `place()` from `ui/place.ts`, which sets only custom properties such as `--i` and `--n` so the stylesheet can position a card on the 3D table. Each use carries a suppression that says so. Colours, sizes and everything else still go in `src/index.css`.
+
 Suppressing a lint rule needs a reason on the same line: `// oxlint-disable-next-line <rule> -- <why this case is safe>`. A suppression without a reason, or one that only exists to get CI green, will be rejected in review.
 
 ## Conventions and gotchas
@@ -111,7 +115,7 @@ Suppressing a lint rule needs a reason on the same line: `// oxlint-disable-next
 - Use `slice().sort()` rather than `toSorted()` and similar ES2023 array methods: older phone browsers and in-app webviews lack them and nothing polyfills them.
 - `legalPlays` re-reads any play that uses a wild card through `classify`, so its reported rank matches what `play` will record. Keep that when adding patterns.
 - Agreed rule variants: three failed attempts at A drop a team to level 2; return tribute must be a 10 or lower; after a double tribute the payer of the larger card leads (clockwise on a tie); a resisted tribute (抗贡) means the previous winner leads. The full rules are in the guandan-play skill.
-- Check a UI change at about 375×550, 852×300 and 1280×720. When testing in a browser, open the dev server as `http://qa.localhost:<port>` instead of `localhost`: it is the same server with separate storage, so test saves and settings do not leak into a real session.
+- Check a UI change at about 375×550, 852×300 and 1280×720, on both tables if it touches something they share (the hand, buttons, tools, top bar or dialogs). When testing in a browser, open the dev server as `http://qa.localhost:<port>` instead of `localhost`: it is the same server with separate storage, so test saves and settings do not leak into a real session.
 - UI tests start with `// @vitest-environment jsdom` on the first line. Engine tests run in plain Node and must stay that way.
 - Browser tests live in `e2e/` and run under Playwright against the production build. `e2e/page-tools.js` holds the layout probe; the browser-qa skill uses the same file for hands-on checks, so change it in one place.
 - Dependabot opens weekly pull requests for npm packages and GitHub Actions (`.github/dependabot.yml`). They go through the same CI; merge them like any other pull request.

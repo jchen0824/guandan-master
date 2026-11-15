@@ -53,3 +53,12 @@ export function describeSituation(game: GameState, myTurn: boolean, mustReturn: 
   const short = `${table}你有 ${options.length} 种压法${bombs > 0 ? `，其中 ${bombs} 种要用炸弹` : ""}。`
   return { plain, short, long: `${short}先自己想，再点“提示”对照。` }
 }
+
+/** The one-line status above the action buttons of the 3D table. */
+export function turnNote(game: GameState, myTurn: boolean, mustReturn: boolean): string {
+  if (game.phase === "return") return mustReturn ? "请还贡" : "等待还贡"
+  if (game.phase !== "play") return "本局结束"
+  if (!myTurn) return game.finished.includes(HUMAN) ? "你已出完牌" : `等${SEAT_NAMES[game.turn]}出牌`
+  if (!game.lastPlay) return "轮到你首出"
+  return `轮到你 · 要压过${SEAT_NAMES[game.lastPlay.player]}的${describeCombo(game.lastPlay.combo, game.level)}`
+}

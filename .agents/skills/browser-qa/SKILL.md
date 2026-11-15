@@ -61,6 +61,7 @@ Automated checks only cover what someone thought to assert. Use whatever browser
 | End of a hand | Loop: when 提示 is showing, click it, then 出牌 if cards were selected, otherwise 不出. Bots move every 0.8s, so a hand takes about a minute and a half. `guandanQa.state().over` turns true |
 | A hand with tribute | In the console: `localStorage.setItem("guandan.match", <save>)` with the `SAVE_AFTER_DOUBLE_WIN` text from `e2e/helpers.ts`, reload, click 继续第 2 局. You win the previous hand by a double, so you receive tribute and must return a card |
 | An exact deal | Open 设置, click 重新开始整场比赛, run `guandanQa.seed(4)`, then click the 确认 button. Seed 4 with hint-following play ends on your own bomb of 9s |
+| The 3D table | Use the 2D/3D switch in the top bar (in 设置 on an upright phone), or run `localStorage.setItem("guandan.view", "3d")` and reload. Check every state above on both tables when the change touches something they share |
 
 `guandanQa.state()` tells you where you are: `{ over, myTurn, mustReturn, cards, selected, dialog }`.
 

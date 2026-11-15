@@ -15,18 +15,22 @@ import type { Suit } from "./engine/cards"
 import { describeCombo } from "./engine/combos"
 import type { GameState, PlayRecord } from "./engine/game"
 import { CardFace, CardRow } from "./ui/CardFace"
+import { CardFace3D } from "./ui/CardFace3D"
 import { cardAttributes, cardLabel } from "./ui/cardAttributes"
 import { Coach } from "./ui/Coach"
-import { describeSituation } from "./ui/situation"
+import { describeSituation, turnNote } from "./ui/situation"
+import { Player } from "./ui/Player"
 import { PlayLog } from "./ui/PlayLog"
+import { ScorePanel } from "./ui/ScorePanel"
+import { Table3D } from "./ui/Table3D"
 import { Tracker } from "./ui/Tracker"
 import { tributeLines } from "./ui/tribute"
 import { LogDialog, ResumeDialog, RulesDialog, SettingsDialog } from "./ui/Dialogs"
 import { buildColumns } from "./ui/columns"
-import { HUMAN, PLACE_NAMES, SEAT_NAMES, TEAM_NAMES } from "./ui/names"
+import { HUMAN, PLACE_NAMES, SEAT_NAMES, SIDES, TEAM_NAMES } from "./ui/names"
 import { useGame } from "./ui/useGame"
-
-const SIDES = ["me", "right", "top", "left"]
+import { useView } from "./ui/view"
+import { ViewSwitch } from "./ui/ViewSwitch"
 
 function PlayZone({ game, record, seat }: { game: GameState; record: PlayRecord | null; seat: number }) {
   return (
@@ -39,35 +43,6 @@ function PlayZone({ game, record, seat }: { game: GameState; record: PlayRecord 
           level={game.level}
           label={`${SEAT_NAMES[seat]}出的牌：${describeCombo(record.combo, game.level)}`}
         />
-      )}
-    </div>
-  )
-}
-
-function Player({ game, seat }: { game: GameState; seat: number }) {
-  const place = game.finished.indexOf(seat)
-  const active = game.phase === "play" && game.turn === seat
-  const left = game.hands[seat].length
-  return (
-    <div
-      data-slot="player"
-      data-side={SIDES[seat]}
-      data-team={seat % 2 === 0 ? "us" : "them"}
-      data-active={active ? "" : undefined}
-    >
-      <span data-slot="avatar" aria-hidden="true">
-        {SEAT_NAMES[seat].slice(0, 1)}
-      </span>
-      <strong data-slot="player-name">
-        {SEAT_NAMES[seat]}
-        <span data-slot="player-role">{seat % 2 === 0 ? "队友" : "对手"}</span>
-      </strong>
-      {place >= 0 ? (
-        <span data-slot="place">{PLACE_NAMES[place]}</span>
-      ) : (
-        <span data-slot="count" data-low={left <= 10 ? "" : undefined}>
-          剩 {left} 张
-        </span>
       )}
     </div>
   )
@@ -246,9 +221,12 @@ function App() {
   const [coachOn, setCoachOn] = useSaved("guandan.coach", true)
   const [trackerOn, setTrackerOn] = useSaved("guandan.tracker", true)
   const [coachOpen, setCoachOpen] = useState(false)
+  const [view, setView] = useView()
+  const three = view === "3d"
   const pressCoach = () => {
     if (!coachOn) return setCoachOn(true)
-    if (window.matchMedia("(max-width: 1000px)").matches) return setCoachOpen(true)
+    // The 3D table has no docked panel, so the full coach always opens as a drawer there.
+    if (three || window.matchMedia("(max-width: 1000px)").matches) return setCoachOpen(true)
     setCoachOn(false)
   }
   const hideCoach = () => {
@@ -264,11 +242,36 @@ function App() {
   const over = game.phase === "handOver" || game.phase === "matchOver"
   // The result waits until the player asks for it, so the last plays stay in view. A new hand closes it.
   const [resultFor, setResultFor] = useState<GameState | null>(null)
+  const bubble = (
+    <div data-slot="bubble">
+      <p role="status">
+        {coachOn ? <strong>教练</strong> : null}
+        {coachOn ? situation.short : situation.plain} <TributeLine game={game} />
+      </p>
+      {g.notice ? (
+        <p data-slot="notice" data-kind={g.notice.kind} role={g.notice.kind === "error" ? "alert" : "status"}>
+          {g.notice.kind === "hint" ? "提示：" : ""}
+          {g.notice.text}
+        </p>
+      ) : null}
+    </div>
+  )
 
   return (
-    <main data-slot="app" data-coach-on={coachOn ? "" : undefined} data-coach-open={coachOn && coachOpen ? "" : undefined}>
+    <main
+      data-slot="app"
+      data-view={view}
+      data-coach-on={coachOn ? "" : undefined}
+      data-coach-open={coachOn && coachOpen ? "" : undefined}
+    >
       <div data-slot="board">
         <header data-slot="topbar">
+          {three ? (
+            <div data-slot="brand">
+              <strong>掼蛋教练</strong>
+              <span>第 {game.handNumber} 局</span>
+            </div>
+          ) : null}
           <div data-slot="scores">
             <span data-slot="level-badge">
               <span data-slot="badge-long">本局</span>打 <b>{rankLabel(game.level)}</b>
@@ -280,17 +283,28 @@ function App() {
               {TEAM_NAMES[1]} <b>{rankLabel(game.levels[1])}</b>
             </span>
           </div>
-          <section data-slot="seat-top" aria-label={SEAT_NAMES[2]}>
-            <Player game={game} seat={2} />
-            <PlayZone game={game} record={g.table[2]} seat={2} />
-          </section>
+          {three ? (
+            <div data-slot="top-middle">{trackerOn ? <Tracker game={game} /> : null}</div>
+          ) : (
+            <section data-slot="seat-top" aria-label={SEAT_NAMES[2]}>
+              <Player game={game} seat={2} />
+              <PlayZone game={game} record={g.table[2]} seat={2} />
+            </section>
+          )}
           <div data-slot="menu">
             <span data-slot="round">
               第 {game.handNumber} 局 · 逢人配 <b>♥{rankLabel(game.level)}</b>
             </span>
+            <ViewSwitch view={view} onChange={setView} />
             <RulesDialog />
             <LogDialog game={game} />
-            <SettingsDialog skills={g.skills} onChange={g.setSkills} onStartOver={g.startOver} />
+            <SettingsDialog
+              skills={g.skills}
+              onChange={g.setSkills}
+              onStartOver={g.startOver}
+              view={view}
+              onViewChange={setView}
+            />
             <Button data-variant="coach" aria-pressed={coachOn} onClick={pressCoach}>
               {coachOn ? null : <span data-slot="badge-long">显示</span>}教练
             </Button>
@@ -298,35 +312,35 @@ function App() {
         </header>
 
         <div data-slot="table">
-          <section data-slot="seat-left" aria-label={SEAT_NAMES[3]}>
-            <Player game={game} seat={3} />
-            <PlayZone game={game} record={g.table[3]} seat={3} />
-          </section>
-          <div data-slot="center">
-            {trackerOn ? <Tracker game={game} /> : null}
-            <div data-slot="bubble">
-              <p role="status">
-                {coachOn ? <strong>教练</strong> : null}
-                {coachOn ? situation.short : situation.plain} <TributeLine game={game} />
-              </p>
-              {g.notice ? (
-                <p data-slot="notice" data-kind={g.notice.kind} role={g.notice.kind === "error" ? "alert" : "status"}>
-                  {g.notice.kind === "hint" ? "提示：" : ""}
-                  {g.notice.text}
-                </p>
-              ) : null}
-            </div>
-          </div>
-          <section data-slot="seat-right" aria-label={SEAT_NAMES[1]}>
-            <PlayZone game={game} record={g.table[1]} seat={1} />
-            <Player game={game} seat={1} />
-          </section>
+          {three ? (
+            <>
+              <Table3D game={game} table={g.table} />
+              <ScorePanel game={game} />
+              {bubble}
+            </>
+          ) : (
+            <>
+              <section data-slot="seat-left" aria-label={SEAT_NAMES[3]}>
+                <Player game={game} seat={3} />
+                <PlayZone game={game} record={g.table[3]} seat={3} />
+              </section>
+              <div data-slot="center">
+                {trackerOn ? <Tracker game={game} /> : null}
+                {bubble}
+              </div>
+              <section data-slot="seat-right" aria-label={SEAT_NAMES[1]}>
+                <PlayZone game={game} record={g.table[1]} seat={1} />
+                <Player game={game} seat={1} />
+              </section>
+            </>
+          )}
         </div>
 
         <section data-slot="controls" aria-label="你的操作">
+          {three ? <p data-slot="turn-note">{turnNote(game, g.myTurn, g.mustReturn)}</p> : null}
           {over ? (
             <div data-slot="pills">
-              {g.table[HUMAN] ? <PlayZone game={game} record={g.table[HUMAN]} seat={HUMAN} /> : null}
+              {g.table[HUMAN] && !three ? <PlayZone game={game} record={g.table[HUMAN]} seat={HUMAN} /> : null}
               <Button data-variant="play" onClick={() => setResultFor(game)}>
                 查看结果
               </Button>
@@ -351,6 +365,8 @@ function App() {
                 </>
               )}
             </div>
+          ) : three ? (
+            <div data-slot="pills" />
           ) : (
             <section data-slot="pills" aria-label="你出的牌">
               <PlayZone game={game} record={g.table[HUMAN]} seat={HUMAN} />
@@ -389,7 +405,7 @@ function App() {
                     pressed={g.selected.includes(card.id)}
                     onPressedChange={(pressed) => g.toggle(card, pressed)}
                   >
-                    <CardFace card={card} level={game.level} />
+                    {three ? <CardFace3D card={card} level={game.level} /> : <CardFace card={card} level={game.level} />}
                   </Toggle>
                 ))}
               </div>
