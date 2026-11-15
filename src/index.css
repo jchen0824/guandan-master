@@ -889,6 +889,58 @@ button {
   color: var(--panel-soft);
 }
 
+[data-slot="about"] {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0 16px;
+  width: 100%;
+  padding-top: 12px;
+  border-top: 1px solid var(--panel-line);
+}
+
+[data-slot="about"] h3 {
+  margin: 0;
+  font-size: 14px;
+}
+
+[data-slot="about"] p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--panel-soft);
+}
+
+[data-slot="about"] p b {
+  color: var(--panel-ink);
+}
+
+[data-slot="about"] a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  margin-inline: -12px;
+  padding: 0 12px;
+  border-radius: 8px;
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+[data-slot="about"] a:hover {
+  background: #dfe8e2;
+}
+
+[data-slot="about"] svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 [data-slot="segmented-control"] {
   display: inline-grid;
   grid-auto-flow: column;
