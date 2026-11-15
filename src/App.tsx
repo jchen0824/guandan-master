@@ -3,7 +3,7 @@ import { Dialog, DialogBackdrop, DialogContent, DialogDescription, DialogTitle }
 import { Toggle, ToggleGroup } from "@ui-sdk/react/toggle"
 import { useRef, useState } from "react"
 import type { PointerEvent as ReactPointerEvent } from "react"
-import { cardShort, rankLabel, sortHand } from "./engine/cards"
+import { rankLabel, sortHand } from "./engine/cards"
 import type { Suit } from "./engine/cards"
 import { describeCombo } from "./engine/combos"
 import type { GameState, PlayRecord } from "./engine/game"
@@ -11,7 +11,9 @@ import { CardFace, CardRow } from "./ui/CardFace"
 import { cardAttributes, cardLabel } from "./ui/cardAttributes"
 import { Coach } from "./ui/Coach"
 import { describeSituation } from "./ui/situation"
+import { PlayLog } from "./ui/PlayLog"
 import { Tracker } from "./ui/Tracker"
+import { tributeLines } from "./ui/tribute"
 import { LogDialog, ResumeDialog, RulesDialog, SettingsDialog } from "./ui/Dialogs"
 import { buildColumns } from "./ui/columns"
 import { HUMAN, PLACE_NAMES, SEAT_NAMES, TEAM_NAMES } from "./ui/names"
@@ -65,18 +67,9 @@ function Player({ game, seat }: { game: GameState; seat: number }) {
 }
 
 function TributeLine({ game }: { game: GameState }) {
-  if (game.handNumber === 1 || game.log.length > 3) return null
-  if (game.tributeResisted) return <span data-slot="tribute">抗贡：输家持有两张大王，本局不进贡。</span>
-  return (
-    <span data-slot="tribute">
-      {game.tributes.map((t) => (
-        <span key={t.from}>
-          {SEAT_NAMES[t.from]}向{SEAT_NAMES[t.to]}进贡 {cardShort(t.card)}
-          {t.returned ? `，还贡 ${cardShort(t.returned)}` : "，等待还贡"}。
-        </span>
-      ))}
-    </span>
-  )
+  if (game.log.length > 3) return null
+  const lines = tributeLines(game)
+  return lines.length > 0 ? <span data-slot="tribute">{lines.join("")}</span> : null
 }
 
 function Review({ game }: { game: GameState }) {
@@ -89,18 +82,7 @@ function Review({ game }: { game: GameState }) {
           <CardRow cards={sortHand(cards, game.level)} level={game.level} label={`${SEAT_NAMES[seat]}的起手牌`} />
         </div>
       ))}
-      <h3>出牌记录</h3>
-      <ol data-slot="review-log">
-        {game.log.map((record, index) => (
-          // oxlint-disable-next-line react/no-array-index-key -- the log only grows, so position is identity
-          <li key={index} data-pass={record.combo ? undefined : ""}>
-            {SEAT_NAMES[record.player]}：
-            {record.combo
-              ? `${describeCombo(record.combo, game.level)}（${record.combo.cards.map(cardShort).join(" ")}）`
-              : "不出"}
-          </li>
-        ))}
-      </ol>
+      <PlayLog game={game} />
     </div>
   )
 }
