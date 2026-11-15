@@ -4,7 +4,7 @@
 
 [![CI](https://github.com/jchen0824/guandan-master/actions/workflows/ci.yml/badge.svg)](https://github.com/jchen0824/guandan-master/actions/workflows/ci.yml)
 
-一个帮新手练习掼蛋的网页小游戏：你和三位电脑玩家打牌，教练在旁边讲解。
+「掼蛋教练」是一个单机掼蛋练习游戏，适合刚入门的玩家。在浏览器里和三个电脑玩家对局，支持提示、出牌点评和记牌器。
 
 在线试玩：https://guandan-iota.vercel.app
 
