@@ -17,7 +17,7 @@ Follow these steps in order. Each one has a check that fails when it is skipped.
 5. **Commit with a Conventional Commit message**, as [CONTRIBUTING.md](CONTRIBUTING.md) describes.
 6. **Open a pull request** and fill in the template. The title must also be a Conventional Commit, because it becomes the commit on `main`.
 
-Do not deploy, merge your own pull request, change branch protection or raise a budget in `scripts/` unless the maintainer asked for exactly that.
+Do not deploy, cut a release, merge your own pull request, change branch protection or raise a budget in `scripts/` unless the maintainer asked for exactly that.
 
 ## Commands
 
@@ -38,6 +38,7 @@ npm run bench             # 300 simulated hands per bot matchup; prints win and 
 - Single test: `npx vitest run src/engine/engine.test.ts -t "orders bombs by size"`.
 - `benchmark.test.ts` is skipped unless `VITE_BENCH` is set; `npm run bench` sets it. Run it before and after changing `src/engine/bot.ts` and put both sets of numbers in the pull request.
 - Check a commit message without committing: `npm run check:commits -- "fix(ui): keep the hand on screen"`.
+- Releasing is a maintainer step, described in [CONTRIBUTING.md](CONTRIBUTING.md#releases). Do not change `version` in `package.json` unless the task is a release. The version and build date reach the UI through `import.meta.env.VITE_APP_VERSION` and `VITE_BUILD_DATE`, set in `vite.config.ts` and read in `src/ui/buildInfo.ts`.
 - Deploying is a maintainer step: `vercel deploy --prod --yes` from the repo root. Vercel is not connected to the GitHub repo, so merging does not deploy.
 
 ## Skills
