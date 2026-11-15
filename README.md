@@ -6,7 +6,7 @@
 
 「掼蛋教练」是一个单机掼蛋练习游戏，适合刚入门的玩家。在浏览器里和三个电脑玩家对局，支持提示、出牌点评和记牌器。
 
-在线试玩：https://guandan-iota.vercel.app
+在线试玩：https://guandan-playground.vercel.app
 
 ## 功能
 

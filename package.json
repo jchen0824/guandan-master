@@ -9,7 +9,7 @@
     "type": "git",
     "url": "git+https://github.com/jchen0824/guandan-master.git"
   },
-  "homepage": "https://guandan-iota.vercel.app",
+  "homepage": "https://guandan-playground.vercel.app",
   "engines": {
     "node": ">=22.12"
   },
