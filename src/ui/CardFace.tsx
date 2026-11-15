@@ -1,10 +1,6 @@
-import { cardName, isJoker, isWild, rankLabel, suitSymbol } from "../engine/cards"
+import { isJoker, isWild, rankLabel, suitSymbol } from "../engine/cards"
 import type { Card } from "../engine/cards"
-import { cardAttributes } from "./cardAttributes"
-
-function cardLabel(card: Card, level: number) {
-  return isWild(card, level) ? `${cardName(card)}（逢人配）` : cardName(card)
-}
+import { cardAttributes, cardLabel } from "./cardAttributes"
 
 function Jester() {
   return (
@@ -60,4 +56,4 @@ function CardRow({ cards, level, label }: { cards: Card[]; level: number; label:
   )
 }
 
-export { CardFace, CardRow, cardLabel }
+export { CardFace, CardRow }

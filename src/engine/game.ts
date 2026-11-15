@@ -176,7 +176,8 @@ export function checkPlay(state: GameState, player: number, cards: Card[]): Play
   const combo = readPlay(cards, state.level, previous)
   if (combo) return { ok: true, combo }
   const mine = readings[0]
-  const target = previous!
+  if (!previous) return { ok: true, combo: mine }
+  const target = previous
   const reason =
     bombPower(mine) > 0 && bombPower(target) > 0
       ? `你的${describeCombo(mine, state.level)}压不住桌上的${describeCombo(target, state.level)}。炸弹大小：四张 < 五张 < 同花顺 < 六张及以上 < 四大天王，同级比点数。`
@@ -262,7 +263,7 @@ export function play(state: GameState, player: number, cards: Card[]): GameState
     return settle(next, [...finished, ...rest])
   }
   if (finished.length === 3) {
-    return settle(next, [...finished, [0, 1, 2, 3].find((p) => !finished.includes(p))!])
+    return settle(next, [...finished, ...[0, 1, 2, 3].filter((p) => !finished.includes(p))])
   }
   return { ...next, turn: nextActive(next, player) }
 }

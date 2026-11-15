@@ -1,4 +1,4 @@
-import { isJoker, isWild } from "../engine/cards"
+import { cardName, isJoker, isWild } from "../engine/cards"
 import type { Card } from "../engine/cards"
 
 export function cardAttributes(card: Card, level: number) {
@@ -9,4 +9,8 @@ export function cardAttributes(card: Card, level: number) {
     "data-wild": isWild(card, level) ? "" : undefined,
     "data-joker": isJoker(card) ? "" : undefined,
   }
+}
+
+export function cardLabel(card: Card, level: number) {
+  return isWild(card, level) ? `${cardName(card)}（逢人配）` : cardName(card)
 }

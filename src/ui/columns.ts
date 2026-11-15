@@ -11,7 +11,7 @@ export interface Column {
   name?: string
 }
 
-const RUNS = ["straight", "straightFlush", "tube", "plate"]
+const RUNS = new Set(["straight", "straightFlush", "tube", "plate"])
 
 const SUIT_ORDER = { S: 0, H: 1, C: 2, D: 3, J: 4 }
 
@@ -23,7 +23,7 @@ export function buildColumns(hand: Card[], groups: number[][], level: number): C
     const cards = group.flatMap((id) => byId.get(id) ?? [])
     if (cards.length === 0) continue
     const combo = classify(cards, level)[0]
-    const inRun = combo !== undefined && RUNS.includes(combo.type)
+    const inRun = combo !== undefined && RUNS.has(combo.type)
     cards.sort((a, b) => (inRun ? b.rank - a.rank : cardValue(b, level) - cardValue(a, level)))
     cards.forEach((c) => used.add(c.id))
     custom.push({
