@@ -34,11 +34,15 @@ npm run dev
 ## Other commands
 
 ```bash
-npm run check   # run this before you commit: lint, conventions, tests, build, bundle size
-npm test        # rules engine and game screen tests
-npm run bench   # the three bot levels playing each other
-npm run build   # production build
+npm run check              # run this before you commit: lint, conventions, tests, build, bundle size
+npm run test:e2e           # also run this after changing the screen: browser tests at four desktop and phone sizes
+npm run test:e2e:install   # once, before the first browser test run: downloads Chromium and WebKit
+npm test                   # rules engine and game screen tests
+npm run bench              # the three bot levels playing each other
+npm run build              # production build
 ```
+
+`npm run check` does not include the browser tests. CI runs both, so after a change to the screen, run both before you commit.
 
 ## Layout
 

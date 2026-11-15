@@ -212,6 +212,18 @@
       "rules": {
         "no-console": "off"
       }
+    },
+    {
+      "files": [
+        "e2e/**",
+        "playwright.config.ts"
+      ],
+      "rules": {
+        "no-await-in-loop": "off",
+        "unicorn/consistent-function-scoping": "off",
+        "typescript/no-non-null-assertion": "off",
+        "no-underscore-dangle": "off"
+      }
     }
   ]
 }

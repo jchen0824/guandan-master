@@ -22,11 +22,11 @@ npx skills add vercel-labs/ui --skill ui-sdk
 ## Workflow
 
 1. Create a branch from `main` named `<type>/<short-name>`, for example `feat/pile-counter`.
-2. Make the change with a test, and run `npm run check` until it passes.
+2. Make the change with a test, and run `npm run check` until it passes. For a change to the screen, also run `npm run test:e2e` (`npm run test:e2e:install` once first).
 3. Commit using the format below.
 4. Open a pull request against `main` and fill in the template.
 
-`main` is protected: nobody pushes to it directly, the `quality` and `conventional-commits` checks must pass, and the branch must be up to date. Pull requests are squash-merged, so **the pull request title becomes the commit on `main`** and must follow the same format as a commit.
+`main` is protected: nobody pushes to it directly, the `quality`, `e2e` and `conventional-commits` checks must pass, and the branch must be up to date. Pull requests are squash-merged, so **the pull request title becomes the commit on `main`** and must follow the same format as a commit.
 
 Keep a pull request to one purpose. A bug fix and an unrelated refactor are two pull requests.
 
@@ -63,7 +63,7 @@ CI runs the same script on the pull request title and on every commit in the pul
 ## What a good change looks like
 
 - **Rules and bots**: add a case to `src/engine/engine.test.ts`. For a bot change, run `npm run bench` before and after and paste both results into the pull request. Read [the guandan-play skill](.agents/skills/guandan-play/SKILL.md) first so the bot plays the way a good player would.
-- **Screens**: use `@ui-sdk/react` components and style them from `src/index.css`. Check the result at about 375×550, 852×300 and 1280×720. Read [the guandan-ui skill](.agents/skills/guandan-ui/SKILL.md) first.
+- **Screens**: use `@ui-sdk/react` components and style them from `src/index.css`. Read [the guandan-ui skill](.agents/skills/guandan-ui/SKILL.md) first, then check the result as [the browser-qa skill](.agents/skills/browser-qa/SKILL.md) describes: the automated browser run, and a look at about 375×550, 852×300 and 1280×720.
 - **Text**: everything the player reads is Chinese.
 - **Rule variants**: this trainer uses a few house rules on purpose (listed in AGENTS.md). Open an issue before changing one.
 

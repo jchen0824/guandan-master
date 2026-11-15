@@ -67,6 +67,7 @@ Status text uses plain `role="status"` or `role="alert"` on a paragraph, and gro
 ## 4. Check your work
 
 1. Add or update a test in `src/App.test.tsx`. Start the file with `// @vitest-environment jsdom`. Find controls by role and Chinese name, drive them with `fireEvent`, and move bot turns forward with fake timers as the existing tests do.
-2. Run `npm run check`.
-3. Look at the real thing at about 375×550 (upright phone), 852×300 (phone landscape with browser bars) and 1280×720. Open the dev server as `http://qa.localhost:<port>` so your test session does not overwrite a real saved match. jsdom cannot see layout, overlap or colour contrast, so this step is not optional for a visual change.
-4. In the pull request, say which sizes you checked and anything you could not check, such as a real phone.
+2. If the change is something a player can see or reach, add it to `e2e/game.spec.ts` as well. The simulated DOM has no layout, so only the browser tests can catch an off-screen button or an overlap.
+3. Run `npm run check`, then `npm run test:e2e`.
+4. Follow [the browser-qa skill](../browser-qa/SKILL.md) for a look at the real thing at about 375×550, 852×300 and 1280×720. This step is not optional for a visual change.
+5. In the pull request, say which sizes you checked and anything you could not check, such as a real phone.
