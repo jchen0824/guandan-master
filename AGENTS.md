@@ -12,8 +12,8 @@ Follow these steps in order. Each one has a check that fails when it is skipped.
 
 1. **Branch from `main`.** Name it `<type>/<short-name>`, for example `fix/bomb-timing`. Direct pushes to `main` are blocked.
 2. **Read the skill for the area you touch** (see [Skills](#skills)). Do this before you read or write code.
-3. **Make the change, with a test.** A rule or bot change needs a test in `src/engine/engine.test.ts`; a screen change needs one in `src/App.test.tsx`.
-4. **Run `npm run check`.** It is the same gate CI runs. Fix every failure; do not weaken a check to get past it.
+3. **Make the change, with a test.** A rule or bot change needs a test in `src/engine/engine.test.ts`; a screen change needs one in `src/App.test.tsx`, and one in `e2e/game.spec.ts` when it changes what a player can see or reach.
+4. **Run `npm run check`**, and `npm run test:e2e` after a screen change. Together they are the gate CI runs. Fix every failure; do not weaken a check to get past it.
 5. **Commit with a Conventional Commit message**, as [CONTRIBUTING.md](CONTRIBUTING.md) describes.
 6. **Open a pull request** and fill in the template. The title must also be a Conventional Commit, because it becomes the commit on `main`.
 
@@ -29,6 +29,8 @@ npm run lint              # oxlint, warnings are errors
 npm run check:conventions # repo rules a linter cannot express
 npm run typecheck         # tsc -b
 npm test                  # vitest run (engine and game screen)
+npm run test:e2e          # Playwright: builds, then plays the game in real browsers at four screen sizes
+npm run test:e2e:install  # once per machine: download Chromium and WebKit for the line above
 npm run build             # tsc -b && vite build
 npm run check:bundle      # gzipped size budget, run after a build
 npm run bench             # 300 simulated hands per bot matchup; prints win and double-win rates
@@ -49,8 +51,9 @@ A skill is a folder of instructions under `.agents/skills/`. If your agent does 
 | --- | --- |
 | Game rules, bots, hints, coach text, the 记牌器, or any Chinese wording about play | [.agents/skills/guandan-play/SKILL.md](.agents/skills/guandan-play/SKILL.md) |
 | Anything under `src/ui`, `src/App.tsx` or `src/index.css` | [.agents/skills/guandan-ui/SKILL.md](.agents/skills/guandan-ui/SKILL.md), then the `ui-sdk` skill it points to |
+| Checking a screen change, reproducing a layout bug, or a failing browser test | [.agents/skills/browser-qa/SKILL.md](.agents/skills/browser-qa/SKILL.md) |
 
-The two skills above live in this repo, so a fresh clone already has them. The `ui-sdk` skill belongs to the ui-sdk project and is set up per machine:
+The skills above live in this repo, so a fresh clone already has them. The `ui-sdk` skill belongs to the ui-sdk project and is set up per machine:
 
 ```bash
 npx skills add vercel-labs/ui --skill ui-sdk   # once on a new machine, for agents that load skills
@@ -84,7 +87,7 @@ Seats: 0 is the human, 1 is 下家, 2 is the partner (对家), 3 is 上家. `tea
 
 ## What CI checks
 
-Every pull request runs two required jobs. Run the left column locally to see the same result.
+Every pull request runs three required jobs: `quality`, `e2e` and `conventional-commits`. Run the left column locally to see the same result.
 
 | Command | Catches | Typical fix |
 | --- | --- | --- |
@@ -93,6 +96,7 @@ Every pull request runs two required jobs. Run the left column locally to see th
 | `npm test` | Broken rules, bots that peek at hidden hands, reasons not written in Chinese, a game screen that no longer deals, hints or plays | Fix the code, not the test, unless the rule itself changed on purpose |
 | `npm run build` | Type errors and anything Vite cannot bundle, including broken CSS | The dev server tolerates some broken CSS. The build does not |
 | `npm run check:bundle` | A bundle that outgrew its budget | Remove the heavy dependency or root import |
+| `npm run test:e2e` | Anything a player cannot see or reach in a real browser: a button or card off screen, two things overlapping, a covered button, a squeezed table, a dialog that does not fit, a console error. Runs on desktop, phone upright, phone landscape (852×300) and a short phone, in Chromium and WebKit | Read the sentence in the failure, open the trace, fix the layout. See the browser-qa skill |
 | `npm run check:commits` (CI only, on the title and every commit) | Messages that are not Conventional Commits | Reword; see [CONTRIBUTING.md](CONTRIBUTING.md) |
 
 Suppressing a lint rule needs a reason on the same line: `// oxlint-disable-next-line <rule> -- <why this case is safe>`. A suppression without a reason, or one that only exists to get CI green, will be rejected in review.
@@ -109,10 +113,12 @@ Suppressing a lint rule needs a reason on the same line: `// oxlint-disable-next
 - Agreed rule variants: three failed attempts at A drop a team to level 2; return tribute must be a 10 or lower; after a double tribute the payer of the larger card leads (clockwise on a tie); a resisted tribute (抗贡) means the previous winner leads. The full rules are in the guandan-play skill.
 - Check a UI change at about 375×550, 852×300 and 1280×720. When testing in a browser, open the dev server as `http://qa.localhost:<port>` instead of `localhost`: it is the same server with separate storage, so test saves and settings do not leak into a real session.
 - UI tests start with `// @vitest-environment jsdom` on the first line. Engine tests run in plain Node and must stay that way.
+- Browser tests live in `e2e/` and run under Playwright against the production build. `e2e/page-tools.js` holds the layout probe; the browser-qa skill uses the same file for hands-on checks, so change it in one place.
+- Dependabot opens weekly pull requests for npm packages and GitHub Actions (`.github/dependabot.yml`). They go through the same CI; merge them like any other pull request.
 
 ## Done means
 
-- `npm run check` passes, and you read its output rather than only its last line.
+- `npm run check` passes, and you read its output rather than only its last line. For a screen change, `npm run test:e2e` passes too.
 - The change has a test that fails without it.
 - Docs that describe the changed behaviour are updated in the same pull request: this file, the skills, and both READMEs when a feature or command changes.
 - The pull request says what you could not verify (for example "not checked on a real phone").

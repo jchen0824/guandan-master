@@ -32,11 +32,15 @@ npm run dev
 ## 其他命令
 
 ```bash
-npm run check   # 提交前跑这一条：代码检查、约定检查、测试、构建、包体积
-npm test        # 规则引擎和界面测试
-npm run bench   # 三档电脑玩家互相对打的基准测试
-npm run build   # 生产构建
+npm run check              # 提交前跑这一条：代码检查、约定检查、测试、构建、包体积
+npm run test:e2e           # 改动界面后还要跑这一条：在真实浏览器里测试电脑和手机共四种屏幕尺寸
+npm run test:e2e:install   # 首次运行浏览器测试前执行一次：下载 Chromium 和 WebKit
+npm test                   # 规则引擎和界面测试
+npm run bench              # 三档电脑玩家互相对打的基准测试
+npm run build              # 生产构建
 ```
+
+`npm run check` 不包含浏览器测试。CI 两者都会跑，所以改了界面的话，提交前请把两条都跑一遍。
 
 ## 代码结构
 
