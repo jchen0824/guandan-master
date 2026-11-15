@@ -1,0 +1,63 @@
+name: CI
+
+# Runs the same gate as `npm run check` on every pull request, plus the commit-message check.
+# Both jobs are required by the branch protection on main, so keep their names stable.
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Install
+        run: npm ci
+      - name: Lint (React, hooks, accessibility, imports, ui-sdk entries, engine boundary)
+        run: npm run lint
+      - name: Repo conventions (widget roles, determinism, storage keys, agent docs, links)
+        run: npm run check:conventions
+      - name: Tests (rules engine, bots, game screen)
+        run: npm test
+      - name: Typecheck and production build
+        run: npm run build
+      - name: Bundle size budget
+        run: npm run check:bundle
+
+  conventional-commits:
+    name: conventional-commits
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+      - name: Pull request title (becomes the squash commit on main)
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: node scripts/check-commits.mjs
+      - name: Commit subjects in this pull request
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: node scripts/check-commits.mjs --range "$BASE_SHA..$HEAD_SHA"
