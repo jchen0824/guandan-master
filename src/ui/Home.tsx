@@ -78,7 +78,7 @@ function Home({ onPick }: { onPick: (game: GameChoice) => void }) {
           </div>
         </section>
       </div>
-      <p data-slot="home-note">只用练习筹码，不涉及真钱。没有倒计时，想多久都可以。</p>
+      <p data-slot="home-note">*纯人机练习</p>
     </main>
   )
 }
