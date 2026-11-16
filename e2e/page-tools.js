@@ -63,7 +63,7 @@
   function holdemProblems(mustBeOnScreen, mustBeReachable) {
     const problems = []
     const labels = all(
-      '[data-slot="he-top"] > *, [data-slot="he-chip"], [data-slot="he-bet"], [data-slot="he-pot"], [data-slot="he-board"], [data-slot="he-banner"] > *, [data-slot="he-coach"], [data-slot="he-ranks"], [data-slot="he-me"], [data-slot="he-hole"], [data-slot="he-notice"], [data-slot="he-sizes"] > *, [data-slot="he-buttons"] > *',
+      '[data-slot="he-top"] > *, [data-slot="he-chip"], [data-slot="he-bet"], [data-slot="he-pot"], [data-slot="he-board"], [data-slot="he-banner"] > *, [data-slot="he-coach"], [data-slot="he-ranks"], [data-slot="he-me"], [data-slot="he-hole"], [data-slot="he-notice"], [data-slot="he-sizes"] > *, [data-slot="he-slider"], [data-slot="he-buttons"] > *',
     )
     const cross = (a, b) => Math.min(a.right, b.right) - Math.max(a.left, b.left) > 3 && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 3
     // On a phone held sideways the player's label is the last line of the coach's box, by design.

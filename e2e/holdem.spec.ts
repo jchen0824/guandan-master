@@ -64,6 +64,44 @@ for (const view of ["2d", "3d"] as const) {
   })
 }
 
+test("a raise of any size can be chosen, the minimum and all-in included", async ({ page }) => {
+  await openHoldem(page)
+  const raise = page.getByRole("button", { name: /^(下注|加注到) / })
+  await expect(raise).toBeVisible()
+  const slider = page.getByRole("slider")
+  // A phone on its side has only the slider; an upright phone only the size buttons; a wide screen both.
+  if (await slider.isVisible()) {
+    const min = Number(await slider.getAttribute("min"))
+    const max = Number(await slider.getAttribute("max"))
+    await slider.focus()
+    await page.keyboard.press("End")
+    await expect(raise).toHaveText(new RegExp(`${max.toLocaleString("en-US")}$`))
+    await page.keyboard.press("Home")
+    await expect(raise).toHaveText(new RegExp(`${min.toLocaleString("en-US")}$`))
+  } else {
+    const sizes = page.getByRole("group", { name: /多少$/ })
+    for (const name of ["全下", "最小"]) {
+      const size = sizes.getByRole("button", { name: new RegExp(`^${name}`) })
+      await size.click()
+      await expect(raise).toHaveText(new RegExp(`${(await size.locator("b").innerText()).replace(/,/g, ",")}$`))
+    }
+  }
+  await expectLayoutToHold(page, "with a raise size picked")
+})
+
+// The four test sizes have no tablet. These two are where the seat labels and the coach panel ran into each other.
+for (const [width, height] of [
+  [900, 800],
+  [1240, 800],
+]) {
+  test(`a hand at ${width}×${height} keeps every label clear of the others`, async ({ page }, info) => {
+    test.skip(info.project.name !== "desktop-chromium", "one browser is enough for a size set by the test itself")
+    await page.setViewportSize({ width, height })
+    await openHoldem(page)
+    await playHoldemHand(page, (when) => expectLayoutToHold(page, `at ${width}×${height}, ${when}`))
+  })
+}
+
 test("the computer players' level is set in 设置, in a dialog that fits", async ({ page }) => {
   await openHoldem(page)
   await page.getByRole("button", { name: "设置", exact: true }).click()

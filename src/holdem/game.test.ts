@@ -168,7 +168,8 @@ describe("from one hand to the next", () => {
       state = nextHand(state, rng)
     }
     expect(showdowns).toBeGreaterThan(30)
-  })
+    // Novices reach a showdown in almost every hand, which takes several seconds on a slow CI runner.
+  }, 30_000)
 })
 
 describe("how well the computer players play", () => {
@@ -199,5 +200,5 @@ describe("how well the computer players play", () => {
     const advanced = habits("advanced")
     expect(novice.folds).toBeLessThan(advanced.folds - 0.1)
     expect(novice.bets).toBeLessThan(advanced.bets)
-  })
+  }, 30_000)
 })

@@ -13,6 +13,7 @@ import type { HandCategory } from "../../holdem/hands"
 import { place } from "../place"
 import { useSaved } from "../useSaved"
 import { PlayingCard } from "./PlayingCard"
+import { biggestWinner, resultLine } from "./summary"
 import { useHoldem } from "./useHoldem"
 import type { Decision } from "./useHoldem"
 
@@ -54,22 +55,6 @@ function SeatNote({ game, seat }: { game: HoldemState; seat: number }) {
   )
 }
 
-/** The seat whose hand the table marks at showdown: the winner of the main pot. */
-function winner(game: HoldemState): number | null {
-  return game.result?.pots[0]?.winners[0] ?? null
-}
-
-function resultLine(game: HoldemState): { title: string; line: string } | null {
-  const seat = winner(game)
-  if (!game.result || seat === null) return null
-  const won = chips(game.result.winnings[seat])
-  const who = SEAT_NAMES[seat]
-  const shown = game.result.shown.find((entry) => entry.seat === seat)
-  if (!shown) return { title: seat === HERO ? "你赢了" : `${who}赢了`, line: `其他人都弃牌了，${who}赢得 ${won}` }
-  const tied = game.result.pots[0].winners.length > 1
-  return { title: categoryName(shown.value.category), line: tied ? `平分底池：${describeHand(shown.value)}` : `${who}用${describeHand(shown.value)}，赢得 ${won}` }
-}
-
 /** The dealer button, worn as a badge on the label of the seat that has it. */
 function DealerMark({ seat }: { seat: number }) {
   return (
@@ -107,7 +92,7 @@ function Seat({ game, seat, mark }: { game: HoldemState; seat: number; mark: Mar
       {shown ? (
         <span data-slot="he-shown">
           {state.hole.map((card) => (
-            <PlayingCard key={card.id} card={card} mark={seat === winner(game) ? mark(card.id) : undefined} />
+            <PlayingCard key={card.id} card={card} mark={seat === biggestWinner(game) ? mark(card.id) : undefined} />
           ))}
         </span>
       ) : null}
@@ -377,7 +362,7 @@ function Holdem({ onHome }: { onHome: () => void }) {
   const hero = game.seats[HERO]
   const over = game.result !== null
   const result = resultLine(game)
-  const best = winner(game)
+  const best = biggestWinner(game)
   const marked = best === null ? null : game.result?.shown.find((entry) => entry.seat === best)?.value.cards.map((card) => card.id)
   const mark: Mark = (id) => (marked ? (marked.includes(id) ? "used" : "unused") : undefined)
   const holding = !hero.folded && (game.board.length >= 3 || hero.hole[0].rank === hero.hole[1].rank)

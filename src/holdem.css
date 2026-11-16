@@ -778,9 +778,10 @@
 }
 
 /* The panel stops above the label of the seat under it (戊, at 440 of the stage's 470). */
+/* At 1240px wide the panel just clears the label of 丁 (884 of the stage's 1280). */
 [data-slot="he-coach"] {
-  right: 20px;
-  width: 280px;
+  right: 16px;
+  width: 260px;
   max-height: calc(50cqh + 205 * var(--u) - 40px);
   overflow-y: auto;
 }
@@ -1080,8 +1081,9 @@
   }
 }
 
-/* ---- Narrow or short screens: smaller seat labels that say less ---- */
-@media (max-width: 899px), (max-height: 480px) {
+/* ---- Anything narrower than a laptop, and short screens: smaller seat labels that say less. Below 1240px the
+   table has shrunk but full-size labels have not, and the labels of 乙, 丙 and 丁 run into each other. ---- */
+@media (max-width: 1239px), (max-height: 480px) {
   [data-slot="he-long"],
   [data-slot="he-chip"] [data-slot="he-who"] b {
     display: none;
@@ -1442,10 +1444,19 @@
   }
   [data-slot="he-actions"] {
     width: 140px;
+    gap: 6px;
   }
-  [data-slot="he-sizes"],
-  [data-slot="he-slider"] {
+  /* No room for the five size buttons: the slider alone sets the raise, from the minimum to all-in. */
+  [data-slot="he-sizes"] {
     display: none;
+  }
+  [data-slot="he-slider"] {
+    gap: 6px;
+    padding: 0 2px;
+    font-size: 11px;
+  }
+  [data-slot="he-slider"] input {
+    height: 28px;
   }
   [data-slot="he-buttons"] {
     flex-direction: column;
