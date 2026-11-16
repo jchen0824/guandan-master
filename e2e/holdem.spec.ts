@@ -89,10 +89,12 @@ test("a raise of any size can be chosen, the minimum and all-in included", async
   await expectLayoutToHold(page, "with a raise size picked")
 })
 
-// The four test sizes have no tablet. These two are where the seat labels and the coach panel ran into each other.
+// The four test sizes have no tablet and no short desktop window. These are where seat labels ran into each
+// other or into the coach panel.
 for (const [width, height] of [
   [900, 800],
   [1240, 800],
+  [1280, 550],
 ]) {
   test(`a hand at ${width}×${height} keeps every label clear of the others`, async ({ page }, info) => {
     test.skip(info.project.name !== "desktop-chromium", "one browser is enough for a size set by the test itself")

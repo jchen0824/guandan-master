@@ -1081,9 +1081,10 @@
   }
 }
 
-/* ---- Anything narrower than a laptop, and short screens: smaller seat labels that say less. Below 1240px the
-   table has shrunk but full-size labels have not, and the labels of 乙, 丙 and 丁 run into each other. ---- */
-@media (max-width: 1239px), (max-height: 480px) {
+/* ---- Anything narrower than a laptop, and short windows: smaller seat labels that say less. Below 1240px wide,
+   or about 580px high at any width, the table has shrunk but full-size labels have not, and the labels of 乙,
+   丙 and 丁 run into each other. ---- */
+@media (max-width: 1239px), (max-height: 640px) {
   [data-slot="he-long"],
   [data-slot="he-chip"] [data-slot="he-who"] b {
     display: none;
