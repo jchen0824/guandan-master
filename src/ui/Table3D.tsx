@@ -98,9 +98,10 @@ function Play3D({ game, record, seat }: { game: GameState; record: PlayRecord | 
           <span data-slot="play-tag" aria-hidden="true">
             {comboTypeName(combo.type)}
           </span>
-          <ul data-slot="card-row" aria-label={`${SEAT_NAMES[seat]}出的牌：${describeCombo(combo, game.level)}`}>
+          {/* Keyed by the play, so the row flies in again when this seat plays again. */}
+          <ul key={combo.cards[0].id} data-slot="card-row" aria-label={`${SEAT_NAMES[seat]}出的牌：${describeCombo(combo, game.level)}`}>
             {combo.cards.map((card, i) => (
-              // oxlint-disable-next-line react/forbid-dom-props -- sets only the custom properties that place this card on the felt
+              // oxlint-disable-next-line react/forbid-dom-props -- sets only the custom properties that place this card in its row
               <li key={card.id} {...cardAttributes(card, game.level)} style={place({ i, n: combo.cards.length })}>
                 <span data-slot="visually-hidden">{cardLabel(card, game.level)}</span>
                 <span aria-hidden="true" data-slot="card-face">

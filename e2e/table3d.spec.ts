@@ -80,6 +80,14 @@ test("the player's last play lies on the felt when the hand ends", async ({ page
   await expect(mine.getByLabel("你出的牌：4张9炸弹")).toHaveCount(1)
   await expect(mine.locator("[data-card]")).toHaveCount(4)
   for (const card of await mine.locator("[data-card]").all()) await expect(card).toBeVisible()
+  // The cards of a play are placed in 2D inside one row that is placed in 3D, so they are painted in the order
+  // they are written. As separate 3D layers Safari drew the first card over the ones after it.
+  const transforms = await mine.locator('[data-slot="card-row"]').evaluate((row) => ({
+    row: getComputedStyle(row).transform,
+    cards: [...row.children].map((card) => getComputedStyle(card).transform),
+  }))
+  expect(transforms.row).toMatch(/^matrix3d\(/)
+  for (const card of transforms.cards) expect(card).toMatch(/^matrix\(/)
   // That play is a bomb, so it gets the bomb's moment: the effect on the felt and the banner over the table.
   await expect(mine.locator('[data-bomb] [data-slot="spark"]')).toHaveCount(16)
   await expect(page.locator('[data-slot="bomb-banner"] b')).toHaveText("炸弹")

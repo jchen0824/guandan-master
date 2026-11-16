@@ -1654,7 +1654,6 @@ button {
 [data-view="3d"] [data-slot="table-base"],
 [data-view="3d"] [data-slot="seat3d"],
 [data-view="3d"] [data-slot="seat3d"] [data-slot="play-zone"],
-[data-view="3d"] [data-slot="seat3d"] [data-slot="card-row"],
 [data-view="3d"] [data-slot="blast"] {
   position: absolute;
   left: 0;
@@ -1981,27 +1980,52 @@ button {
   --tag-dy: -48;
 }
 
-/* ---- Cards lying on the felt ---- */
+/* ---- A play on the felt ----
+   The cards of one play are one flat surface, like a fan: the row is placed in 3D and the cards inside it in
+   2D, painted in the order they are written. As separate 3D layers they were a hair apart in depth, and
+   Safari then drew the first card over the ones after it, hiding their ranks. The row needs a real box,
+   for the same reason a fan does. */
+[data-view="3d"] [data-slot="seat3d"] [data-slot="card-row"] {
+  --rest: translate3d(calc(var(--play-x) * var(--u)), calc(var(--play-y) * var(--u)), calc(6 * var(--u)))
+    rotateX(var(--prop));
+  /* A play flies in from its owner: from the upright fan, or from my hand at the bottom of the screen. */
+  --from: translate3d(calc(var(--fan-x) * var(--u)), calc(var(--fan-y) * var(--u)), calc(70 * var(--u))) rotateX(-70deg)
+    rotateZ(var(--fan-turn)) scale(0.8);
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: block;
+  /* Big enough for the widest, largest play (an eight-card bomb): Chrome does not draw what sticks out of it. */
+  width: calc(480 * var(--u));
+  height: calc(190 * var(--u));
+  min-height: 0;
+  margin: calc(-190 * var(--u)) 0 0 calc(-240 * var(--u));
+  padding: 0;
+  transform-origin: 50% 100%;
+  transform: var(--rest);
+  animation: land 450ms cubic-bezier(0.2, 0.75, 0.2, 1) backwards;
+}
+
+[data-view="3d"] [data-slot="seat3d"][data-side="me"] [data-slot="card-row"] {
+  --from: translate3d(0, calc(var(--hy) * var(--u)), calc(var(--hz) * var(--u))) rotateX(var(--lean));
+}
+
 [data-view="3d"] [data-slot="seat3d"] [data-card] {
   --cu: var(--u);
   --lp: min(var(--lpitch), 200 / var(--n));
   position: absolute;
-  left: 0;
-  top: 0;
+  left: 50%;
+  top: 100%;
   display: block;
   width: calc(76 * var(--u));
   height: calc(106 * var(--u));
   margin: calc(-106 * var(--u)) 0 0 calc(-38 * var(--u));
   padding: 0;
   transform-origin: 50% 100%;
-  transform: translate3d(
-      calc((var(--play-x) + (var(--i) - (var(--n) - 1) / 2) * var(--lp)) * var(--u)),
-      calc(var(--play-y) * var(--u)),
-      calc((6 + var(--i) * 0.6) * var(--u))
-    )
-    rotateX(var(--prop)) rotateZ(var(--jitter, 0deg)) scale(var(--ls));
-  animation: land 450ms cubic-bezier(0.2, 0.75, 0.2, 1) backwards;
-  animation-delay: calc(var(--i) * 45ms);
+  transform: translateX(calc((var(--i) - (var(--n) - 1) / 2) * var(--lp) * var(--u))) rotate(var(--jitter, 0deg))
+    scale(var(--ls));
+  /* The cards start in one pile and spread out as the row lands. */
+  animation: spread 380ms cubic-bezier(0.2, 0.75, 0.2, 1) 120ms backwards;
 }
 
 [data-view="3d"] [data-slot="seat3d"] [data-card]:nth-child(5n + 1) {
@@ -2020,19 +2044,10 @@ button {
   --jitter: -2deg;
 }
 
-/* A play flies in from its owner: from the upright fan, or from my hand at the bottom of the screen. */
-[data-view="3d"] [data-slot="seat3d"] [data-card] {
-  --from: translate3d(calc(var(--fan-x) * var(--u)), calc(var(--fan-y) * var(--u)), calc(70 * var(--u))) rotateX(-70deg)
-    rotateZ(var(--fan-turn)) scale(0.8);
-}
-
-[data-view="3d"] [data-slot="seat3d"][data-side="me"] [data-card] {
-  --from: translate3d(
-      calc((var(--i) - (var(--n) - 1) / 2) * 62 * var(--u)),
-      calc(var(--hy) * var(--u)),
-      calc(var(--hz) * var(--u))
-    )
-    rotateX(var(--lean)) rotateZ(0deg) scale(1);
+@keyframes spread {
+  from {
+    transform: scale(var(--ls));
+  }
 }
 
 @keyframes land {
@@ -2710,9 +2725,9 @@ button {
     --ih: 804;
     --ir: 132;
     --print-y: -90;
-    --zx: 150;
+    --zx: 182;
     --zy: 150;
-    --my: 278;
+    --my: 298;
     --ty: -160;
     --lpitch: 40;
     --ls: 1.25;
@@ -2775,8 +2790,23 @@ button {
   [data-view="3d"] [data-slot="hand-column"]:has([data-card]:nth-of-type(6)) {
     --peek: 0.2;
   }
+  /* A pile's name is wider than the strip of a column that shows here, so the pile gets room beside it. */
+  [data-view="3d"] [data-slot="hand-column"][data-custom] {
+    margin-right: calc(var(--cw) * 0.32);
+  }
+  [data-view="3d"] [data-slot="button"][data-variant="pile"] {
+    width: max-content;
+    min-width: 100%;
+    padding: 0 4px;
+    overflow: visible;
+  }
   /* The coach's line above the table already says whose turn it is, and my own plays need this strip. */
   [data-view="3d"] [data-slot="turn-note"] {
+    display: none;
+  }
+  /* A hint or a refused play takes the place of the coach's line, so the bar never grows past two lines and
+     down onto the far seat's label. */
+  [data-view="3d"] [data-slot="bubble"]:has([data-slot="notice"]) > p[role="status"]:first-child {
     display: none;
   }
   [data-view="3d"] [data-slot="tools"] {
@@ -2827,7 +2857,7 @@ button {
     --ty: -110;
   }
   /* One line for the coach here, so the far seat's label and plays fit under it. The drawer has the rest. */
-  [data-view="3d"] [data-slot="bubble"] > p[role="status"]:first-child {
+  [data-view="3d"] [data-slot="bubble"] > p {
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
@@ -2873,24 +2903,27 @@ button {
 }
 
 /* ---- A bomb: its cards fall from above and lie wider and larger, the felt flashes, rings and sparks fly out ---- */
+[data-view="3d"] [data-slot="play-zone"][data-bomb] [data-slot="card-row"] {
+  --rest: translate3d(calc(var(--play-x) * var(--u)), calc(var(--play-y) * var(--u)), calc(7 * var(--u)))
+    rotateX(var(--prop));
+  --from: translate3d(calc(var(--play-x) * var(--u)), calc((var(--play-y) + 190) * var(--u)), calc(460 * var(--u)))
+    rotateX(-48deg) scale(1.7);
+  animation: slam 780ms cubic-bezier(0.55, 0, 0.85, 0.45) backwards;
+}
+
 [data-view="3d"] [data-slot="play-zone"][data-bomb] [data-card] {
   /* --t runs from -1 at the first card to 1 at the last */
   --t: calc((var(--i) * 2 - var(--n) + 1) / (var(--n) - 1));
-  --rest: translate3d(
-      calc((var(--play-x) + var(--t) * min(var(--bp) * (var(--n) - 1) / 2, 165)) * var(--u)),
-      calc((var(--play-y) + var(--t) * var(--t) * 10) * var(--u)),
-      calc((7 + var(--i)) * var(--u))
+  transform: translate(
+      calc(var(--t) * min(var(--bp) * (var(--n) - 1) / 2, 165) * var(--u)),
+      calc(var(--t) * var(--t) * 10 * var(--u))
     )
-    rotateX(var(--prop)) rotateZ(calc(var(--t) * 10deg)) scale(calc(var(--ls) * var(--bs)));
-  --from: translate3d(calc(var(--play-x) * var(--u)), calc((var(--play-y) + 190) * var(--u)), calc(460 * var(--u)))
-    rotateX(-48deg) rotateZ(calc(var(--t) * 30deg)) scale(1.7);
-  transform: var(--rest);
+    rotate(calc(var(--t) * 10deg)) scale(calc(var(--ls) * var(--bs)));
   box-shadow: 0 0 0 2px #f0c869, 0 2px 0 #cfc8b8, 0 10px 18px rgb(0 0 0 / 0.5);
-  animation: slam 780ms cubic-bezier(0.55, 0, 0.85, 0.45) backwards;
-  animation-delay: calc(var(--i) * 70ms);
+  animation: none;
 }
 
-/* The cards land 480ms in. Everything below waits for that, and so does the shake in Table3D.tsx. */
+/* The row lands 480ms in. Everything below waits for that, and so does the shake in Table3D.tsx. */
 @keyframes slam {
   from {
     transform: var(--from);
@@ -3135,7 +3168,8 @@ button {
     transition: none;
   }
   [data-view="3d"] [data-slot="seat3d"] [data-card],
-  [data-view="3d"] [data-slot="play-zone"][data-bomb] [data-card] {
+  [data-view="3d"] [data-slot="seat3d"] [data-slot="card-row"],
+  [data-view="3d"] [data-slot="play-zone"][data-bomb] [data-slot="card-row"] {
     animation: none;
   }
   [data-view="3d"] [data-slot="tabletop"] > [data-slot="ring"],
