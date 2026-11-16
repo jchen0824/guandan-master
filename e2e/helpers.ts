@@ -120,8 +120,9 @@ export async function waitForNextMove(page: Page) {
 /** Texas Hold'em: does what the coach's advice says, and waits for the table to move on. */
 export async function followAdvice(page: Page) {
   const before = await page.evaluate(() => window.guandanQa.signature())
-  const advice = await page.getByRole("complementary", { name: "教练" }).getByRole("heading", { name: /^建议/ }).innerText()
-  const name = advice.includes("弃牌") ? /^弃牌$/ : advice.includes("过牌") || advice.includes("跟注") ? /^(过牌|跟注)/ : /^(下注|加注到)/
+  // The coach's advice is in the panel's data-advice. A raise button starts at the coach's amount.
+  const advice = await page.getByRole("complementary", { name: "教练" }).getAttribute("data-advice")
+  const name = advice === "fold" ? /^弃牌$/ : advice === "check" || advice === "call" ? /^(过牌|跟注)/ : /^(下注|加注到) /
   await page.getByRole("button", { name }).click()
   await expect.poll(() => page.evaluate(() => window.guandanQa.signature())).not.toBe(before)
 }

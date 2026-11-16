@@ -32,6 +32,7 @@ import { HUMAN, PLACE_NAMES, SEAT_NAMES, SIDES, TEAM_NAMES } from "./ui/names"
 import { useGame } from "./ui/useGame"
 import { useView } from "./ui/view"
 import { ViewSwitch } from "./ui/ViewSwitch"
+import { useSaved } from "./ui/useSaved"
 
 function PlayZone({ game, record, seat }: { game: GameState; record: PlayRecord | null; seat: number }) {
   return (
@@ -143,26 +144,6 @@ const SUITS: [Suit, string, string][] = [
   ["C", "♣", "只看梅花"],
   ["D", "♦", "只看方块"],
 ]
-
-function useSaved(key: string, fallback: boolean): [boolean, (value: boolean) => void] {
-  const [value, setValue] = useState(() => {
-    try {
-      const saved = localStorage.getItem(key)
-      return saved === null ? fallback : saved === "1"
-    } catch {
-      return fallback
-    }
-  })
-  const save = (next: boolean) => {
-    setValue(next)
-    try {
-      localStorage.setItem(key, next ? "1" : "0")
-    } catch {
-      return
-    }
-  }
-  return [value, save]
-}
 
 function cardIdAt(x: number, y: number): number | null {
   const card = document.elementFromPoint(x, y)?.closest<HTMLElement>("[data-card-id]")

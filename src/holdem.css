@@ -106,17 +106,12 @@
   line-height: 1.15;
 }
 
-[data-slot="home-intro"] p,
 [data-slot="tile-facts"],
 [data-slot="tile-note"],
 [data-slot="home-note"] {
   margin: 0;
   color: var(--cream-soft);
   font-size: 13px;
-}
-
-[data-slot="home-intro"] p {
-  margin-top: 6px;
 }
 
 [data-slot="home-games"] {
@@ -350,6 +345,29 @@
   background: var(--brass);
   color: var(--brass-ink);
   font-weight: 700;
+}
+
+[data-slot="he-menu"] {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* The same switch as on the 3D 掼蛋 table: brass when the coach is on. */
+[data-slot="holdem"] [data-slot][data-variant="coach"] {
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 0.28);
+  background: var(--hud);
+  color: var(--cream);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+[data-slot="holdem"] [data-slot][data-variant="coach"][aria-pressed="true"] {
+  border-color: var(--brass);
+  color: var(--brass);
 }
 
 /* ---- The table. A seat stands at design pixels (--x, --y): --x times --u across, --y times --v down.
@@ -817,6 +835,11 @@
   font-size: 12px;
 }
 
+/* With the coach off, its box keeps one line of table news. At the end of a hand the banner says the same, so it goes. */
+[data-slot="holdem"][data-over] [data-slot="he-coach"][data-quiet] {
+  display: none;
+}
+
 /* Only where the coach is a bar: the result in words, the grades counted, and a button for the full review. */
 [data-slot="he-outcome"],
 [data-slot="he-tally"],
@@ -978,6 +1001,13 @@
 @media (max-width: 1239px), (max-height: 480px) {
   [data-slot="he-table"] {
     --coach: 100px;
+  }
+  /* With the coach off its bar is one line, so the table gets the rest of the room. */
+  [data-slot="holdem"][data-coach-off] [data-slot="he-table"] {
+    --coach: 36px;
+  }
+  [data-slot="holdem"][data-over] [data-slot="he-coach"][data-quiet] {
+    display: block;
   }
   [data-slot="he-ranks"],
   [data-slot="he-coach"] h2,
@@ -1254,7 +1284,8 @@
   [data-slot="holdem"] {
     grid-template-rows: auto minmax(0, 1fr);
   }
-  [data-slot="he-table"] {
+  [data-slot="he-table"],
+  [data-slot="holdem"][data-coach-off] [data-slot="he-table"] {
     --sw: 852;
     --sh: 256;
     --coach: 0px;

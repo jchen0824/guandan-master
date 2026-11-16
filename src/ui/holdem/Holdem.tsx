@@ -8,6 +8,7 @@ import type { Action, HoldemState, Street } from "../../holdem/game"
 import { CATEGORIES, categoryName, describeHand, evaluate } from "../../holdem/hands"
 import type { HandCategory } from "../../holdem/hands"
 import { place } from "../place"
+import { useSaved } from "../useSaved"
 import { PlayingCard } from "./PlayingCard"
 import { useHoldem } from "./useHoldem"
 import type { Decision } from "./useHoldem"
@@ -184,7 +185,16 @@ function ReviewDialog({ decisions }: { decisions: Decision[] }) {
   )
 }
 
-function Coach({ game, advice, decisions, outcome }: { game: HoldemState; advice: Advice | null; decisions: Decision[]; outcome: string | null }) {
+function Coach({ on, game, advice, decisions, outcome }: { on: boolean; game: HoldemState; advice: Advice | null; decisions: Decision[]; outcome: string | null }) {
+  const waiting = game.toAct === null || game.toAct === HERO ? "" : `等${SEAT_NAMES[game.toAct]}行动…`
+  // With the coach off, one plain line of what is happening at the table stays, as on the 掼蛋 table.
+  if (!on) {
+    return (
+      <aside data-slot="he-coach" data-quiet="" aria-label="牌桌动态">
+        <p role="status">{game.result ? outcome : (advice?.situation ?? waiting)}</p>
+      </aside>
+    )
+  }
   if (game.result) {
     return (
       <aside data-slot="he-coach" aria-label="教练">
@@ -196,7 +206,6 @@ function Coach({ game, advice, decisions, outcome }: { game: HoldemState; advice
     )
   }
   if (!advice) {
-    const waiting = game.toAct === null ? "" : `等${SEAT_NAMES[game.toAct]}行动…`
     return (
       <aside data-slot="he-coach" aria-label="教练">
         <h2>教练 · {STREET_NAMES[game.street]}</h2>
@@ -205,7 +214,7 @@ function Coach({ game, advice, decisions, outcome }: { game: HoldemState; advice
     )
   }
   return (
-    <aside data-slot="he-coach" data-advice="" aria-label="教练">
+    <aside data-slot="he-coach" data-advice={advice.action.kind} aria-label="教练">
       <h2>教练 · {STREET_NAMES[game.street]}</h2>
       <p role="status">
         {advice.situation}
@@ -227,7 +236,6 @@ function Coach({ game, advice, decisions, outcome }: { game: HoldemState; advice
           <span aria-hidden="true" data-slot="he-bar" data-kind="have" style={place({ share: advice.have })} />
         </div>
       </dl>
-      <h3>{advice.title}</h3>
       <p data-slot="he-why">{advice.reason}</p>
       {advice.reminder ? (
         <div data-slot="he-remind">
@@ -240,12 +248,13 @@ function Coach({ game, advice, decisions, outcome }: { game: HoldemState; advice
 }
 
 /** The buttons for the player's turn. It is mounted afresh for each decision, so the raise size starts from a sensible default. */
-function Actions({ game, advice, onChoose }: { game: HoldemState; advice: Advice; onChoose: (action: Action) => void }) {
+/** `coached` starts the raise size at the coach's amount; without the coach it starts at two thirds of the pot. */
+function Actions({ game, advice, coached, onChoose }: { game: HoldemState; advice: Advice; coached: boolean; onChoose: (action: Action) => void }) {
   const legal = legalActions(game)
   const { minRaiseTo: least, maxRaiseTo: most } = legal
   const fit = (to: number) => Math.min(most ?? 0, Math.max(least ?? 0, Math.round(to / 10) * 10))
   const ofPot = (share: number) => fit(game.currentBet + (game.pot + legal.callAmount) * share)
-  const [size, setSize] = useState(() => ({ name: "", to: advice.action.kind === "raise" ? advice.action.to : ofPot(2 / 3) }))
+  const [size, setSize] = useState(() => ({ name: "", to: coached && advice.action.kind === "raise" ? advice.action.to : ofPot(2 / 3) }))
   const amount = size.to
   const sizes: [string, number][] =
     least === null || most === null
@@ -324,6 +333,7 @@ function Rules() {
 /** The Texas Hold'em table: six seats, the board, the coach, and the player's cards and buttons. */
 function Holdem({ onHome }: { onHome: () => void }) {
   const { game, advice, decisions, notice, choose, deal } = useHoldem()
+  const [coachOn, setCoachOn] = useSaved("guandan.holdem.coach", true)
   const hero = game.seats[HERO]
   const over = game.result !== null
   const result = resultLine(game)
@@ -336,7 +346,7 @@ function Holdem({ onHome }: { onHome: () => void }) {
   const reached = STREETS.findIndex(([street]) => street === game.street)
 
   return (
-    <main data-slot="holdem" data-over={over ? "" : undefined}>
+    <main data-slot="holdem" data-over={over ? "" : undefined} data-coach-off={coachOn ? undefined : ""}>
       <header data-slot="he-top">
         <Button data-variant="text" data-home="" onClick={onHome}>
           <span aria-hidden="true">‹</span> 牌桌教练
@@ -352,6 +362,9 @@ function Holdem({ onHome }: { onHome: () => void }) {
           ))}
         </ol>
         <div data-slot="he-menu">
+          <Button data-variant="coach" aria-pressed={coachOn} onClick={() => setCoachOn(!coachOn)}>
+            教练
+          </Button>
           <Rules />
         </div>
       </header>
@@ -378,7 +391,7 @@ function Holdem({ onHome }: { onHome: () => void }) {
           ) : null}
         </div>
         <Ranks game={game} made={made} drawing={advice?.drawText?.includes("同花") ?? false} />
-        <Coach game={game} advice={advice} decisions={decisions} outcome={result?.line ?? null} />
+        <Coach on={coachOn} game={game} advice={advice} decisions={decisions} outcome={result?.line ?? null} />
       </div>
 
       <footer data-slot="he-controls" aria-label="你的操作">
@@ -412,14 +425,14 @@ function Holdem({ onHome }: { onHome: () => void }) {
         {over ? (
           <div data-slot="he-actions">
             <div data-slot="he-buttons">
-              <ReviewDialog decisions={decisions} />
+              {coachOn ? <ReviewDialog decisions={decisions} /> : null}
               <Button data-variant="raise" onClick={deal}>
                 下一手
               </Button>
             </div>
           </div>
         ) : advice ? (
-          <Actions key={game.log.length} game={game} advice={advice} onChoose={choose} />
+          <Actions key={game.log.length} game={game} advice={advice} coached={coachOn} onChoose={choose} />
         ) : (
           <div data-slot="he-actions" />
         )}

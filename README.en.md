@@ -20,7 +20,7 @@ The game itself is in Chinese.
 - Progress is saved in the browser. No account, no server
 - Works in desktop and phone browsers, upright or landscape
 - A switch between a 2D (flat) and a 3D table
-- Texas Hold'em: a six-seat no-limit table with 10/20 blinds and practice chips. The coach shows your win rate, the pot odds and its advice, and grades each of your decisions when the hand ends
+- Texas Hold'em: a six-seat no-limit table with 10/20 blinds and practice chips. The coach shows your win rate, the pot odds and its advice, and grades each of your decisions when the hand ends. It can be turned off
 
 The computer players and the coach are rule-based programs. No large language model is involved.
 

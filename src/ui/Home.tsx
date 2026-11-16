@@ -24,7 +24,6 @@ function Home({ onPick }: { onPick: (game: GameChoice) => void }) {
       <header data-slot="home-top">牌桌教练</header>
       <div data-slot="home-intro">
         <h1>今天练哪一桌？</h1>
-        <p>两种牌局，同一位教练。每一手都告诉你为什么这样打。</p>
       </div>
       <div data-slot="home-games">
         <section data-slot="game-tile" data-game="guandan" aria-labelledby="home-guandan">

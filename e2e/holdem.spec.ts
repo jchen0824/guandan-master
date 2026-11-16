@@ -108,3 +108,19 @@ test("the rules and the review of a hand open in dialogs that fit", async ({ pag
     await expect(coach.locator('[data-slot="he-review"]')).toBeVisible()
   }
 })
+
+test("with the coach off, a hand still fits and the table news stays in one line", async ({ page }) => {
+  await openHoldem(page)
+  await page.getByRole("button", { name: "教练", exact: true }).click()
+  await expect(page.getByRole("button", { name: "教练", exact: true })).toHaveAttribute("aria-pressed", "false")
+  await expect(page.getByRole("complementary", { name: "牌桌动态" })).toBeVisible()
+  await expect(page.getByRole("complementary", { name: "教练" })).toHaveCount(0)
+  for (let step = 0; step < 200 && !(await screen(page)).over; step++) {
+    if ((await screen(page)).myTurn) {
+      await expectLayoutToHold(page, `with the coach off, at step ${step}`)
+      await page.getByRole("button", { name: /^(过牌|跟注)/ }).click()
+    } else await waitForNextMove(page)
+  }
+  await expectLayoutToHold(page, "with the coach off, when the hand is over")
+  await expect(page.getByRole("button", { name: "看复盘" })).toHaveCount(0)
+})

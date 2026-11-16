@@ -17,11 +17,14 @@ function waitForButtons() {
   }
 }
 
+/** The button for each kind of advice. A raise button starts at the coach's amount, so pressing it follows the advice. */
+const FOR_ADVICE: Record<string, RegExp> = { fold: /^弃牌$/, check: /^过牌$/, call: /^跟注/, raise: /^(下注|加注到) / }
+
 /** Does what the coach's advice says. */
 function followAdvice() {
-  const title = within(coach()).getByRole("heading", { name: /^建议/ }).textContent ?? ""
-  const pick = title.includes("弃牌") ? button("弃牌") : title.includes("过牌") || title.includes("跟注") ? button(/^(过牌|跟注)/) : button(/^(下注|加注到)/)
-  if (!pick) throw new Error(`no button for the advice "${title}"`)
+  const kind = coach().getAttribute("data-advice") ?? ""
+  const pick = button(FOR_ADVICE[kind] ?? /^$/)
+  if (!pick) throw new Error(`no button for the advice "${kind}"`)
   fireEvent.click(pick)
 }
 
@@ -38,6 +41,7 @@ function playHand() {
 }
 
 beforeEach(() => {
+  localStorage.clear()
   vi.useFakeTimers()
   vi.spyOn(Math, "random").mockImplementation(seeded(7))
 })
@@ -70,11 +74,56 @@ describe("the Texas Hold'em table", () => {
     render(<Holdem onHome={() => {}} />)
     waitForButtons()
     const panel = within(coach())
-    expect(panel.getByRole("heading", { name: /^建议：(弃牌|过牌|跟注|下注|加注到)/ })).toBeTruthy()
+    expect(coach().querySelector('[data-slot="he-why"]')?.textContent).toMatch(/[一-鿿]{4}/)
     expect(panel.getByText("你的胜率，大约").nextElementSibling?.textContent).toMatch(/^\d+%$/)
     expect(panel.getByRole("status").textContent).toMatch(/底池现在 \d/)
     expect(button("弃牌")).toBeTruthy()
     expect(button(/^(过牌|跟注 \d)/)).toBeTruthy()
+  })
+
+  it("starts the raise button at the coach's amount when the advice is to raise", () => {
+    render(<Holdem onHome={() => {}} />)
+    for (let hand = 0; hand < 20 && coach().getAttribute("data-advice") !== "raise"; hand++) {
+      waitForButtons()
+      if (coach().getAttribute("data-advice") === "raise") break
+      fireEvent.click(button(/^(弃牌|下一手)$/) as HTMLElement)
+    }
+    expect(coach().getAttribute("data-advice")).toBe("raise")
+    expect(button(/^(下注|加注到) [\d,]+$/)).toBeTruthy()
+  })
+
+  it("turns the coach off and on from the top bar, and remembers the choice", () => {
+    const first = render(<Holdem onHome={() => {}} />)
+    waitForButtons()
+    const toggle = screen.getByRole("button", { name: "教练" })
+    expect(toggle.getAttribute("aria-pressed")).toBe("true")
+    fireEvent.click(toggle)
+    expect(toggle.getAttribute("aria-pressed")).toBe("false")
+    expect(screen.queryByLabelText("教练")).toBeNull()
+    expect(screen.queryByText("你的胜率，大约")).toBeNull()
+    // What is happening at the table still shows, in one plain line.
+    expect(within(screen.getByLabelText("牌桌动态")).getByRole("status").textContent).toMatch(/底池现在 \d/)
+    expect(localStorage.getItem("guandan.holdem.coach")).toBe("0")
+    first.unmount()
+
+    render(<Holdem onHome={() => {}} />)
+    expect(screen.getByRole("button", { name: "教练" }).getAttribute("aria-pressed")).toBe("false")
+    fireEvent.click(screen.getByRole("button", { name: "教练" }))
+    expect(screen.getByLabelText("教练")).toBeTruthy()
+    expect(localStorage.getItem("guandan.holdem.coach")).toBe("1")
+  })
+
+  it("plays a hand to the end with the coach off, and shows the result without the review", () => {
+    localStorage.setItem("guandan.holdem.coach", "0")
+    render(<Holdem onHome={() => {}} />)
+    for (let step = 0; step < 40 && !button("下一手"); step++) {
+      waitForButtons()
+      if (button("下一手")) break
+      fireEvent.click(button(/^(过牌|跟注)/) as HTMLElement)
+    }
+    expect(button("下一手")).toBeTruthy()
+    expect(button("看复盘")).toBeNull()
+    expect(within(screen.getByLabelText("牌桌动态")).getByRole("status").textContent).toMatch(/赢得|平分底池/)
   })
 
   it("raises to the size the player picked", () => {
