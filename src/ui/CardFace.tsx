@@ -56,4 +56,4 @@ function CardRow({ cards, level, label }: { cards: Card[]; level: number; label:
   )
 }
 
-export { CardFace, CardRow }
+export { CardFace, CardRow, Jester }

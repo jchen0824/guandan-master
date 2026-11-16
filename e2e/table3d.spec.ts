@@ -135,7 +135,7 @@ test("the switch moves between the two tables and the choice is kept", async ({ 
   const app = page.locator('[data-slot="app"]')
   await expect(app).toHaveAttribute("data-view", "2d")
 
-  // The flat table's top bar has no room for the switch on an upright phone, so settings always has it.
+  // Settings has the switch too.
   await page.getByRole("button", { name: "设置", exact: true }).click()
   const settings = page.getByRole("dialog")
   await settings.getByRole("radio", { name: "3D", exact: true }).click()
@@ -149,9 +149,18 @@ test("the switch moves between the two tables and the choice is kept", async ({ 
   await page.reload()
   await expect(app).toHaveAttribute("data-view", "3d")
 
-  await page.getByRole("radiogroup", { name: "牌桌视角" }).getByRole("radio", { name: "2D", exact: true }).click()
+  const bar = page.locator('[data-slot="menu"] > [data-view-switch]')
+  await bar.getByRole("radio", { name: "2D", exact: true }).click()
   await expect(app).toHaveAttribute("data-view", "2d")
   await expectLayoutToHold(page, "after switching back to 2D")
+
+  // The way back is in the flat table's top bar on every screen, a phone included, and costs it no extra row.
+  const scores = (await page.locator('[data-slot="scores"]').boundingBox())!
+  const back = bar.getByRole("radio", { name: "3D", exact: true })
+  const where = (await back.boundingBox())!
+  expect(Math.abs(where.y + where.height / 2 - (scores.y + scores.height / 2)), "the switch is on the same row as the scores").toBeLessThan(12)
+  await back.click()
+  await expect(app).toHaveAttribute("data-view", "3d")
 })
 
 test("the coach opens as a drawer on the 3D table at every size", async ({ page }) => {

@@ -1499,8 +1499,24 @@ button {
 }
 
 @media (max-width: 620px) {
-  /* The flat table's top bar is full on an upright phone; there the switch is in 设置. */
-  [data-view="2d"] [data-slot="menu"] > [data-view-switch] {
+  /* The flat table's top bar is nearly full on an upright phone, so the switch and its neighbours are tighter there. */
+  [data-view="2d"] [data-slot="menu"] {
+    gap: 1px;
+  }
+  [data-view="2d"] [data-slot="menu"] > [data-view-switch] [data-slot="segmented-control-item"] {
+    min-width: 28px;
+    min-height: 32px;
+    padding: 0 4px;
+    font-size: 12px;
+  }
+  [data-view="2d"] [data-slot="menu"] > [data-variant="coach"] {
+    padding: 0 8px;
+  }
+}
+
+@media (max-width: 380px) {
+  /* On the narrowest phones only the table you can switch to fits, so the half for the table you are on goes. */
+  [data-view="2d"] [data-slot="menu"] > [data-view-switch] [data-slot="segmented-control-item"][data-checked] {
     display: none;
   }
 }
@@ -2072,17 +2088,15 @@ button {
   letter-spacing: -0.02em;
 }
 
+/* A joker has the same face on both tables: JOKER down the corner and the jester, in colour for the big one. */
 [data-view="3d"] [data-slot="face-rank"][data-joker-name] {
   position: absolute;
   left: calc(6 * var(--cu));
-  top: calc(6 * var(--cu));
-  width: calc(17 * var(--cu));
-  font: 700 calc(16 * var(--cu)) / 1.08 inherit;
-  font-family: "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei", system-ui, sans-serif;
-  letter-spacing: 0;
-  text-align: center;
-  white-space: normal;
-  word-break: break-all;
+  top: calc(5 * var(--cu));
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  font: 800 calc(13 * var(--cu)) / 1 system-ui, sans-serif;
+  letter-spacing: -0.08em;
 }
 
 [data-view="3d"] [data-slot="face-suit"],
