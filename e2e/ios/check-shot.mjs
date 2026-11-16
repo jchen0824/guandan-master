@@ -21,7 +21,10 @@ const isMark = ([r, g, b]) => r > 200 && g < 110 && b > 200
 const isFelt = ([r, g, b]) => g > r + 20 && g > b && g > 50
 const isCardBack = ([r, g]) => r > g * 2 + 20
 const isDark = ([r, g, b]) => Math.max(r, g, b) < 90
-const isInk = ([r, g, b]) => Math.max(r, g, b) < 130 || (r > 140 && g < 110 && b < 110)
+// A rank is black or red ink on a near-white card face. Black means dark and grey: the felt and the wood of
+// the table are dark too, but green and brown, and must not count, or a play painted behind the felt would pass.
+const isFace = ([r, g, b]) => Math.min(r, g, b) > 190
+const isInk = ([r, g, b]) => (Math.max(r, g, b) < 120 && Math.max(r, g, b) - Math.min(r, g, b) < 40) || (r > 140 && g < 110 && b < 110 && r > g * 1.6)
 
 function finish() {
   const lines = results.map((r) => `${r.ok ? "✓" : "✗"} ${r.name}${r.detail ? ` — ${r.detail}` : ""}`)
@@ -91,7 +94,8 @@ for (const label of report.labels) {
 }
 
 for (const play of report.plays) {
-  const hidden = play.cards.filter((card) => share(card.rank, isInk) < 0.06).map((card) => card.name)
-  check(`every rank shows in ${play.label}`, hidden.length === 0, hidden.length ? `no rank where these cards should show one: ${hidden.join(", ")}` : `${play.cards.length} cards`)
+  // Ink alone is not enough: it must be on a card face, so the box needs both.
+  const hidden = play.cards.filter((card) => share(card.rank, isInk) < 0.06 || share(card.rank, isFace) < 0.2).map((card) => card.name)
+  check(`every rank shows in ${play.label}`, hidden.length === 0, hidden.length ? `no rank on a card face where these cards should show one: ${hidden.join(", ")}` : `${play.cards.length} cards`)
 }
 finish()
