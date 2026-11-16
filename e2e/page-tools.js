@@ -77,6 +77,11 @@
     for (const el of all('[data-slot="he-who"], [data-slot="he-note"], [data-slot="he-buttons"] > *, [data-slot="he-sizes"] > *')) {
       if (el.scrollWidth > el.clientWidth + 1) problems.push(`the text of ${name(el)} is cut off`)
     }
+    // The dealer badge sits on a corner of its seat's label, so it is inside the label and the pair check skips it.
+    for (const badge of all('[data-slot="he-dealer"]')) {
+      const who = badge.parentElement.querySelector('[data-slot="he-who"]')
+      if (who && overlap(box(badge), box(who))) problems.push(`the dealer badge covers the name on ${name(badge.parentElement)}`)
+    }
     for (const el of all('[data-slot="holdem"] button')) mustBeReachable(el, `the ${name(el)} button`)
     const table = all('[data-slot="he-stage"]')[0]
     if (table && box(table).height < 180) problems.push(`the table is squeezed to ${Math.round(box(table).height)}px high`)

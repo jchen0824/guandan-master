@@ -1215,6 +1215,10 @@
   [data-slot="he-me"] [data-slot="he-avatar"] {
     display: none;
   }
+  /* There is no avatar under the dealer badge here, so the text moves over to make room for it. */
+  [data-slot="he-me"]:has(> [data-slot="he-dealer"]) {
+    padding-left: 22px;
+  }
   [data-slot="he-hole"] {
     --cw: var(--hole);
     position: absolute;
