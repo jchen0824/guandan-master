@@ -39,6 +39,7 @@ npm run test:e2e           # 改动界面后还要跑这一条：在真实浏览
 npm run test:e2e:install   # 首次运行浏览器测试前执行一次：下载 Chromium 和 WebKit
 npm test                   # 规则引擎和界面测试
 npm run bench              # 三档电脑玩家互相对打的基准测试
+npm run test:levels        # 德州扑克三档电脑玩家互相对打，检查难度没有退步
 npm run build              # 生产构建
 ```
 

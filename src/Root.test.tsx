@@ -69,6 +69,15 @@ describe("the home page", () => {
     expect(localStorage.getItem("guandan.game")).toBeNull()
   })
 
+  it("links to the source code on GitHub, in a new tab", () => {
+    render(<Root />)
+    const link = screen.getByRole("link", { name: "GitHub 源代码" })
+    expect(link.getAttribute("href")).toBe("https://github.com/jchen0824/guandan-master")
+    expect(link.getAttribute("target")).toBe("_blank")
+    expect(link.getAttribute("rel")).toBe("noreferrer")
+    expect(link.querySelector("svg")).toBeTruthy()
+  })
+
   it("says so when a 掼蛋 match is waiting to be continued", () => {
     localStorage.setItem("guandan.match", "{}")
     render(<Root />)

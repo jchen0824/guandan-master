@@ -93,10 +93,44 @@
 [data-slot="home-top"] {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   min-height: 54px;
   font-size: 18px;
   font-weight: 700;
   letter-spacing: 1px;
+}
+
+[data-slot="home-source"] {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 44px;
+  margin-right: -6px;
+  padding: 0 14px 0 12px;
+  border-radius: 22px;
+  border: 1px solid var(--line);
+  color: var(--cream-soft);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-decoration: none;
+}
+
+[data-slot="home-source"]:hover {
+  border-color: rgb(255 255 255 / 0.32);
+  color: var(--cream);
+}
+
+[data-slot="home-source"]:focus-visible {
+  outline: 2px solid var(--brass);
+  outline-offset: 2px;
+}
+
+[data-slot="home-source"] svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
 }
 
 [data-slot="home-intro"] h1 {

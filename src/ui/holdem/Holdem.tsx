@@ -341,8 +341,8 @@ const LEVELS: [BotSkill, string][] = [
 
 const LEVEL_NOTES: Record<BotSkill, string> = {
   novice: "什么牌都想看一眼，爱跟注，很少加注，从不诈唬。适合先练看牌力和底池赔率。",
-  basic: "按牌力和位置打，会算底池赔率，偶尔诈唬。",
-  advanced: "好牌主动加注，后位会偷盲，只在价钱合适时跟注，人少时更敢诈唬。",
+  basic: "按牌力和位置打，会算底池赔率，但算得粗，有时跟注太松，偶尔诈唬。",
+  advanced: "好牌主动加注，后位会偷盲，只在价钱合适时跟注，牌稍好就下注拿价值。",
 }
 
 function Settings({ skill, onSkill }: { skill: BotSkill; onSkill: (skill: BotSkill) => void }) {

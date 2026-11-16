@@ -41,6 +41,7 @@ npm run test:e2e           # also run this after changing the screen: browser te
 npm run test:e2e:install   # once, before the first browser test run: downloads Chromium and WebKit
 npm test                   # rules engine and game screen tests
 npm run bench              # the three bot levels playing each other
+npm run test:levels        # Texas Hold'em: the three computer player levels play each other, to catch a level that got weaker
 npm run build              # production build
 ```
 

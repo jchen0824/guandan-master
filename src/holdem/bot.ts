@@ -34,15 +34,19 @@ export type BotSkill = "novice" | "basic" | "advanced"
 export const BOT_SKILLS: readonly BotSkill[] = ["novice", "basic", "advanced"]
 
 /**
- * After the flop every level weighs its win rate against the price of a call. They differ in how far they
- * trust it: `margin` is how much the win rate must beat the price before calling (a novice calls short of
- * it), `betAt` the win rate it bets with when nobody has, `bluff` how often it bets without one against two
- * or fewer players, and `raiseAt` the win rate it raises a bet with.
+ * After the flop every level weighs its win rate against the price of a call. They differ in how well they
+ * know it and how far they trust it: `samples` is how many deals the win rate is estimated from (fewer is
+ * rougher), `margin` how much it must beat the price before calling (below zero calls too much), `betAt` the
+ * win rate it bets with when nobody has (lower takes thin value), `bluff` how often it bets without one
+ * against two or fewer players, and `raiseAt` the win rate it raises a bet with.
+ *
+ * The levels are checked against each other by `npm run test:levels`: each must win chips from the one below.
+ * Run it after changing these numbers.
  */
 const STYLES: Record<BotSkill, { samples: number; margin: number; betAt: number; betSize: number; probe: boolean; bluff: number; raiseAt: number }> = {
   novice: { samples: 80, margin: -0.1, betAt: 0.75, betSize: 0.5, probe: false, bluff: 0, raiseAt: 0.9 },
-  basic: { samples: 120, margin: 0.04, betAt: 0.65, betSize: 0.66, probe: true, bluff: 0.1, raiseAt: 0.8 },
-  advanced: { samples: 300, margin: 0.01, betAt: 0.55, betSize: 0.75, probe: true, bluff: 0.3, raiseAt: 0.7 },
+  basic: { samples: 60, margin: -0.03, betAt: 0.7, betSize: 0.66, probe: true, bluff: 0.1, raiseAt: 0.8 },
+  advanced: { samples: 300, margin: 0.01, betAt: 0.55, betSize: 0.75, probe: true, bluff: 0.1, raiseAt: 0.75 },
 }
 
 const limpOrCheck = (state: HoldemState): Action => (legalActions(state).canCheck ? { kind: "check" } : { kind: "call" })

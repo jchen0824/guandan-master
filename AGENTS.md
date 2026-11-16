@@ -34,11 +34,13 @@ npm run test:e2e:install  # once per machine: download Chromium and WebKit for t
 npm run build             # tsc -b && vite build
 npm run check:bundle      # gzipped size budget, run after a build
 npm run bench             # 300 simulated hands per bot matchup; prints win and double-win rates
+npm run test:levels       # Texas Hold'em: each computer player level must beat the one below (about a minute)
 ```
 
 - Typecheck with `npm run typecheck` (`npx tsc -b`). The root `tsconfig.json` only holds references, so `npx tsc --noEmit` checks nothing.
 - Single test: `npx vitest run src/engine/engine.test.ts -t "orders bombs by size"`.
 - `benchmark.test.ts` is skipped unless `VITE_BENCH` is set; `npm run bench` sets it. Run it before and after changing `src/engine/bot.ts` and put both sets of numbers in the pull request.
+- `src/holdem/levels.test.ts` is skipped unless `VITE_LEVELS` is set; `npm run test:levels` sets it, and CI runs it in the `quality` job, so a change that makes a Hold'em level no stronger than the one below fails the build. It plays the levels against each other on the same cards both ways round, and counts each level's wrong calls and folds in 600 real spots. Run it after changing `src/holdem/bot.ts` and put its numbers in the pull request.
 - Check a commit message without committing: `npm run check:commits -- "fix(ui): keep the hand on screen"`.
 - Releasing is a maintainer step, described in [CONTRIBUTING.md](CONTRIBUTING.md#releases). Do not change `version` in `package.json` unless the task is a release. The version and build date reach the UI through `import.meta.env.VITE_APP_VERSION` and `VITE_BUILD_DATE`, set in `vite.config.ts` and read in `src/ui/buildInfo.ts`.
 - Deploying is a maintainer step: `vercel deploy --prod --yes` from the repo root. Vercel is not connected to the GitHub repo, so merging does not deploy.
@@ -75,7 +77,7 @@ The rules for the second game, 德州扑克: six seats, no-limit, blinds 10/20, 
 - `game.ts`: the table. `act(state, seat, action)` is the only way a hand moves on: it checks the action, deals the next street when a betting round ends, and pays the pots, side pots included, when the hand ends. `legalActions(state)` says what the seat to act may do.
 - `odds.ts`: `equity()` estimates a win rate by dealing the unknown cards many times, so it moves by a few points from call to call. Pass `betting` when facing a bet, or it is far too hopeful. `draws()` counts outs; `potOdds()` prices a call.
 - `bot.ts`, `coach.ts`: the computer players, and the advice and grading the player sees. Both compare the win rate with the price of a call, worked out pot by pot by `shareOfPot()` so a side pot counts only among the players who can win it. All coach text is Chinese and written for a beginner.
-- `botAction(state, seat, rng, skill)` plays at one of three levels (`BOT_SKILLS`): `novice` limps and calls too much and never bluffs, `basic` is the default, `advanced` raises its hands, steals from late position and bluffs more against few players. Its tests in `game.test.ts` check that the levels play differently, not only that they play legally.
+- `botAction(state, seat, rng, skill)` plays at one of three levels (`BOT_SKILLS`): `novice` limps and calls too much and never bluffs, `basic` (the default) estimates its win rate roughly and calls a little too loosely, `advanced` raises its hands, steals from late position, calls only at the right price and bets thin hands for value. `levels.test.ts` keeps them in order (see `npm run test:levels`); `game.test.ts` checks that they play differently and legally.
 - `testing.ts`: helpers for the tests (`rig()` deals chosen cards). Not for the app.
 - `lastWhere()` in `game.ts` stands in for `findLast`, which older phone browsers lack.
 
@@ -123,6 +125,7 @@ Every pull request runs three required jobs: `quality`, `e2e` and `conventional-
 | `npm run lint` | React rules (hooks order and dependencies, state set during render or in an effect, impure render, components defined inside components, index keys, exports that break fast refresh), accessibility, import cycles, `any` and `!`, inline `style`, the `as` prop, ui-sdk root or private imports, UI or browser code inside `src/engine` | Follow the message. Move shared helpers out of component files; import `@ui-sdk/react/<component>`; style from `data-slot` in `src/index.css` |
 | `npm run check:conventions` | A hand-written widget `role` that ui-sdk already ships, `Math.random()` called in the engine, an undocumented storage key, a skill without frontmatter, `CLAUDE.md` drifting from `@AGENTS.md`, broken doc links | Each failure prints its own fix |
 | `npm test` | Broken rules, bots that peek at hidden hands, reasons not written in Chinese, a game screen that no longer deals, hints or plays | Fix the code, not the test, unless the rule itself changed on purpose |
+| `npm run test:levels` | A Texas Hold'em computer player level that no longer beats the one below it, at the table or in how often it calls or folds wrongly | Retune `STYLES` or the preflop play in `src/holdem/bot.ts`; do not loosen the thresholds |
 | `npm run build` | Type errors and anything Vite cannot bundle, including broken CSS | The dev server tolerates some broken CSS. The build does not |
 | `npm run check:bundle` | A bundle that outgrew its budget | Remove the heavy dependency or root import |
 | `npm run test:e2e` | Anything a player cannot see or reach in a real browser: a button or card off screen, two things overlapping, a covered button, a squeezed table, a dialog that does not fit, a console error. Runs on desktop, phone upright, phone landscape (852×300) and a short phone, in Chromium and WebKit | Read the sentence in the failure, open the trace, fix the layout. See the browser-qa skill |

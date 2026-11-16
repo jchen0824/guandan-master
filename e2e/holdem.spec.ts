@@ -21,6 +21,9 @@ test.afterEach(() => {
 test("the home page shows both games with nothing covered or cut off", async ({ page }) => {
   await openHome(page)
   await expectLayoutToHold(page, "on the home page")
+  const source = page.getByRole("link", { name: "GitHub 源代码" })
+  await expect(source).toBeInViewport({ ratio: 1 })
+  expect((await source.boundingBox())!.height, "the GitHub link is tall enough to tap").toBeGreaterThanOrEqual(44)
   for (const name of ["进入掼蛋牌桌", "进入德州扑克牌桌"]) {
     const enter = page.getByRole("button", { name })
     await enter.scrollIntoViewIfNeeded()
