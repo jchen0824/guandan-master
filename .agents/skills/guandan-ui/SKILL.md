@@ -43,7 +43,7 @@ Each of these fails `npm run check`, so getting them right first saves a round t
 | Import each component from its own entry | `import { Button } from "@ui-sdk/react"` | `import { Button } from "@ui-sdk/react/button"` |
 | Never import private paths | `@ui-sdk/core/internal/...`, `@ui-sdk/react/dist/...` | a documented entry |
 | Do not hand-roll a widget ui-sdk ships | `<div role="dialog">`, `role="switch"`, `role="tablist"` | `Dialog`, `Switch`, `Tabs` from `@ui-sdk/react` |
-| No inline styles | `<div style={{ opacity: on ? 1 : 0.5 }}>` | `data-on={on ? "" : undefined}` and a rule in `src/index.css` |
+| No inline styles | `<div style={{ opacity: on ? 1 : 0.5 }}>` | `data-on={on ? "" : undefined}` and a rule in `src/index.css`. The one exception is `place()` from `ui/place.ts` on the 3D table (section 4) |
 | Change a part's element with `render` | `<Button as="a">` | the `render` prop, as the component's page shows |
 | Component files export only components | a helper function exported from `Coach.tsx` | put the helper in its own `.ts` file (see `ui/situation.ts`) |
 | No state set in an effect or during render | `useEffect(() => setX(derive(y)), [y])` | compute `derive(y)` during render |
@@ -64,7 +64,22 @@ Status text uses plain `role="status"` or `role="alert"` on a paragraph, and gro
 - **Avoid ES2023 array additions** such as `toSorted` and `toReversed`: older phone browsers lack them and nothing polyfills them. `slice().sort()` is the house style.
 - **Storage** goes through keys that start with `guandan.` and are listed in AGENTS.md.
 
-## 4. Check your work
+## 4. The 3D table
+
+The player can switch between the 3D table (`data-view="3d"`, the default) and the flat table (`data-view="2d"`). They share the hand, buttons, tools, top bar, dialogs and all game state, so a change to any of those shows on both. Check both.
+
+- **Where it lives.** `ui/Table3D.tsx` renders the scene; every rule for it is in the last block of `src/index.css`, scoped to `[data-view="3d"]`. A rule for the 3D table always starts with that selector, so it cannot change the flat table.
+- **How it is drawn.** CSS 3D transforms only. `[data-slot="scene"]` sets the perspective, `[data-slot="world"]` is the tilted table, and everything on it is placed with `translate3d` from numbers in custom properties (`--zx`, `--fx`, `--cx`, …) listed at the top of the block. Lengths are multiples of `--u`, one design pixel. To move something, change its number; do not add a transform somewhere else.
+- **Placing repeated things.** A card needs its index and its group's size to work out where it goes. Pass them with `place({ i, n })` from `ui/place.ts`, which sets `--i` and `--n` and nothing else, and do the arithmetic in CSS. This is the only allowed inline `style`, and each use has a lint suppression with that reason.
+- **What flattens the scene.** Any element between `world` and a card must have `transform-style: preserve-3d` and must not have `overflow`, `opacity`, `filter` or `clip-path`. If cards suddenly lie flat or vanish, look for one of those first. Safari also needs the group to have `transform: translateZ(0)`.
+- **Few layers.** Every element with a 3D transform is a layer the browser must sort by depth, and Safari stops sorting when there are too many. The tabletop and each fan are therefore one flat surface each: their parts (felt, glow, shades, a bomb's flash and rings; the card backs) are placed with 2D transforms and painted in source order. Something that lies flat on the table goes into `[data-slot="tabletop"]`, not into a new 3D layer. A flat surface needs a real width and height, or Chrome sorts it under the table.
+- **Labels must not overlap.** Seat labels, combination tags, 不出 marks, the turn note and the coach's line all float over the scene. After moving any of them, play a hand at each screen size: `layoutProblems()` reports two labels that overlap, and the browser tests run it through a whole hand. On phones the table is pinned to the screen, so a position that is clear with one hand is clear with every hand.
+- **Check both engines by eye.** Chrome and Safari disagree about 3D in ways no layout probe can see. A Playwright WebKit screenshot paints 3D flat, so record a video of the page in WebKit and look at a frame (AGENTS.md says how).
+- **Labels.** Seat labels and combination tags counter-rotate to face the camera. Seat labels are in a second `world` layer drawn after the table so a fan can never cover them.
+- **Three camera setups.** Desktop, phone landscape and upright phone each set their own numbers in a media block; a short upright phone gets a flatter camera. Keep a change inside the block for the layout it is for.
+- **Readable cards come first.** On phones the plays on the felt are propped up and enlarged, because a card lying flat at that size cannot be read. Do not trade that away for realism.
+
+## 5. Check your work
 
 1. Add or update a test in `src/App.test.tsx`. Start the file with `// @vitest-environment jsdom`. Find controls by role and Chinese name, drive them with `fireEvent`, and move bot turns forward with fake timers as the existing tests do.
 2. If the change is something a player can see or reach, add it to `e2e/game.spec.ts` as well. The simulated DOM has no layout, so only the browser tests can catch an off-screen button or an overlap.

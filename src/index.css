@@ -1472,3 +1472,1663 @@ button {
   }
 }
 
+
+/* ------------------------------------------------------------------------------------------------
+   The 2D/3D switch, shown in the top bar of both views and in 设置.
+   ------------------------------------------------------------------------------------------------ */
+[data-slot="menu"] > [data-view-switch] {
+  width: auto;
+  padding: 2px;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.3);
+}
+
+[data-slot="menu"] > [data-view-switch] [data-slot="segmented-control-item"] {
+  min-width: 42px;
+  min-height: 36px;
+  padding: 0 8px;
+  border-radius: 999px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+[data-slot="menu"] > [data-view-switch] [data-slot="segmented-control-item"][data-checked] {
+  background: var(--gold);
+  color: #2a1c00;
+}
+
+@media (max-width: 620px) {
+  /* The flat table's top bar is full on an upright phone; there the switch is in 设置. */
+  [data-view="2d"] [data-slot="menu"] > [data-view-switch] {
+    display: none;
+  }
+}
+
+/* ------------------------------------------------------------------------------------------------
+   The 3D table (data-view="3d").
+
+   The hand, buttons, tools and dialogs are the same elements as on the flat table with a darker skin.
+   Only the table is new: a plane tilted away from the player, built from CSS 3D transforms.
+
+   Every length on the table is a multiple of --u, the size of one design pixel. The design is drawn
+   on 1280x720 (desktop), 852x300 (phone on its side) and 393x745 (phone upright), and --u scales it
+   to the board. Positions are plain numbers in those design pixels, measured from the table centre:
+   x to the right, y toward the player, z up from the felt.
+   ------------------------------------------------------------------------------------------------ */
+[data-view="3d"] {
+  --room: #0f0c0a;
+  --hud: rgb(16 12 10 / 0.88);
+  --hud-line: rgb(255 255 255 / 0.16);
+  --brass: #e9bf62;
+  --brass-ink: #23170a;
+  --cream: #f4ecdf;
+  --cream-soft: #cbbfa9;
+  --face-ink: #1c1d22;
+  --face-red: #c3271d;
+  --digits: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --card-held: 0 0 0 1px rgb(0 0 0 / 0.3), 0 2px 0 #cfc8b8, 0 8px 14px rgb(0 0 0 / 0.35);
+}
+
+[data-view="3d"][data-slot="app"] {
+  grid-template-columns: minmax(0, 1fr);
+  background: var(--room);
+}
+
+[data-view="3d"] [data-slot="board"] {
+  position: relative;
+  container-type: size;
+  overflow: hidden;
+  color: var(--cream);
+  background:
+    radial-gradient(ellipse 62% 56% at 50% 44%, rgb(255 214 150 / 0.17), rgb(255 214 150 / 0) 72%),
+    radial-gradient(ellipse 120% 90% at 50% 112%, #2b1d13, var(--room) 62%);
+}
+
+[data-view="3d"] [data-slot="topbar"],
+[data-view="3d"] [data-slot="controls"],
+[data-view="3d"] [data-slot="bottombar"] {
+  position: relative;
+  z-index: 1;
+}
+
+[data-view="3d"] [data-slot="bottombar"] {
+  background: none;
+}
+
+[data-view="3d"] [data-slot="table"] {
+  position: relative;
+  z-index: 0;
+  display: block;
+  overflow: visible;
+  padding: 0;
+}
+
+/* ---- The scene ---- */
+[data-view="3d"] [data-slot="scene"] {
+  --u: min(100cqw / 1280, 100cqh / 720);
+  --lens: 1600;
+  /* The table centre sits --oy above the bottom of the table row; the camera looks --eye above that. */
+  --oy: 48;
+  --eye: 151;
+  --tilt: 50deg;
+  --k: 1;
+  --unk: 1;
+  /* felt, rim and inlay: width, height, corner radius */
+  --fw: 980;
+  --fh: 540;
+  --fr: 122;
+  --rw: 1036;
+  --rh: 596;
+  --rr: 150;
+  --iw: 924;
+  --ih: 484;
+  --ir: 96;
+  --print-y: 0;
+  /* where plays lie: side seats at +-zx, bottom edge at zy; mine at my; the partner's at ty */
+  --zx: 250;
+  --zy: 63;
+  --my: 203;
+  --ty: -70;
+  --lpitch: 30;
+  --ls: 1;
+  --prop: 0deg;
+  --tag-dy: -127;
+  --tag-z: 30;
+  /* a bomb: how far apart its cards lie and how much bigger they are */
+  --bp: 64;
+  --bs: 1.25;
+  /* where hands stand: side seats at +-fx, fy, turned +-ft; the partner's at py */
+  --fx: 385;
+  --fy: -30;
+  --ft: 40deg;
+  --py: -215;
+  /* seat labels */
+  --cx: 500;
+  --cy: 60;
+  --cz: 60;
+  --pcx: 200;
+  --pcy: -222;
+  --pcz: 60;
+  /* where my cards fly in from */
+  --hy: 400;
+  --hz: -28;
+  --lean: -40deg;
+  --spin: calc(var(--sx) * -0.3deg);
+  --pitch: calc(var(--tilt) + var(--sy) * -0.15deg);
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  perspective: calc(var(--lens) * var(--u));
+  perspective-origin: 50% calc(100% - (var(--oy) + var(--eye)) * var(--u));
+}
+
+[data-view="3d"] [data-slot="world"] {
+  position: absolute;
+  left: 50%;
+  top: calc(100% - var(--oy) * var(--u));
+  width: 0;
+  height: 0;
+  transform-style: preserve-3d;
+  transform: rotateX(var(--pitch)) rotateZ(var(--spin)) scale3d(var(--k), var(--k), var(--k));
+  transition: transform 250ms ease-out;
+}
+
+/* Groups hold no box of their own. They must keep the 3D space open for the cards inside them. */
+[data-view="3d"] [data-slot="table-base"],
+[data-view="3d"] [data-slot="seat3d"],
+[data-view="3d"] [data-slot="seat3d"] [data-slot="play-zone"],
+[data-view="3d"] [data-slot="seat3d"] [data-slot="card-row"],
+[data-view="3d"] [data-slot="blast"] {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: block;
+  width: 0;
+  height: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  transform-style: preserve-3d;
+  /* Safari keeps the 3D space open only through a group that has a 3D transform of its own. Without this one
+     it draws the labels inside the group lying flat on the felt. */
+  transform: translateZ(0);
+}
+
+[data-view="3d"] [data-slot="table-base"] > span,
+[data-view="3d"] [data-slot="tabletop"] > span,
+[data-view="3d"] [data-slot="fan"] > span {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: block;
+  box-sizing: border-box;
+}
+
+/* The tabletop and each fan are one flat surface each: their parts are placed in 2D and painted in the order
+   they are written. Safari stops sorting a 3D scene by depth once it holds too many layers (a hundred card
+   backs did it), and then draws the rim over the felt. Keep it to a few layers. */
+[data-view="3d"] [data-slot="tabletop"] > span {
+  left: 50%;
+  top: 50%;
+}
+
+[data-view="3d"] [data-slot="floor"] {
+  width: calc((var(--rw) + 200) * var(--u));
+  height: calc((var(--rh) + 170) * var(--u));
+  margin: calc((var(--rh) + 170) * -0.5 * var(--u)) 0 0 calc((var(--rw) + 200) * -0.5 * var(--u));
+  transform: translateZ(calc(-170 * var(--u)));
+  background: radial-gradient(ellipse, rgb(0 0 0 / 0.75), rgb(0 0 0 / 0) 68%);
+}
+
+[data-view="3d"] [data-slot="slab"],
+[data-view="3d"] [data-slot="tabletop"] {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: calc(var(--rw) * var(--u));
+  height: calc(var(--rh) * var(--u));
+  margin: calc(var(--rh) * -0.5 * var(--u)) 0 0 calc(var(--rw) * -0.5 * var(--u));
+  border-radius: calc(var(--rr) * var(--u));
+}
+
+[data-view="3d"] [data-slot="slab"] {
+  transform: translateZ(calc((var(--i) + 1) * -16 * var(--u)));
+  background: hsl(22 49% calc(17% - var(--i) * 4%));
+}
+
+[data-view="3d"] [data-slot="tabletop"] {
+  background: linear-gradient(180deg, #7b4c2f 0%, #5a341f 46%, #6c4128 100%);
+  box-shadow: inset 0 0 0 1px rgb(255 225 180 / 0.2), inset 0 0 18px rgb(0 0 0 / 0.45);
+}
+
+[data-view="3d"] [data-slot="felt"] {
+  width: calc(var(--fw) * var(--u));
+  height: calc(var(--fh) * var(--u));
+  margin: calc(var(--fh) * -0.5 * var(--u)) 0 0 calc(var(--fw) * -0.5 * var(--u));
+  border-radius: calc(var(--fr) * var(--u));
+  background-color: #22604b;
+  background-image:
+    radial-gradient(ellipse at 50% 42%, rgb(255 255 255 / 0.17), rgb(255 255 255 / 0) 58%),
+    radial-gradient(ellipse at 50% 50%, rgb(0 0 0 / 0) 48%, rgb(0 0 0 / 0.42) 100%);
+  box-shadow: inset 0 0 0 2px rgb(0 0 0 / 0.4), inset 0 10px 22px rgb(0 0 0 / 0.45);
+}
+
+[data-view="3d"] [data-slot="inlay"] {
+  width: calc(var(--iw) * var(--u));
+  height: calc(var(--ih) * var(--u));
+  margin: calc(var(--ih) * -0.5 * var(--u)) 0 0 calc(var(--iw) * -0.5 * var(--u));
+  border-radius: calc(var(--ir) * var(--u));
+  border: calc(1.5 * var(--u)) solid rgb(233 191 98 / 0.4);
+}
+
+[data-view="3d"] [data-slot="tabletop"] > [data-slot="felt-print"] {
+  width: calc(200 * var(--u));
+  height: calc(200 * var(--u));
+  margin: calc(-100 * var(--u)) 0 0 calc(-100 * var(--u));
+  border-radius: 50%;
+  transform: translateY(calc(var(--print-y) * var(--u)));
+  border: calc(2 * var(--u)) solid rgb(255 255 255 / 0.1);
+  color: rgb(255 255 255 / 0.14);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+[data-view="3d"] [data-slot="felt-print"] span {
+  font-size: calc(19 * var(--u));
+  font-weight: 700;
+  letter-spacing: calc(6 * var(--u));
+  margin-right: calc(-6 * var(--u));
+}
+
+[data-view="3d"] [data-slot="felt-print"] b {
+  font: 700 calc(112 * var(--u)) / 0.92 var(--digits);
+}
+
+/* The glow lies under whichever play is winning the trick. */
+[data-view="3d"] [data-slot="glow"] {
+  --gx: 0;
+  --gy: 0;
+  width: calc(330 * var(--u));
+  height: calc(190 * var(--u));
+  margin: calc(-95 * var(--u)) 0 0 calc(-165 * var(--u));
+  transform: translate(calc(var(--gx) * var(--u)), calc((var(--gy) - 53) * var(--u)));
+  transition: transform 500ms ease, opacity 300ms ease;
+  background: radial-gradient(ellipse, rgb(240 200 105 / 0.5), rgb(240 200 105 / 0) 68%);
+}
+
+[data-view="3d"] [data-slot="glow"]:not([data-side]) {
+  opacity: 0;
+}
+[data-view="3d"] [data-slot="glow"][data-side="left"] {
+  --gx: calc(var(--zx) * -1);
+  --gy: var(--zy);
+}
+[data-view="3d"] [data-slot="glow"][data-side="right"] {
+  --gx: var(--zx);
+  --gy: var(--zy);
+}
+[data-view="3d"] [data-slot="glow"][data-side="top"] {
+  --gy: var(--ty);
+}
+[data-view="3d"] [data-slot="glow"][data-side="me"] {
+  --gy: var(--my);
+}
+
+/* ---- Seats: where each one's fan, label and plays go ---- */
+[data-view="3d"] [data-slot="world"] [data-side="left"] {
+  --fan-x: calc(var(--fx) * -1);
+  --fan-y: var(--fy);
+  --fan-turn: calc(var(--ft) * -1);
+  --chip-x: calc(var(--cx) * -1);
+  --chip-y: var(--cy);
+  --chip-z: var(--cz);
+  --play-x: calc(var(--zx) * -1);
+  --play-y: var(--zy);
+}
+[data-view="3d"] [data-slot="world"] [data-side="right"] {
+  --fan-x: var(--fx);
+  --fan-y: var(--fy);
+  --fan-turn: var(--ft);
+  --chip-x: var(--cx);
+  --chip-y: var(--cy);
+  --chip-z: var(--cz);
+  --play-x: var(--zx);
+  --play-y: var(--zy);
+}
+[data-view="3d"] [data-slot="world"] [data-side="top"] {
+  --fan-x: 0;
+  --fan-y: var(--py);
+  --fan-turn: 0deg;
+  --chip-x: var(--pcx);
+  --chip-y: var(--pcy);
+  --chip-z: var(--pcz);
+  --play-x: 0;
+  --play-y: var(--ty);
+}
+[data-view="3d"] [data-slot="world"] [data-side="me"] {
+  --play-x: 0;
+  --play-y: var(--my);
+}
+
+/* A hand held upright: the fan is one surface standing on the felt, hinged at the middle of its bottom edge.
+   It needs a real box. Chrome sorts a surface with no size as if it lay under the table. */
+[data-view="3d"] [data-slot="fan"] {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: calc(480 * var(--u));
+  height: calc(120 * var(--u));
+  margin: calc(-120 * var(--u)) 0 0 calc(-240 * var(--u));
+  transform-origin: 50% 100%;
+  transform: translate3d(calc(var(--fan-x) * var(--u)), calc(var(--fan-y) * var(--u)), 0) rotateZ(var(--fan-turn))
+    rotateX(-78deg);
+}
+
+[data-view="3d"] [data-slot="fan"] > span {
+  left: 50%;
+  top: 100%;
+}
+
+/* Each card turns a little further round a point below the fan. */
+[data-view="3d"] [data-slot="fan-card"] {
+  width: calc(64 * var(--u));
+  height: calc(90 * var(--u));
+  margin: calc(-90 * var(--u)) 0 0 calc(-32 * var(--u));
+  transform-origin: 50% 100%;
+  transform: translateY(calc(494 * var(--u))) rotate(calc((var(--i) - (var(--n) - 1) / 2) * 1.5deg))
+    translateY(calc(-520 * var(--u)));
+  transition: transform 300ms ease;
+  border-radius: calc(6 * var(--u));
+  border: calc(3 * var(--u)) solid #f1eadb;
+  background-color: #9c2b22;
+  background-image:
+    repeating-linear-gradient(45deg, rgb(255 255 255 / 0.2) 0 1.5px, rgb(255 255 255 / 0) 1.5px 7px),
+    repeating-linear-gradient(-45deg, rgb(255 255 255 / 0.2) 0 1.5px, rgb(255 255 255 / 0) 1.5px 7px);
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.4);
+}
+
+[data-view="3d"] [data-slot="fan-shade"] {
+  width: calc(300 * var(--u));
+  height: calc(70 * var(--u));
+  margin: calc(-35 * var(--u)) 0 0 calc(-150 * var(--u));
+  transform: translate(calc(var(--fan-x) * var(--u)), calc((var(--fan-y) + 16) * var(--u))) rotate(var(--fan-turn));
+  background: radial-gradient(ellipse, rgb(0 0 0 / 0.5), rgb(0 0 0 / 0) 70%);
+}
+
+/* Labels stand up and face the camera whatever the tilt. */
+[data-view="3d"] [data-slot="seat3d"] [data-slot="player"],
+[data-view="3d"] [data-slot="play-tag"],
+[data-view="3d"] [data-slot="seat3d"] [data-slot="pass-mark"] {
+  position: absolute;
+  left: 0;
+  top: 0;
+  box-sizing: border-box;
+  white-space: nowrap;
+  background: var(--hud);
+  transition: transform 250ms ease-out;
+}
+
+[data-view="3d"] [data-slot="seat3d"] [data-slot="player"] {
+  width: 156px;
+  height: 48px;
+  margin: -24px 0 0 -78px;
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  align-content: center;
+  align-items: center;
+  justify-items: start;
+  gap: 0 9px;
+  padding: 0 12px 0 8px;
+  border-radius: 24px;
+  border: 1px solid var(--hud-line);
+  transform: translate3d(calc(var(--chip-x) * var(--u)), calc(var(--chip-y) * var(--u)), calc(var(--chip-z) * var(--u)))
+    rotateZ(calc(var(--spin) * -1)) rotateX(calc(var(--pitch) * -1)) scale(var(--unk));
+}
+
+[data-view="3d"] [data-slot="seat3d"] [data-slot="avatar"] {
+  grid-row: 1 / span 2;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  background: #9cc0e0;
+  color: #17110b;
+  font-size: 15px;
+}
+
+[data-view="3d"] [data-slot="seat3d"] [data-team="us"] [data-slot="avatar"] {
+  background: var(--brass);
+}
+
+[data-view="3d"] [data-slot="seat3d"] [data-slot="player"][data-active] [data-slot="avatar"] {
+  box-shadow: 0 0 0 3px var(--brass);
+}
+
+[data-view="3d"] [data-slot="seat3d"] [data-slot="player-name"] {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+[data-view="3d"] [data-slot="seat3d"] [data-slot="player-role"] {
+  display: none;
+}
+
+[data-view="3d"] [data-slot="seat3d"] [data-slot="count"],
+[data-view="3d"] [data-slot="seat3d"] [data-slot="place"] {
+  padding: 0;
+  background: none;
+  color: var(--cream-soft);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.2;
+}
+
+[data-view="3d"] [data-slot="seat3d"] [data-slot="count"][data-low] {
+  color: #ffb39c;
+}
+
+[data-view="3d"] [data-slot="seat3d"] [data-slot="count"][data-low]::after {
+  content: " · 报牌";
+}
+
+[data-view="3d"] [data-slot="seat3d"] [data-slot="place"] {
+  color: var(--brass);
+  font-weight: 700;
+}
+
+[data-view="3d"] [data-slot="play-tag"],
+[data-view="3d"] [data-slot="seat3d"] [data-slot="pass-mark"] {
+  width: 84px;
+  height: 30px;
+  margin: -15px 0 0 -42px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 15px;
+  border: 1px solid rgb(233 191 98 / 0.55);
+  color: #f6e7c4;
+  font-size: 14px;
+  font-weight: 600;
+  transform: translate3d(
+      calc(var(--play-x) * var(--u)),
+      calc((var(--play-y) + var(--tag-dy)) * var(--u)),
+      calc(var(--tag-z) * var(--u))
+    )
+    rotateZ(calc(var(--spin) * -1)) rotateX(calc(var(--pitch) * -1)) scale(var(--unk));
+}
+
+[data-view="3d"] [data-slot="seat3d"] [data-slot="pass-mark"] {
+  --tag-dy: -48;
+}
+
+/* ---- Cards lying on the felt ---- */
+[data-view="3d"] [data-slot="seat3d"] [data-card] {
+  --cu: var(--u);
+  --lp: min(var(--lpitch), 200 / var(--n));
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: block;
+  width: calc(76 * var(--u));
+  height: calc(106 * var(--u));
+  margin: calc(-106 * var(--u)) 0 0 calc(-38 * var(--u));
+  padding: 0;
+  transform-origin: 50% 100%;
+  transform: translate3d(
+      calc((var(--play-x) + (var(--i) - (var(--n) - 1) / 2) * var(--lp)) * var(--u)),
+      calc(var(--play-y) * var(--u)),
+      calc((6 + var(--i) * 0.6) * var(--u))
+    )
+    rotateX(var(--prop)) rotateZ(var(--jitter, 0deg)) scale(var(--ls));
+  animation: land 450ms cubic-bezier(0.2, 0.75, 0.2, 1) backwards;
+  animation-delay: calc(var(--i) * 45ms);
+}
+
+[data-view="3d"] [data-slot="seat3d"] [data-card]:nth-child(5n + 1) {
+  --jitter: -3deg;
+}
+[data-view="3d"] [data-slot="seat3d"] [data-card]:nth-child(5n + 2) {
+  --jitter: 2deg;
+}
+[data-view="3d"] [data-slot="seat3d"] [data-card]:nth-child(5n + 3) {
+  --jitter: -1deg;
+}
+[data-view="3d"] [data-slot="seat3d"] [data-card]:nth-child(5n + 4) {
+  --jitter: 3deg;
+}
+[data-view="3d"] [data-slot="seat3d"] [data-card]:nth-child(5n) {
+  --jitter: -2deg;
+}
+
+/* A play flies in from its owner: from the upright fan, or from my hand at the bottom of the screen. */
+[data-view="3d"] [data-slot="seat3d"] [data-card] {
+  --from: translate3d(calc(var(--fan-x) * var(--u)), calc(var(--fan-y) * var(--u)), calc(70 * var(--u))) rotateX(-70deg)
+    rotateZ(var(--fan-turn)) scale(0.8);
+}
+
+[data-view="3d"] [data-slot="seat3d"][data-side="me"] [data-card] {
+  --from: translate3d(
+      calc((var(--i) - (var(--n) - 1) / 2) * 62 * var(--u)),
+      calc(var(--hy) * var(--u)),
+      calc(var(--hz) * var(--u))
+    )
+    rotateX(var(--lean)) rotateZ(0deg) scale(1);
+}
+
+@keyframes land {
+  from {
+    transform: var(--from);
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+}
+
+/* ---- The card face shared by the felt and the hand. --cu is one 76th of the card's width. ---- */
+[data-view="3d"] [data-slot="seat3d"] [data-card],
+[data-view="3d"] [data-slot="hand"] [data-card] {
+  overflow: hidden;
+  border: 0;
+  border-radius: calc(8 * var(--cu));
+  color: var(--face-ink);
+  background: linear-gradient(180deg, #fffefb, #efeadf);
+  box-shadow: var(--card-held);
+}
+
+[data-view="3d"] [data-slot="seat3d"] [data-card][data-red],
+[data-view="3d"] [data-slot="hand"] [data-card][data-red] {
+  color: var(--face-red);
+}
+
+[data-view="3d"] [data-slot="seat3d"] [data-card][data-wild],
+[data-view="3d"] [data-slot="hand"] [data-card][data-wild] {
+  box-shadow: 0 0 0 2px #d9a93f, 0 2px 0 #cfc8b8, 0 8px 14px rgb(0 0 0 / 0.35);
+}
+
+[data-view="3d"] [data-slot="seat3d"] [data-slot="card-face"] {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+/* The corner index: the rank with the suit under it. */
+[data-view="3d"] [data-slot="face-index"] {
+  position: absolute;
+  left: calc(6 * var(--cu));
+  top: calc(3 * var(--cu));
+  display: flex;
+  flex-direction: column;
+  gap: calc(1 * var(--cu));
+  font-size: calc(28 * var(--cu));
+}
+
+[data-view="3d"] [data-slot="face-rank"] {
+  font: 600 1em / 1 var(--digits);
+  letter-spacing: -0.02em;
+}
+
+[data-view="3d"] [data-slot="face-rank"][data-joker-name] {
+  position: absolute;
+  left: calc(6 * var(--cu));
+  top: calc(6 * var(--cu));
+  width: calc(17 * var(--cu));
+  font: 700 calc(16 * var(--cu)) / 1.08 inherit;
+  font-family: "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei", system-ui, sans-serif;
+  letter-spacing: 0;
+  text-align: center;
+  white-space: normal;
+  word-break: break-all;
+}
+
+[data-view="3d"] [data-slot="face-suit"],
+[data-view="3d"] [data-slot="face-pip"] {
+  fill: currentColor;
+}
+
+[data-view="3d"] [data-slot="face-suit"] {
+  flex: none;
+  width: 0.64em;
+  height: 0.64em;
+  margin-left: -0.04em;
+}
+
+[data-view="3d"] [data-slot="face-pip"] {
+  position: absolute;
+  right: calc(7 * var(--cu));
+  bottom: calc(8 * var(--cu));
+  width: calc(40 * var(--cu));
+  height: calc(40 * var(--cu));
+}
+
+[data-view="3d"] [data-slot="face-tag"] {
+  position: absolute;
+  left: calc(5 * var(--cu));
+  bottom: calc(7 * var(--cu));
+  padding: calc(1 * var(--cu)) calc(4 * var(--cu));
+  border-radius: calc(4 * var(--cu));
+  background: #e2b65a;
+  color: #2a1a05;
+  font-size: calc(12 * var(--cu));
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+/* ---- The hand: the same columns as the flat table, leaning back a little, with the new card face ---- */
+[data-view="3d"] [data-slot="controls"] {
+  --cw: clamp(44px, 7.2cqw, 96px);
+  padding: 0 10px 8px;
+}
+
+[data-view="3d"] [data-slot="hand"] {
+  min-height: calc(var(--cw) * 2.3);
+  padding-top: calc(var(--cw) * 0.3);
+  transform: perspective(1100px) rotateX(9deg);
+  transform-origin: 50% 100%;
+}
+
+/* --peek is how much of a covered card shows above the next one, as a share of the card's width. */
+[data-view="3d"] [data-slot="hand-column"] {
+  --peek: 0.34;
+  flex: 0 1 calc(var(--cw) * 0.82);
+}
+
+[data-view="3d"] [data-slot="hand-column"]:last-child {
+  flex: 0 0 var(--cw);
+}
+
+[data-view="3d"] [data-slot="hand"] [data-card] {
+  --cu: calc(var(--cw) / 76);
+  display: block;
+  padding: 0;
+}
+
+/* Named from the hand down so it outranks the flat table's rules for tall columns, which would undo the overlap. */
+[data-view="3d"] [data-slot="hand"] [data-slot="hand-column"] [data-card] + [data-card] {
+  margin-top: calc(var(--cw) * (var(--peek) - 1.42));
+}
+
+[data-view="3d"] [data-slot="hand-column"]:has([data-card]:nth-of-type(6)) {
+  --peek: 0.22;
+}
+
+/* A covered card shows only that strip, so its suit moves up beside the rank and both shrink to fit. */
+[data-view="3d"] [data-slot="hand-column"] [data-card]:not(:last-child) [data-slot="face-index"] {
+  left: calc(var(--index-left, 6) * var(--cu));
+  top: calc(2 * var(--cu));
+  flex-direction: row;
+  align-items: center;
+  font-size: calc(min(var(--index-size, 28), var(--peek) * 91 - 3) * var(--cu));
+}
+
+[data-view="3d"] [data-slot="hand-column"] [data-card]:not(:last-child) [data-slot="face-suit"] {
+  width: 0.6em;
+  height: 0.6em;
+  margin: 0;
+}
+
+[data-view="3d"] [data-slot="hand-column"] [data-card][data-pressed] {
+  transform: translateY(calc(var(--cw) * -0.26));
+  border: 0;
+  background: linear-gradient(180deg, #fffefb, #efeadf);
+  box-shadow: 0 0 0 3px #f0c869, 0 2px 0 #cfc8b8, 0 16px 22px rgb(0 0 0 / 0.5);
+}
+
+[data-view="3d"] [data-slot="button"][data-variant="pile"] {
+  background: var(--brass);
+  color: var(--brass-ink);
+}
+
+/* ---- Buttons and panels ---- */
+[data-view="3d"] [data-slot][data-variant="pass"],
+[data-view="3d"] [data-slot][data-variant="hint"] {
+  border: 1px solid rgb(255 255 255 / 0.32);
+  background: rgb(16 12 10 / 0.9);
+  color: var(--cream);
+  font-weight: 500;
+}
+
+[data-view="3d"] [data-slot="controls"] [data-slot][data-variant="play"] {
+  background: var(--brass);
+  color: var(--brass-ink);
+}
+
+[data-view="3d"] [data-slot="controls"] [data-variant="pass"],
+[data-view="3d"] [data-slot="controls"] [data-variant="hint"],
+[data-view="3d"] [data-slot="controls"] [data-variant="play"] {
+  min-height: 46px;
+  font-size: 16px;
+  letter-spacing: 0;
+}
+
+[data-view="3d"] [data-slot="turn-note"] {
+  align-self: flex-end;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 3px 10px;
+  border-radius: 11px;
+  background: rgb(16 12 10 / 0.82);
+  color: #f6e7c4;
+  font-size: 13px;
+}
+
+[data-view="3d"] [data-slot="tools"] {
+  padding: 0 6px;
+  border-radius: 24px;
+  border: 1px solid var(--hud-line);
+  background: var(--hud);
+}
+
+[data-view="3d"] [data-slot="me-chip"] {
+  display: none;
+}
+
+[data-view="3d"] [data-slot="menu"] > [data-view-switch] {
+  background: rgb(16 12 10 / 0.82);
+  border: 1px solid var(--hud-line);
+}
+
+[data-view="3d"] [data-slot="menu"] > [data-view-switch] [data-slot="segmented-control-item"] {
+  color: #eadfcb;
+  font: 600 16px / 1 var(--digits);
+  letter-spacing: 0.5px;
+}
+
+[data-view="3d"] [data-slot="menu"] > [data-view-switch] [data-slot="segmented-control-item"][data-checked] {
+  background: var(--brass);
+  color: var(--brass-ink);
+}
+
+[data-view="3d"] [data-slot][data-variant="coach"] {
+  border-color: rgb(255 255 255 / 0.28);
+  background: var(--hud);
+  color: var(--cream);
+}
+
+[data-view="3d"] [data-slot][data-variant="coach"][aria-pressed="true"] {
+  border-color: var(--brass);
+  background: var(--hud);
+  color: var(--brass);
+}
+
+[data-view="3d"] [data-slot="round"] {
+  display: none;
+}
+
+[data-view="3d"] [data-slot="topbar"] {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 14px;
+  padding: 5px 16px 5px 20px;
+}
+
+[data-view="3d"] [data-slot="brand"] {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+[data-view="3d"] [data-slot="brand"] strong {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+[data-view="3d"] [data-slot="brand"] span {
+  padding: 3px 9px;
+  border-radius: 11px;
+  border: 1px solid rgb(255 255 255 / 0.18);
+  color: var(--cream-soft);
+  font-size: 13px;
+}
+
+[data-view="3d"] [data-slot="top-middle"] {
+  flex: 1 0 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+[data-view="3d"] [data-slot="top-middle"]:has([data-slot="tracker"])::before {
+  content: "记牌器";
+  color: var(--cream-soft);
+  font-size: 12px;
+}
+
+[data-view="3d"] [data-slot="tracker"] {
+  grid-template-columns: repeat(16, 29px);
+  padding: 3px 8px;
+  border-radius: 12px;
+  border: 1px solid var(--hud-line);
+  background: rgb(16 12 10 / 0.82);
+  color: var(--cream);
+  line-height: 1.15;
+}
+
+[data-view="3d"] [data-slot="tracker"] div + div {
+  border-left: 0;
+}
+
+[data-view="3d"] [data-slot="tracker"] dt,
+[data-view="3d"] [data-slot="tracker"] div[data-kind] dt {
+  background: none;
+  color: var(--cream-soft);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+[data-view="3d"] [data-slot="tracker"] div[data-kind="wild"] dt,
+[data-view="3d"] [data-slot="tracker"] div[data-kind="joker"] dt {
+  color: #f0c869;
+}
+
+[data-view="3d"] [data-slot="tracker"] dd {
+  font: 600 17px / 1.05 var(--digits);
+}
+
+[data-view="3d"] [data-slot="tracker"] div[data-none] dd {
+  color: #9d9484;
+}
+
+[data-view="3d"] [data-slot="scores"] {
+  gap: 2px;
+  padding: 0 8px;
+  min-height: 34px;
+  border-radius: 17px;
+  border: 1px solid var(--hud-line);
+  background: var(--hud);
+}
+
+[data-view="3d"] [data-slot="level-badge"],
+[data-view="3d"] [data-slot="score"] {
+  padding: 0 4px;
+  background: none;
+  color: var(--cream);
+  font-weight: 400;
+}
+
+[data-view="3d"] [data-slot="level-badge"] b,
+[data-view="3d"] [data-slot="score"] b {
+  color: #f0c869;
+  font: 700 19px / 1 var(--digits);
+}
+
+[data-view="3d"] [data-slot="score-panel"],
+[data-view="3d"] [data-slot="bubble"] {
+  position: absolute;
+  top: 8px;
+  bottom: auto;
+  z-index: 1;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgb(255 255 255 / 0.12);
+  background: rgb(16 12 10 / 0.86);
+  color: var(--cream);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+[data-view="3d"] [data-slot="score-panel"] {
+  left: 20px;
+  width: 192px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+[data-view="3d"] [data-slot="score-level"] {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  color: var(--cream-soft);
+}
+
+[data-view="3d"] [data-slot="score-level"] > b {
+  color: #f0c869;
+  font: 700 40px / 0.9 var(--digits);
+}
+
+[data-view="3d"] [data-slot="score-wild"] {
+  margin-left: auto;
+  font-size: 12px;
+}
+
+[data-view="3d"] [data-slot="score-wild"] b {
+  color: #f6a196;
+  font: 600 17px / 1 var(--digits);
+}
+
+[data-view="3d"] [data-slot="score-panel"] dl {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+[data-view="3d"] [data-slot="score-panel"] dl div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+[data-view="3d"] [data-slot="score-panel"] dt span {
+  color: var(--cream-soft);
+}
+
+[data-view="3d"] [data-slot="score-panel"] dd {
+  margin: 0;
+  font: 600 20px / 1 var(--digits);
+}
+
+[data-view="3d"] [data-slot="bubble"] {
+  right: 20px;
+  width: 262px;
+  gap: 6px;
+}
+
+[data-view="3d"] [data-slot="bubble"] strong {
+  display: block;
+  margin: 0;
+  color: var(--cream-soft);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+[data-view="3d"] [data-slot="bubble"] strong::after {
+  content: " · 局面";
+}
+
+[data-view="3d"] [data-slot="notice"] {
+  color: var(--cream);
+  font-weight: 400;
+}
+
+[data-view="3d"] [data-slot="notice"]::before {
+  display: block;
+  color: #f0c869;
+  font-size: 12px;
+}
+
+[data-view="3d"] [data-slot="notice"][data-kind="hint"]::before {
+  content: "建议";
+}
+
+[data-view="3d"] [data-slot="notice"][data-kind="error"]::before {
+  content: "不能这样出";
+  color: #ffb39c;
+}
+
+[data-view="3d"] [data-slot="notice"][data-kind="info"]::before {
+  content: "提示";
+}
+
+/* The full coach is a drawer at every width: the 3D table has no docked panel. */
+@media (min-width: 1001px) {
+  [data-view="3d"] [data-coach-close] {
+    display: inline-flex;
+    align-items: center;
+  }
+  [data-view="3d"][data-slot="app"]:not([data-coach-on]) [data-slot="coach"] {
+    display: flex;
+  }
+  [data-view="3d"] [data-slot="coach"] {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 3;
+    width: 320px;
+    transform: translateX(100%);
+    visibility: hidden;
+    transition: transform 160ms ease, visibility 160ms;
+  }
+  [data-view="3d"][data-coach-open] [data-slot="coach"] {
+    transform: none;
+    visibility: visible;
+  }
+  [data-view="3d"][data-coach-open] [data-slot="scrim"] {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 2;
+    border: 0;
+    background: rgb(0 0 0 / 0.45);
+  }
+}
+
+/* ---- Desktop: tools left and actions right, both in the row above the hand ---- */
+@media (min-width: 900px) and (min-height: 481px) {
+  [data-view="3d"] [data-slot="scores"] {
+    display: none;
+  }
+  [data-view="3d"] [data-slot="controls"] {
+    grid-row: 3;
+    grid-column: 1;
+  }
+  [data-view="3d"] [data-slot="pills"] {
+    justify-content: flex-end;
+    gap: 10px;
+    min-height: 48px;
+    padding-right: 26px;
+  }
+  [data-view="3d"] [data-slot="turn-note"] {
+    margin-right: 26px;
+  }
+  [data-view="3d"] [data-slot="bottombar"] {
+    grid-row: 3;
+    grid-column: 1;
+    align-self: start;
+    justify-self: start;
+    z-index: 2;
+    min-height: 48px;
+    margin-top: 32px;
+    padding: 0 0 0 36px;
+  }
+}
+
+@media (max-width: 899px), (max-height: 480px) {
+  [data-view="3d"] [data-slot="brand"],
+  [data-view="3d"] [data-slot="score-panel"] {
+    display: none;
+  }
+}
+
+/* ---- Phone on its side: a wider table seen from lower down, plays propped up so ranks stay readable ---- */
+@media (max-height: 480px) and (min-width: 621px) {
+  [data-view="3d"] [data-slot="scene"] {
+    --u: min(100cqw / 852, 100cqh / 300);
+    --lens: 1100;
+    --oy: 196;
+    /* On a phone the table is pinned to the screen and --oy is measured from the bottom of the screen. If it
+       sat in the table row it would slide up whenever the hand grew a taller column, and the far seat's label
+       would land on the top bar. A tall hand covers the near edge of the felt instead. */
+    position: fixed;
+    --eye: 68;
+    --tilt: 58deg;
+    --k: 0.5;
+    --unk: 2;
+    --fw: 1400;
+    --fh: 480;
+    --fr: 240;
+    --rw: 1456;
+    --rh: 536;
+    --rr: 268;
+    --iw: 1344;
+    --ih: 424;
+    --ir: 212;
+    --print-y: -20;
+    --zx: 312;
+    --zy: 60;
+    --my: 110;
+    --ty: -60;
+    --lpitch: 40;
+    --ls: 1.3;
+    --bs: 1.1;
+    --prop: -30deg;
+    --tag-dy: 18;
+    --tag-z: 14;
+    --fx: 560;
+    --fy: 10;
+    --ft: 50deg;
+    --py: -185;
+    --cx: 600;
+    --cy: 60;
+    --cz: 120;
+    --pcx: -235;
+    --pcy: -140;
+    --pcz: 0;
+    --hy: 413;
+    --hz: -57;
+    --lean: -48deg;
+  }
+  [data-view="3d"] [data-slot="topbar"] {
+    padding: 2px 8px 0;
+    gap: 2px 8px;
+  }
+  [data-view="3d"] [data-slot="controls"] {
+    --cw: clamp(36px, 7cqw, 62px);
+    padding: 0 8px 4px 6px;
+  }
+  [data-view="3d"] [data-slot="hand"] {
+    min-height: 0;
+    padding-top: calc(var(--cw) * 0.3);
+  }
+  [data-view="3d"] [data-slot="hand-column"] {
+    --peek: 0.28;
+    flex: 0 1 calc(var(--cw) * 0.7);
+  }
+  [data-view="3d"] [data-slot="hand-column"]:has([data-card]:nth-of-type(5)) {
+    --peek: 0.2;
+  }
+  [data-view="3d"] [data-slot="hand-column"]:has([data-card]:nth-of-type(7)) {
+    --peek: 0.14;
+  }
+  [data-view="3d"] [data-slot="controls"] [data-variant="pass"],
+  [data-view="3d"] [data-slot="controls"] [data-variant="hint"],
+  [data-view="3d"] [data-slot="controls"] [data-variant="play"] {
+    min-height: 40px;
+    font-size: 15px;
+  }
+  [data-view="3d"] [data-slot="turn-note"] {
+    position: absolute;
+    right: 8px;
+    bottom: 100%;
+    max-width: 46cqw;
+    font-size: 12px;
+  }
+  [data-view="3d"] [data-slot="tools"] {
+    border-radius: 12px;
+    padding: 4px;
+  }
+  [data-view="3d"] [data-slot="tracker"] {
+    grid-template-columns: repeat(16, 19px);
+    padding: 1px 5px;
+  }
+  [data-view="3d"] [data-slot="tracker"] dt {
+    font-size: 11px;
+  }
+  [data-view="3d"] [data-slot="tracker"] dd {
+    font-size: 14px;
+  }
+  [data-view="3d"] [data-slot="top-middle"]:has([data-slot="tracker"])::before {
+    content: none;
+  }
+  [data-view="3d"] [data-slot="menu"] {
+    gap: 2px;
+  }
+  [data-view="3d"] [data-slot="menu"] [data-variant="text"] {
+    padding: 0 7px;
+  }
+  /* Only what needs saying now fits here: an illegal play, or the hint. The rest is in the coach drawer. */
+  [data-view="3d"] [data-slot="bubble"] {
+    top: 2px;
+    left: 50%;
+    right: auto;
+    width: max-content;
+    max-width: 70cqw;
+    padding: 0;
+    border: 0;
+    background: none;
+    transform: translateX(-50%);
+  }
+  [data-view="3d"] [data-slot="bubble"] > p[role="status"]:first-child {
+    display: none;
+  }
+  [data-view="3d"] [data-slot="notice"] {
+    padding: 3px 12px;
+    border-radius: 12px;
+    background: var(--hud);
+    font-size: 12px;
+  }
+  [data-view="3d"] [data-slot="notice"]::before {
+    display: inline;
+    margin-right: 6px;
+  }
+}
+
+/* ---- Phone upright: a tall table ---- */
+@media (max-width: 620px) {
+  [data-view="3d"] [data-slot="scene"] {
+    --u: min(100cqw / 393, 100cqh / 745);
+    --lens: 1200;
+    --oy: 419;
+    position: fixed;
+    --eye: 136;
+    --tilt: 40deg;
+    --k: 0.5;
+    --unk: 2;
+    --fw: 640;
+    --fh: 860;
+    --fr: 160;
+    --rw: 696;
+    --rh: 916;
+    --rr: 188;
+    --iw: 584;
+    --ih: 804;
+    --ir: 132;
+    --print-y: -90;
+    --zx: 150;
+    --zy: 150;
+    --my: 278;
+    --ty: -160;
+    --lpitch: 40;
+    --ls: 1.25;
+    --bs: 1.05;
+    --bp: 54;
+    --prop: -22deg;
+    --tag-dy: 18;
+    --tag-z: 14;
+    --fx: 255;
+    --fy: -120;
+    --ft: 50deg;
+    --py: -350;
+    --cx: 250;
+    --cy: 30;
+    --cz: 100;
+    --pcx: 215;
+    --pcy: -280;
+    --pcz: 100;
+    --hy: 753;
+    --hz: -224;
+    --lean: -30deg;
+  }
+  [data-view="3d"] [data-slot="topbar"] {
+    padding: 4px 8px 0;
+    gap: 2px 6px;
+    justify-content: space-between;
+  }
+  [data-view="3d"] [data-slot="top-middle"] {
+    order: 3;
+    flex: 1 0 100%;
+  }
+  [data-view="3d"] [data-slot="top-middle"]:has([data-slot="tracker"])::before {
+    content: none;
+  }
+  [data-view="3d"] [data-slot="tracker"] {
+    width: 100%;
+    grid-template-columns: repeat(16, minmax(0, 1fr));
+    padding: 2px 4px;
+  }
+  [data-view="3d"] [data-slot="tracker"] dt {
+    font-size: 11px;
+  }
+  [data-view="3d"] [data-slot="tracker"] dd {
+    font-size: 15px;
+  }
+  [data-view="3d"] [data-slot="controls"] {
+    --cw: clamp(40px, 13.7cqw, 58px);
+    padding: 0 8px;
+  }
+  [data-view="3d"] [data-slot="hand"] {
+    min-height: calc(var(--cw) * 2.4);
+  }
+  /* Columns overlap sideways here, so the index of a covered card must fit in under half a card: a 10 is the widest. */
+  [data-view="3d"] [data-slot="hand-column"] {
+    --peek: 0.31;
+    --index-left: 3;
+    --index-size: 22;
+    flex: 0 1 calc(var(--cw) * 0.46);
+  }
+  [data-view="3d"] [data-slot="hand-column"]:has([data-card]:nth-of-type(6)) {
+    --peek: 0.2;
+  }
+  /* The coach's line above the table already says whose turn it is, and my own plays need this strip. */
+  [data-view="3d"] [data-slot="turn-note"] {
+    display: none;
+  }
+  [data-view="3d"] [data-slot="tools"] {
+    border: 0;
+    border-radius: 0;
+    background: none;
+    padding: 0;
+  }
+  /* The coach line sits over the far end of the table, clear of the plays nearer the player. */
+  [data-view="3d"] [data-slot="bubble"] {
+    top: 2px;
+    left: 8px;
+    right: 8px;
+    width: auto;
+    padding: 4px 12px;
+    font-size: 12px;
+    line-height: 1.4;
+  }
+  [data-view="3d"] [data-slot="bubble"] strong {
+    display: inline;
+    margin-right: 0.6em;
+    color: #f0c869;
+  }
+  [data-view="3d"] [data-slot="bubble"] strong::after {
+    content: none;
+  }
+  [data-view="3d"] [data-slot="notice"]::before {
+    display: inline;
+    margin-right: 6px;
+  }
+}
+
+/* A short upright phone has little room between the top bar and the hand, so the camera drops lower:
+   the table gets flatter on screen and can stay nearly as wide as the phone. */
+@media (max-width: 620px) and (max-height: 640px) {
+  [data-view="3d"] [data-slot="scene"] {
+    --u: min(100cqw / 393, 100cqh / 500);
+    --tilt: 58deg;
+    --oy: 342;
+    --eye: 100;
+    --pcy: -150;
+    --pcz: 30;
+    --cx: 232;
+    --cy: 185;
+    --cz: 20;
+    --zy: 50;
+    --my: 158;
+    --ty: -110;
+  }
+  /* One line for the coach here, so the far seat's label and plays fit under it. The drawer has the rest. */
+  [data-view="3d"] [data-slot="bubble"] > p[role="status"]:first-child {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+}
+
+/* Both phone layouts: seat labels shrink to one line, the seat's initial and the cards it has left. */
+@media (max-width: 620px), (max-height: 480px) {
+  [data-view="3d"] [data-slot="seat3d"] [data-slot="player"] {
+    width: 116px;
+    height: 34px;
+    margin: -17px 0 0 -58px;
+    display: flex;
+    flex-direction: row;
+    gap: 6px;
+    padding: 0 9px 0 5px;
+    border-radius: 17px;
+  }
+  [data-view="3d"] [data-slot="seat3d"] [data-slot="avatar"] {
+    width: 24px;
+    height: 24px;
+    font-size: 12px;
+  }
+  [data-view="3d"] [data-slot="seat3d"] [data-slot="player-name"] {
+    display: none;
+  }
+  [data-view="3d"] [data-slot="seat3d"] [data-slot="count"],
+  [data-view="3d"] [data-slot="seat3d"] [data-slot="place"] {
+    color: var(--cream);
+    font-size: 13px;
+  }
+  [data-view="3d"] [data-slot="play-tag"],
+  [data-view="3d"] [data-slot="seat3d"] [data-slot="pass-mark"] {
+    width: 64px;
+    height: 26px;
+    margin: -13px 0 0 -32px;
+    font-size: 13px;
+  }
+  [data-view="3d"] [data-slot="seat3d"] [data-slot="pass-mark"] {
+    --tag-dy: -30;
+    --tag-z: 30;
+  }
+}
+
+/* ---- A bomb: its cards fall from above and lie wider and larger, the felt flashes, rings and sparks fly out ---- */
+[data-view="3d"] [data-slot="play-zone"][data-bomb] [data-card] {
+  /* --t runs from -1 at the first card to 1 at the last */
+  --t: calc((var(--i) * 2 - var(--n) + 1) / (var(--n) - 1));
+  --rest: translate3d(
+      calc((var(--play-x) + var(--t) * min(var(--bp) * (var(--n) - 1) / 2, 165)) * var(--u)),
+      calc((var(--play-y) + var(--t) * var(--t) * 10) * var(--u)),
+      calc((7 + var(--i)) * var(--u))
+    )
+    rotateX(var(--prop)) rotateZ(calc(var(--t) * 10deg)) scale(calc(var(--ls) * var(--bs)));
+  --from: translate3d(calc(var(--play-x) * var(--u)), calc((var(--play-y) + 190) * var(--u)), calc(460 * var(--u)))
+    rotateX(-48deg) rotateZ(calc(var(--t) * 30deg)) scale(1.7);
+  transform: var(--rest);
+  box-shadow: 0 0 0 2px #f0c869, 0 2px 0 #cfc8b8, 0 10px 18px rgb(0 0 0 / 0.5);
+  animation: slam 780ms cubic-bezier(0.55, 0, 0.85, 0.45) backwards;
+  animation-delay: calc(var(--i) * 70ms);
+}
+
+/* The cards land 480ms in. Everything below waits for that, and so does the shake in Table3D.tsx. */
+@keyframes slam {
+  from {
+    transform: var(--from);
+    opacity: 0;
+  }
+  16% {
+    opacity: 1;
+  }
+  62% {
+    transform: var(--rest);
+  }
+  79% {
+    transform: var(--rest) translateZ(calc(15 * var(--u))) rotateX(-4deg);
+  }
+}
+
+/* The flash and the rings lie on the tabletop. The sparks leave it, so they are the only parts in 3D. */
+[data-view="3d"] [data-slot="tabletop"] > [data-slot="flash"],
+[data-view="3d"] [data-slot="tabletop"] > [data-slot="ring"] {
+  --at: translate(calc(var(--play-x) * var(--u)), calc((var(--play-y) - 66) * var(--u)));
+  opacity: 0;
+  transform: var(--at);
+}
+
+[data-view="3d"] [data-slot="flash"] {
+  width: calc(520 * var(--u));
+  height: calc(330 * var(--u));
+  margin: calc(-165 * var(--u)) 0 0 calc(-260 * var(--u));
+  background: radial-gradient(ellipse, rgb(255 214 120 / 0.85), rgb(255 170 60 / 0.35) 38%, rgb(255 170 60 / 0) 70%);
+  animation: flash 1s ease-out 480ms both;
+}
+
+[data-view="3d"] [data-slot="tabletop"] > [data-slot="ring"] {
+  --to: var(--at) scale(3.6);
+  width: calc(200 * var(--u));
+  height: calc(200 * var(--u));
+  margin: calc(-100 * var(--u));
+  border: calc(5 * var(--u)) solid rgb(255 224 150 / 0.9);
+  border-radius: 50%;
+  transform: var(--at) scale(0.25);
+  animation: burst 1080ms ease-out calc(480ms + var(--i) * 130ms);
+}
+
+[data-view="3d"] [data-slot="spark"] {
+  --to: translate3d(
+      calc((var(--play-x) + var(--dx)) * var(--u)),
+      calc((var(--play-y) - 66 + var(--dy)) * var(--u)),
+      calc(var(--dz) * var(--u))
+    )
+    rotateZ(calc(var(--i) * 47deg)) scale(0.35);
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: calc(9 * var(--u));
+  height: calc(9 * var(--u));
+  margin: calc(-4.5 * var(--u));
+  background: #f0c869;
+  opacity: 0;
+  transform: translate3d(calc(var(--play-x) * var(--u)), calc((var(--play-y) - 66) * var(--u)), calc(12 * var(--u)));
+  animation: burst 1250ms cubic-bezier(0.1, 0.7, 0.3, 1) calc(480ms + var(--wait) * 1ms);
+}
+
+[data-view="3d"] [data-slot="spark"]:nth-child(3n) {
+  background: #fff3cf;
+}
+
+@keyframes flash {
+  12% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.3;
+  }
+}
+
+@keyframes burst {
+  from {
+    opacity: 1;
+  }
+  to {
+    transform: var(--to);
+    opacity: 0;
+  }
+}
+
+/* The banner and the ladder of bombs show for two seconds, then fade. They are drawn over the table, not on it. */
+[data-view="3d"] [data-slot="bomb-moment"] {
+  display: contents;
+}
+
+[data-view="3d"] [data-slot="bomb-banner"],
+[data-view="3d"] [data-slot="bomb-ladder"] {
+  position: absolute;
+  z-index: 2;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  pointer-events: none;
+  animation: show 2200ms 480ms both;
+}
+
+[data-view="3d"] [data-slot="bomb-banner"] {
+  left: 0;
+  right: 0;
+  top: 21%;
+  align-items: center;
+  gap: 6px;
+  animation-name: pop;
+  animation-timing-function: cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+[data-view="3d"] [data-slot="bomb-banner"] b {
+  margin-right: -0.11em;
+  color: #ffe9ae;
+  font-size: clamp(30px, min(6.6cqw, 22cqh), 84px);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0.11em;
+  text-shadow: 0 0.055em 0 #7a4410, 0 0 0.48em rgb(255 180 70 / 0.75);
+}
+
+[data-view="3d"] [data-slot="bomb-banner"] span {
+  padding: 4px 14px;
+  border-radius: 14px;
+  background: var(--hud);
+  color: #f6e7c4;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+[data-view="3d"] [data-slot="bomb-ladder"] {
+  left: 20px;
+  top: 8px;
+  box-sizing: border-box;
+  width: 192px;
+  gap: 5px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgb(255 255 255 / 0.12);
+  background: #100c0a;
+  color: var(--cream-soft);
+  font-size: 12px;
+}
+
+[data-view="3d"] [data-slot="bomb-ladder"] ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  color: var(--cream);
+  font-size: 13px;
+}
+
+[data-view="3d"] [data-slot="bomb-ladder"] li {
+  display: flex;
+  justify-content: space-between;
+  padding: 3px 8px;
+  border-radius: 7px;
+}
+
+[data-view="3d"] [data-slot="bomb-ladder"] li[data-current] {
+  background: var(--brass);
+  color: #23170a;
+  font-weight: 700;
+}
+
+/* The banner lies over the far seat's tag, so that tag waits until the moment is over. */
+[data-view="3d"] [data-slot="table"]:has([data-slot="bomb-moment"]) [data-side="top"] > [data-slot="play-tag"],
+[data-view="3d"] [data-slot="table"]:has([data-slot="bomb-moment"]) [data-side="top"] > [data-slot="pass-mark"] {
+  visibility: hidden;
+}
+
+@keyframes pop {
+  from {
+    transform: scale(2.1);
+    opacity: 0;
+  }
+  15% {
+    transform: scale(0.94);
+    opacity: 1;
+  }
+  24%,
+  86% {
+    transform: none;
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes show {
+  from,
+  to {
+    opacity: 0;
+  }
+  12%,
+  86% {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 899px), (max-height: 480px) {
+  [data-view="3d"] [data-slot="bomb-ladder"] {
+    display: none;
+  }
+}
+
+/* A short screen has room for the name only, above the play it names. */
+@media (max-height: 640px) {
+  [data-view="3d"] [data-slot="bomb-banner"] {
+    top: 0;
+  }
+  [data-view="3d"] [data-slot="bomb-banner"] span {
+    display: none;
+  }
+}
+
+/* On a short upright phone the coach's line is at the top of the table, so the name goes under it. */
+@media (max-width: 620px) and (max-height: 640px) {
+  [data-view="3d"] [data-slot="bomb-banner"] {
+    top: 34px;
+  }
+}
+
+/* On a desktop the tag stands above the play, and a bomb's cards are taller. */
+@media (min-width: 900px) and (min-height: 481px) {
+  [data-view="3d"] [data-slot="play-zone"][data-bomb] {
+    --tag-dy: -152;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-view="3d"] [data-slot="world"],
+  [data-view="3d"] [data-slot="fan-card"],
+  [data-view="3d"] [data-slot="glow"],
+  [data-view="3d"] [data-slot="seat3d"] [data-slot="player"],
+  [data-view="3d"] [data-slot="play-tag"],
+  [data-view="3d"] [data-slot="seat3d"] [data-slot="pass-mark"] {
+    transition: none;
+  }
+  [data-view="3d"] [data-slot="seat3d"] [data-card],
+  [data-view="3d"] [data-slot="play-zone"][data-bomb] [data-card] {
+    animation: none;
+  }
+  [data-view="3d"] [data-slot="tabletop"] > [data-slot="ring"],
+  [data-view="3d"] [data-slot="spark"] {
+    display: none;
+  }
+  [data-view="3d"] [data-slot="bomb-banner"] {
+    animation-name: show;
+  }
+}

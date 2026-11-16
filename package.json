@@ -29,6 +29,7 @@
     "check": "npm run lint && npm run check:conventions && npm test && npm run build && npm run check:bundle"
   },
   "dependencies": {
+    "@fontsource/barlow-condensed": "^5.3.0",
     "@ui-sdk/core": "^0.1.0-beta.1",
     "@ui-sdk/react": "^0.1.0-beta.1",
     "react": "^19.3.1",

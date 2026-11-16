@@ -1,5 +1,6 @@
 import { bombPower, describeCombo, legalPlays } from "../engine/combos"
-import type { GameState } from "../engine/game"
+import type { Combo } from "../engine/combos"
+import type { GameState, PlayRecord } from "../engine/game"
 import { HUMAN, SEAT_NAMES, TEAM_NAMES } from "./names"
 
 interface Situation {
@@ -52,4 +53,29 @@ export function describeSituation(game: GameState, myTurn: boolean, mustReturn: 
   }
   const short = `${table}你有 ${options.length} 种压法${bombs > 0 ? `，其中 ${bombs} 种要用炸弹` : ""}。`
   return { plain, short, long: `${short}先自己想，再点“提示”对照。` }
+}
+
+/** The one-line status above the action buttons of the 3D table. */
+export function turnNote(game: GameState, myTurn: boolean, mustReturn: boolean): string {
+  if (game.phase === "return") return mustReturn ? "请还贡" : "等待还贡"
+  if (game.phase !== "play") return "本局结束"
+  if (!myTurn) return game.finished.includes(HUMAN) ? "你已出完牌" : `等${SEAT_NAMES[game.turn]}出牌`
+  if (!game.lastPlay) return "轮到你首出"
+  return `轮到你 · 要压过${SEAT_NAMES[game.lastPlay.player]}的${describeCombo(game.lastPlay.combo, game.level)}`
+}
+
+/**
+ * The line under a bomb's banner: who played it and what it beat. It is read from the hand's log, not from the
+ * table, because the table changes as the others pass and the line must not.
+ */
+export function bombNote(bomb: { player: number; combo: Combo }, log: PlayRecord[], level: number): string {
+  const who = SEAT_NAMES[bomb.player]
+  const what = describeCombo(bomb.combo, level)
+  for (let at = log.findIndex((record) => record.combo === bomb.combo) - 1; at >= 0; at--) {
+    const before = log[at]
+    // Reaching the bomber's own last move first means everyone else passed in between: the bomb opened a trick.
+    if (before.player === bomb.player) break
+    if (before.combo) return `${who}出${what}，压过${SEAT_NAMES[before.player]}的${describeCombo(before.combo, level)}`
+  }
+  return `${who}领出${what}`
 }
