@@ -1,5 +1,7 @@
-# Dependabot opens pull requests that update dependencies. CI decides whether an update is safe;
-# a person still merges it. The prefixes keep its titles valid Conventional Commits (see CONTRIBUTING.md).
+# Dependabot opens pull requests that update dependencies. CI decides whether an update is safe.
+# Minor and patch updates then merge on their own (.github/workflows/dependabot-auto-merge.yml);
+# a person reads and merges a major one. The prefixes keep its titles valid Conventional Commits
+# (see CONTRIBUTING.md).
 version: 2
 updates:
   - package-ecosystem: npm
@@ -10,10 +12,20 @@ updates:
     open-pull-requests-limit: 5
     commit-message:
       prefix: chore(deps)
+    # Wait before proposing a new release, so one that is broken or malicious is usually withdrawn first.
+    # Security updates do not wait.
+    cooldown:
+      default-days: 7
+      semver-major-days: 14
     groups:
       # One pull request a week for everything that should be safe; major versions come one at a time.
       npm:
         update-types: [minor, patch]
+    ignore:
+      # These types describe the Node version in .nvmrc. Raise them by hand in the pull request that raises
+      # Node, not before: a newer major would describe features the project's Node does not have.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: /
@@ -22,6 +34,8 @@ updates:
       day: monday
     commit-message:
       prefix: ci(deps)
+    cooldown:
+      default-days: 7
     groups:
       actions:
         patterns: ["*"]

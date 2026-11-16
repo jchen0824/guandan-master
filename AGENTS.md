@@ -126,7 +126,7 @@ Suppressing a lint rule needs a reason on the same line: `// oxlint-disable-next
 - Check a UI change at about 375×550, 852×300 and 1280×720, on both tables if it touches something they share (the hand, buttons, tools, top bar or dialogs). When testing in a browser, open the dev server as `http://qa.localhost:<port>` instead of `localhost`: it is the same server with separate storage, so test saves and settings do not leak into a real session.
 - UI tests start with `// @vitest-environment jsdom` on the first line. Engine tests run in plain Node and must stay that way.
 - Browser tests live in `e2e/` and run under Playwright against the production build. `e2e/page-tools.js` holds the layout probe; the browser-qa skill uses the same file for hands-on checks, so change it in one place.
-- Dependabot opens weekly pull requests for npm packages and GitHub Actions (`.github/dependabot.yml`). They go through the same CI; merge them like any other pull request.
+- Dependabot opens weekly pull requests for npm packages and GitHub Actions (`.github/dependabot.yml`). They go through the same CI. A minor or patch update merges on its own once the required checks pass (`.github/workflows/dependabot-auto-merge.yml`); a major one waits for the maintainer. `@types/node` majors are ignored: raise them by hand together with `.nvmrc`.
 
 ## Done means
 

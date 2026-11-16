@@ -1,0 +1,42 @@
+name: Dependabot auto-merge
+
+# Turns on GitHub's auto-merge for Dependabot pull requests that make only minor or patch updates.
+# GitHub then merges the pull request when the three required checks in ci.yml have passed on a branch
+# that is up to date with main, and not before. A major update is left for a person to read and merge.
+#
+# This needs "Allow auto-merge" switched on in the repository settings. A merge made this way is done with
+# the workflow's own token, so it does not start the workflows that run on a push to main.
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    name: dependabot-auto-merge
+    # Both must be Dependabot: the author of the pull request and whoever pushed the commit being looked at.
+    if: >-
+      github.event.pull_request.user.login == 'dependabot[bot]' &&
+      github.actor == 'dependabot[bot]' &&
+      github.repository == 'jchen0824/guandan-master'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Read what the update changes
+        id: metadata
+        uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3.1.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      # For a grouped pull request `update-type` is the largest change in the group.
+      - name: Let GitHub merge it when the required checks pass
+        if: >-
+          steps.metadata.outputs.update-type == 'version-update:semver-minor' ||
+          steps.metadata.outputs.update-type == 'version-update:semver-patch'
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh pr merge --auto --squash "$PR_URL"
