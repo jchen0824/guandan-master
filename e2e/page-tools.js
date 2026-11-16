@@ -112,6 +112,23 @@
       if (hit) problems.push(`the ${name(tool)} tool overlaps the card ${name(hit)}`)
     }
 
+    // On the 3D table every label floats over the scene, so only this check keeps one from landing on another.
+    if (document.querySelector('[data-view="3d"]')) {
+      const faint = (el) => {
+        for (let node = el; node; node = node.parentElement) if (Number(getComputedStyle(node).opacity) < 0.3) return true
+        return false
+      }
+      const labels = all(
+        '[data-layer="labels"] [data-slot="player"], [data-slot="play-tag"], [data-slot="pass-mark"], [data-slot="turn-note"], [data-slot="bubble"], [data-slot="score-panel"], [data-slot="bomb-banner"] > *, [data-slot="tracker"], [data-slot="brand"], [data-slot="menu"] > *, [data-slot="pills"] button',
+      ).filter((el) => !faint(el))
+      const cross = (a, b) => Math.min(a.right, b.right) - Math.max(a.left, b.left) > 3 && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 3
+      labels.forEach((a, i) => {
+        for (const b of labels.slice(i + 1)) {
+          if (!a.contains(b) && !b.contains(a) && cross(box(a), box(b))) problems.push(`the label ${name(a)} overlaps ${name(b)}`)
+        }
+      })
+    }
+
     const table = all('[data-slot="table"]')[0]
     if (table && box(table).height < MIN_TABLE_HEIGHT) {
       problems.push(`the table is squeezed to ${Math.round(box(table).height)}px high`)

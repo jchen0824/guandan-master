@@ -2547,7 +2547,11 @@ button {
   [data-view="3d"] [data-slot="scene"] {
     --u: min(100cqw / 852, 100cqh / 300);
     --lens: 1100;
-    --oy: 30;
+    --oy: 196;
+    /* On a phone the table is pinned to the screen and --oy is measured from the bottom of the screen. If it
+       sat in the table row it would slide up whenever the hand grew a taller column, and the far seat's label
+       would land on the top bar. A tall hand covers the near edge of the felt instead. */
+    position: fixed;
     --eye: 68;
     --tilt: 58deg;
     --k: 0.5;
@@ -2562,7 +2566,7 @@ button {
     --ih: 424;
     --ir: 212;
     --print-y: -20;
-    --zx: 330;
+    --zx: 312;
     --zy: 60;
     --my: 110;
     --ty: -60;
@@ -2579,9 +2583,9 @@ button {
     --cx: 600;
     --cy: 60;
     --cz: 120;
-    --pcx: 330;
-    --pcy: -185;
-    --pcz: 40;
+    --pcx: -235;
+    --pcy: -140;
+    --pcz: 0;
     --hy: 413;
     --hz: -57;
     --lean: -48deg;
@@ -2676,7 +2680,8 @@ button {
   [data-view="3d"] [data-slot="scene"] {
     --u: min(100cqw / 393, 100cqh / 745);
     --lens: 1200;
-    --oy: 150;
+    --oy: 419;
+    position: fixed;
     --eye: 136;
     --tilt: 40deg;
     --k: 0.5;
@@ -2693,7 +2698,7 @@ button {
     --print-y: -90;
     --zx: 150;
     --zy: 150;
-    --my: 290;
+    --my: 278;
     --ty: -160;
     --lpitch: 40;
     --ls: 1.25;
@@ -2711,7 +2716,7 @@ button {
     --cz: 100;
     --pcx: 215;
     --pcy: -280;
-    --pcz: 130;
+    --pcz: 100;
     --hy: 753;
     --hz: -224;
     --lean: -30deg;
@@ -2756,9 +2761,9 @@ button {
   [data-view="3d"] [data-slot="hand-column"]:has([data-card]:nth-of-type(6)) {
     --peek: 0.2;
   }
+  /* The coach's line above the table already says whose turn it is, and my own plays need this strip. */
   [data-view="3d"] [data-slot="turn-note"] {
-    align-self: center;
-    font-size: 12px;
+    display: none;
   }
   [data-view="3d"] [data-slot="tools"] {
     border: 0;
@@ -2796,15 +2801,22 @@ button {
   [data-view="3d"] [data-slot="scene"] {
     --u: min(100cqw / 393, 100cqh / 500);
     --tilt: 58deg;
-    --oy: 96;
+    --oy: 342;
     --eye: 100;
     --pcy: -150;
-    --pcz: 110;
-    --cy: 60;
-    --cz: 80;
-    --zy: 90;
-    --my: 240;
+    --pcz: 30;
+    --cx: 232;
+    --cy: 185;
+    --cz: 20;
+    --zy: 50;
+    --my: 158;
     --ty: -110;
+  }
+  /* One line for the coach here, so the far seat's label and plays fit under it. The drawer has the rest. */
+  [data-view="3d"] [data-slot="bubble"] > p[role="status"]:first-child {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
   }
 }
 
@@ -2979,7 +2991,7 @@ button {
 [data-view="3d"] [data-slot="bomb-banner"] b {
   margin-right: -0.11em;
   color: #ffe9ae;
-  font-size: clamp(30px, min(7.2cqw, 22cqh), 92px);
+  font-size: clamp(30px, min(6.6cqw, 22cqh), 84px);
   font-weight: 900;
   line-height: 1;
   letter-spacing: 0.11em;
@@ -3033,6 +3045,12 @@ button {
   font-weight: 700;
 }
 
+/* The banner lies over the far seat's tag, so that tag waits until the moment is over. */
+[data-view="3d"] [data-slot="table"]:has([data-slot="bomb-moment"]) [data-side="top"] > [data-slot="play-tag"],
+[data-view="3d"] [data-slot="table"]:has([data-slot="bomb-moment"]) [data-side="top"] > [data-slot="pass-mark"] {
+  visibility: hidden;
+}
+
 @keyframes pop {
   from {
     transform: scale(2.1);
@@ -3082,7 +3100,7 @@ button {
 /* On a short upright phone the coach's line is at the top of the table, so the name goes under it. */
 @media (max-width: 620px) and (max-height: 640px) {
   [data-view="3d"] [data-slot="bomb-banner"] {
-    top: 30px;
+    top: 34px;
   }
 }
 

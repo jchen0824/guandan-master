@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, fireEvent, render, screen, within } from "@testing-library/react"
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { App } from "./App"
 
@@ -40,6 +40,8 @@ function playToTheEnd() {
 beforeEach(() => {
   vi.useFakeTimers()
   vi.spyOn(Math, "random").mockImplementation(seeded(5))
+  // Most tests here are about the flat table. The 3D ones say so.
+  localStorage.setItem("guandan.view", "2d")
 })
 
 afterEach(() => {
@@ -152,9 +154,14 @@ describe("the 3D table", () => {
   const board = () => document.querySelector('[data-slot="app"]')
   const backs = (seat: string) => screen.getByRole("region", { name: seat }).querySelectorAll('[data-slot="fan-card"]')
 
-  it("starts on the flat table and switches from the top bar", () => {
+  it("gives a new player the 3D table and switches from the top bar", () => {
+    localStorage.removeItem("guandan.view")
     render(<App />)
+    expect(board()?.getAttribute("data-view")).toBe("3d")
+
+    fireEvent.click(screen.getByRole("radio", { name: "2D" }))
     expect(board()?.getAttribute("data-view")).toBe("2d")
+    expect(localStorage.getItem("guandan.view")).toBe("2d")
     expect(document.querySelector('[data-slot="scene"]')).toBeNull()
 
     fireEvent.click(screen.getByRole("radio", { name: "3D" }))
@@ -168,7 +175,10 @@ describe("the 3D table", () => {
     expect(localStorage.getItem("guandan.view")).toBe("2d")
   })
 
-  it("opens on the 3D table when that was the last choice", () => {
+  it("opens on the table that was the last choice", () => {
+    render(<App />)
+    expect(board()?.getAttribute("data-view")).toBe("2d")
+    cleanup()
     localStorage.setItem("guandan.view", "3d")
     render(<App />)
     expect(board()?.getAttribute("data-view")).toBe("3d")

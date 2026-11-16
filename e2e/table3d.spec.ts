@@ -32,10 +32,10 @@ test("a fresh deal fits the screen on the 3D table", async ({ page }) => {
 test("the fans are painted standing in front of the table", async ({ page, browserName }) => {
   // The layout probe reads positions, and positions cannot tell whether a browser paints one surface over
   // another. Chrome has painted the tabletop over the fans. So this test looks at the pixels where the middle
-  // card of the far fan should be.
+  // card of a fan should be. It is the left fan because the far one is behind the top bar on a short phone.
   test.skip(browserName === "webkit", "Playwright's WebKit paints every 3D scene flat in a screenshot; record a video to look at it")
   await openGame(page, { view: "3d" })
-  const card = page.locator('[data-slot="seat3d"][data-side="top"] [data-slot="fan-card"]').nth(13)
+  const card = page.locator('[data-slot="seat3d"][data-side="left"] [data-slot="fan-card"]').nth(13)
   const box = (await card.boundingBox())!
   const clip = { x: box.x + box.width * 0.3, y: box.y + box.height * 0.3, width: box.width * 0.4, height: box.height * 0.4 }
   const shot = (await page.screenshot({ clip })).toString("base64")
@@ -54,7 +54,7 @@ test("the fans are painted standing in front of the table", async ({ page, brows
     for (let at = 0; at < data.length; at += 4) if (data[at] > data[at + 1] * 2 + 20) count++
     return count / (data.length / 4)
   }, shot)
-  expect(red, "share of card-back red where the far fan's middle card should be").toBeGreaterThan(0.3)
+  expect(red, "share of card-back red where the left fan's middle card should be").toBeGreaterThan(0.3)
 })
 
 test("a whole hand can be played on the 3D table", async ({ page }) => {
@@ -122,6 +122,12 @@ test("cards can be picked and gathered into a pile on the 3D table", async ({ pa
   await page.getByRole("button", { name: "理牌", exact: true }).click()
   await expect(page.locator('[data-slot="hand-column"][data-custom]')).toHaveCount(1)
   await expectLayoutToHold(page, "with a pile")
+})
+
+test("a new player starts on the 3D table", async ({ page }) => {
+  await openGame(page, { view: "new player" })
+  await expect(page.locator('[data-slot="app"]')).toHaveAttribute("data-view", "3d")
+  await expectLayoutToHold(page, "on a first visit")
 })
 
 test("the switch moves between the two tables and the choice is kept", async ({ page }) => {

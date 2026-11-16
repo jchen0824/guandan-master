@@ -317,7 +317,7 @@ function App() {
             <>
               <Table3D game={game} table={g.table} />
               <ScorePanel game={game} />
-              <BombMoment game={game} table={g.table} />
+              <BombMoment game={game} />
               {bubble}
             </>
           ) : (

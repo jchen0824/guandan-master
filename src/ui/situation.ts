@@ -64,12 +64,18 @@ export function turnNote(game: GameState, myTurn: boolean, mustReturn: boolean):
   return `轮到你 · 要压过${SEAT_NAMES[game.lastPlay.player]}的${describeCombo(game.lastPlay.combo, game.level)}`
 }
 
-/** The line under a bomb's banner: who played it and what it beat. The play it beat is the nearest one before it in turn order. */
-export function bombNote(bomb: { player: number; combo: Combo }, table: (PlayRecord | null)[], level: number): string {
+/**
+ * The line under a bomb's banner: who played it and what it beat. It is read from the hand's log, not from the
+ * table, because the table changes as the others pass and the line must not.
+ */
+export function bombNote(bomb: { player: number; combo: Combo }, log: PlayRecord[], level: number): string {
+  const who = SEAT_NAMES[bomb.player]
   const what = describeCombo(bomb.combo, level)
-  for (let back = 1; back < 4; back++) {
-    const before = table[(bomb.player + 4 - back) % 4]
-    if (before?.combo) return `${SEAT_NAMES[bomb.player]}出${what}，压过${SEAT_NAMES[before.player]}的${describeCombo(before.combo, level)}`
+  for (let at = log.findIndex((record) => record.combo === bomb.combo) - 1; at >= 0; at--) {
+    const before = log[at]
+    // Reaching the bomber's own last move first means everyone else passed in between: the bomb opened a trick.
+    if (before.player === bomb.player) break
+    if (before.combo) return `${who}出${what}，压过${SEAT_NAMES[before.player]}的${describeCombo(before.combo, level)}`
   }
-  return `${SEAT_NAMES[bomb.player]}领出${what}`
+  return `${who}领出${what}`
 }
