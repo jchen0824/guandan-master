@@ -196,6 +196,44 @@ describe("the 3D table", () => {
     expect(counts).toEqual(["上家", "对家", "下家"].map((seat) => backs(seat).length))
   })
 
+  it("draws the suit of every hand card beside or under its rank, in one corner index", () => {
+    localStorage.setItem("guandan.view", "3d")
+    render(<App />)
+    const plain = [...hand()].filter((card) => !card.querySelector("[data-joker-name]"))
+    expect(plain.length).toBeGreaterThan(20)
+    for (const card of plain) {
+      const index = [...card.querySelectorAll('[data-slot="face-index"] > *')].map((part) => part.getAttribute("data-slot"))
+      expect(index).toEqual(["face-rank", "face-suit"])
+    }
+  })
+
+  it("gives a bomb its moment: its name, who played it, and where it ranks among bombs", () => {
+    // With this deal the player goes out on four 9s.
+    vi.spyOn(Math, "random").mockImplementation(seeded(4))
+    localStorage.setItem("guandan.view", "3d")
+    render(<App />)
+    expect(document.querySelector('[data-slot="bomb-moment"]')).toBeNull()
+    playToTheEnd()
+
+    const moment = document.querySelector('[data-slot="bomb-moment"]')
+    expect(moment?.querySelector('[data-slot="bomb-banner"] b')?.textContent).toBe("炸弹")
+    expect(moment?.querySelector('[data-slot="bomb-banner"] span')?.textContent).toMatch(/^你(领出4张9炸弹|出4张9炸弹，压过.+的.+)$/)
+    expect(moment?.querySelector("[data-current]")?.textContent).toBe("四张你刚出的")
+    const mine = screen.getByRole("region", { name: "你出的牌" })
+    expect(mine.querySelector("[data-bomb]")).toBeTruthy()
+    expect(mine.querySelectorAll('[data-slot="spark"]')).toHaveLength(16)
+    expect(document.querySelectorAll('[data-slot="tabletop"] [data-slot="ring"][data-side="me"]')).toHaveLength(3)
+  })
+
+  it("does not replay the moment for a bomb that was already on the table", () => {
+    vi.spyOn(Math, "random").mockImplementation(seeded(4))
+    render(<App />)
+    playToTheEnd()
+    fireEvent.click(screen.getByRole("radio", { name: "3D" }))
+    expect(screen.getByRole("region", { name: "你出的牌" }).querySelector("[data-bomb]")).toBeTruthy()
+    expect(document.querySelector('[data-slot="bomb-moment"]')).toBeNull()
+  })
+
   it("plays a whole hand and shows the result on request", () => {
     localStorage.setItem("guandan.view", "3d")
     render(<App />)

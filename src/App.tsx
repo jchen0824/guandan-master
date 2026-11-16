@@ -21,6 +21,7 @@ import { Coach } from "./ui/Coach"
 import { describeSituation, turnNote } from "./ui/situation"
 import { Player } from "./ui/Player"
 import { PlayLog } from "./ui/PlayLog"
+import { BombMoment } from "./ui/BombMoment"
 import { ScorePanel } from "./ui/ScorePanel"
 import { Table3D } from "./ui/Table3D"
 import { Tracker } from "./ui/Tracker"
@@ -316,6 +317,7 @@ function App() {
             <>
               <Table3D game={game} table={g.table} />
               <ScorePanel game={game} />
+              <BombMoment game={game} table={g.table} />
               {bubble}
             </>
           ) : (

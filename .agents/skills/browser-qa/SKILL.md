@@ -73,3 +73,5 @@ Say what you ran and what you saw, not that it "looks fine":
 - which sizes you looked at by hand, and which states;
 - anything the probe flagged, quoted;
 - what you could not check. A real phone is the usual one: WebKit on a desktop or CI machine is close to iPhone Safari, not identical.
+
+For the 3D table, do not judge WebKit from a screenshot: Playwright's WebKit paints every 3D scene flat in one. Record a video with `recordVideo` and look at a frame from it.

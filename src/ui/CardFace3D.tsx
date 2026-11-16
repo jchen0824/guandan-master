@@ -31,8 +31,10 @@ function CardFace3D({ card, level }: { card: Card; level: number }) {
   }
   return (
     <>
-      <span data-slot="face-rank">{rankLabel(card.rank)}</span>
-      <Pip suit={card.suit} slot="face-suit" />
+      <span data-slot="face-index">
+        <span data-slot="face-rank">{rankLabel(card.rank)}</span>
+        <Pip suit={card.suit} slot="face-suit" />
+      </span>
       <Pip suit={card.suit} slot="face-pip" />
       {isWild(card, level) ? <span data-slot="face-tag">配</span> : null}
     </>

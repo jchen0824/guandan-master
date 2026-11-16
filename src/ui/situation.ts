@@ -1,5 +1,6 @@
 import { bombPower, describeCombo, legalPlays } from "../engine/combos"
-import type { GameState } from "../engine/game"
+import type { Combo } from "../engine/combos"
+import type { GameState, PlayRecord } from "../engine/game"
 import { HUMAN, SEAT_NAMES, TEAM_NAMES } from "./names"
 
 interface Situation {
@@ -61,4 +62,14 @@ export function turnNote(game: GameState, myTurn: boolean, mustReturn: boolean):
   if (!myTurn) return game.finished.includes(HUMAN) ? "你已出完牌" : `等${SEAT_NAMES[game.turn]}出牌`
   if (!game.lastPlay) return "轮到你首出"
   return `轮到你 · 要压过${SEAT_NAMES[game.lastPlay.player]}的${describeCombo(game.lastPlay.combo, game.level)}`
+}
+
+/** The line under a bomb's banner: who played it and what it beat. The play it beat is the nearest one before it in turn order. */
+export function bombNote(bomb: { player: number; combo: Combo }, table: (PlayRecord | null)[], level: number): string {
+  const what = describeCombo(bomb.combo, level)
+  for (let back = 1; back < 4; back++) {
+    const before = table[(bomb.player + 4 - back) % 4]
+    if (before?.combo) return `${SEAT_NAMES[bomb.player]}出${what}，压过${SEAT_NAMES[before.player]}的${describeCombo(before.combo, level)}`
+  }
+  return `${SEAT_NAMES[bomb.player]}领出${what}`
 }
