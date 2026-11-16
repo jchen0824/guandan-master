@@ -1,8 +1,11 @@
 name: Dependabot auto-merge
 
 # Turns on GitHub's auto-merge for Dependabot pull requests that make only minor or patch updates.
-# GitHub then merges the pull request when the three required checks in ci.yml have passed on a branch
-# that is up to date with main, and not before. A major update is left for a person to read and merge.
+# GitHub then merges the pull request when the three required checks in ci.yml have passed, and not
+# before. A major update is left for a person to read and merge.
+#
+# The branch does not have to be up to date with main. If it did, the second of two updates opened
+# together would wait for a rebase that nobody asked for, since Dependabot rebases only on a conflict.
 #
 # This needs "Allow auto-merge" switched on in the repository settings. A merge made this way is done with
 # the workflow's own token, so it does not start the workflows that run on a push to main.

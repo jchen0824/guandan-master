@@ -26,7 +26,7 @@ npx skills add vercel-labs/ui --skill ui-sdk
 3. Commit using the format below.
 4. Open a pull request against `main` and fill in the template.
 
-`main` is protected: nobody pushes to it directly, the `quality`, `e2e` and `conventional-commits` checks must pass, and the branch must be up to date. Pull requests are squash-merged, so **the pull request title becomes the commit on `main`** and must follow the same format as a commit.
+`main` is protected: nobody pushes to it directly, and the `quality`, `e2e` and `conventional-commits` checks must pass. The branch does not have to be up to date with `main`, so rebase when your change touches the same area as one that merged after you branched. Pull requests are squash-merged, so **the pull request title becomes the commit on `main`** and must follow the same format as a commit.
 
 Keep a pull request to one purpose. A bug fix and an unrelated refactor are two pull requests.
 
