@@ -207,7 +207,8 @@
     },
     {
       "files": [
-        "scripts/**"
+        "scripts/**",
+        "e2e/ios/*.mjs"
       ],
       "rules": {
         "no-console": "off"
