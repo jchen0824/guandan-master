@@ -40,8 +40,12 @@ export const SAVE_AFTER_DOUBLE_WIN = JSON.stringify({
 })
 
 /** Runs in the page before the app starts. It needs the page tools, so both go into the page as one script. */
-function prepare({ seed, save, view }: { seed: number; save?: string; view: string }) {
+function prepare({ seed, save, view, game }: { seed: number; save?: string; view: string; game: string }) {
   window.guandanQa.seed(seed)
+  if (game !== "home" && !sessionStorage.getItem("qa-game-used")) {
+    localStorage.setItem("guandan.game", game)
+    sessionStorage.setItem("qa-game-used", "1")
+  }
   if (view !== "new player" && !sessionStorage.getItem("qa-view-used")) {
     localStorage.setItem("guandan.view", view)
     sessionStorage.setItem("qa-view-used", "1")
@@ -55,12 +59,28 @@ function prepare({ seed, save, view }: { seed: number; save?: string; view: stri
 /** Opens the game with a fixed deal and a clock the test controls, so a whole hand takes seconds. */
 /** `view` is the table to open on. It is the flat one unless a test says otherwise; "new player" leaves the choice unmade. */
 export async function openGame(page: Page, options: { seed?: number; save?: string; view?: "2d" | "3d" | "new player" } = {}) {
+  await open(page, { ...options, game: "guandan" })
+  await expect(page.getByRole("region", { name: "你的操作" })).toBeVisible()
+}
+
+/** Opens the app as a first visit does: on the home page, with no game chosen. */
+export async function openHome(page: Page, options: { seed?: number; save?: string } = {}) {
+  await open(page, { ...options, game: "home" })
+  await expect(page.getByRole("heading", { name: "今天练哪一桌？" })).toBeVisible()
+}
+
+/** Opens the Texas Hold'em table with a fixed deal and a clock the test controls. */
+export async function openHoldem(page: Page, options: { seed?: number } = {}) {
+  await open(page, { ...options, game: "holdem" })
+  await expect(page.getByRole("list", { name: /^你的手牌/ })).toBeVisible()
+}
+
+async function open(page: Page, options: { seed?: number; save?: string; view?: string; game: "guandan" | "holdem" | "home" }) {
   await page.clock.install()
   // One script, not two: Playwright does not promise the order in which separate init scripts run.
-  const settings = JSON.stringify({ seed: options.seed ?? 5, save: options.save, view: options.view ?? "2d" })
+  const settings = JSON.stringify({ seed: options.seed ?? 5, save: options.save, view: options.view ?? "2d", game: options.game })
   await page.addInitScript({ content: `${PAGE_TOOLS}\n;(${prepare.toString()})(${settings});` })
   await page.goto("/")
-  await expect(page.getByRole("region", { name: "你的操作" })).toBeVisible()
 }
 
 /**
@@ -95,6 +115,31 @@ export async function waitForNextMove(page: Page) {
     if ((await page.evaluate(() => window.guandanQa.signature())) !== before) return
     await new Promise((resolve) => setTimeout(resolve, 10))
   }
+}
+
+/** Texas Hold'em: does what the coach's advice says, and waits for the table to move on. */
+export async function followAdvice(page: Page) {
+  const before = await page.evaluate(() => window.guandanQa.signature())
+  const advice = await page.getByRole("complementary", { name: "教练" }).getByRole("heading", { name: /^建议/ }).innerText()
+  const name = advice.includes("弃牌") ? /^弃牌$/ : advice.includes("过牌") || advice.includes("跟注") ? /^(过牌|跟注)/ : /^(下注|加注到)/
+  await page.getByRole("button", { name }).click()
+  await expect.poll(() => page.evaluate(() => window.guandanQa.signature())).not.toBe(before)
+}
+
+/** Texas Hold'em: plays by the coach's advice until the hand is over. `check` runs at every decision and at the end. */
+export async function playHoldemHand(page: Page, check?: (when: string) => Promise<void>) {
+  for (let step = 0; step < 200; step++) {
+    const now = await screen(page)
+    if (now.over) {
+      if (check) await check("when the hand is over")
+      return
+    }
+    if (now.myTurn) {
+      if (check) await check(`at decision ${step}`)
+      await followAdvice(page)
+    } else await waitForNextMove(page)
+  }
+  throw new Error("the hand did not finish within 200 steps")
 }
 
 /** Plays the turn the way the coach suggests: the hinted cards, or a pass when the hint is to pass. */

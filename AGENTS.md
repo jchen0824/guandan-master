@@ -4,7 +4,7 @@ Instructions for any coding agent (and any person) changing this repository. Thi
 
 ## What this is
 
-掼蛋教练 is a single-player Guandan (掼蛋) trainer for beginners: the human plays seat 0 against three rule-based bots, with a coach that explains positions and comments on each move. It is a static Vite + React + TypeScript site with no server, database or LLM. Live at https://guandan-playground.vercel.app.
+掼蛋教练 is a single-player card-game trainer for beginners. It opens on a home page with two games. In Guandan (掼蛋) the human plays seat 0 against three rule-based bots; in Texas Hold'em (德州扑克) the human plays one of six seats against five. Both have a coach that explains positions and comments on each move. It is a static Vite + React + TypeScript site with no server, database or LLM. Live at https://guandan-playground.vercel.app.
 
 ## How to make a change
 
@@ -12,7 +12,7 @@ Follow these steps in order. Each one has a check that fails when it is skipped.
 
 1. **Branch from `main`.** Name it `<type>/<short-name>`, for example `fix/bomb-timing`. Direct pushes to `main` are blocked.
 2. **Read the skill for the area you touch** (see [Skills](#skills)). Do this before you read or write code.
-3. **Make the change, with a test.** A rule or bot change needs a test in `src/engine/engine.test.ts`; a screen change needs one in `src/App.test.tsx`, and one in `e2e/game.spec.ts` when it changes what a player can see or reach.
+3. **Make the change, with a test.** A rule or bot change needs a test in `src/engine/engine.test.ts`; a screen change needs one in `src/App.test.tsx`, and one in `e2e/game.spec.ts` when it changes what a player can see or reach. For Texas Hold'em the same three are the test beside the file in `src/holdem`, `src/ui/holdem/Holdem.test.tsx` and `e2e/holdem.spec.ts`; the home page has `src/Root.test.tsx`.
 4. **Run `npm run check`**, and `npm run test:e2e` after a screen change. Together they are the gate CI runs. Fix every failure; do not weaken a check to get past it.
 5. **Commit with a Conventional Commit message**, as [CONTRIBUTING.md](CONTRIBUTING.md) describes.
 6. **Open a pull request** and fill in the template. The title must also be a Conventional Commit, because it becomes the commit on `main`.
@@ -50,7 +50,7 @@ A skill is a folder of instructions under `.agents/skills/`. If your agent does 
 | When you touch | Read first |
 | --- | --- |
 | Game rules, bots, hints, coach text, the 记牌器, or any Chinese wording about play | [.agents/skills/guandan-play/SKILL.md](.agents/skills/guandan-play/SKILL.md) |
-| Anything under `src/ui`, `src/App.tsx` or `src/index.css` | [.agents/skills/guandan-ui/SKILL.md](.agents/skills/guandan-ui/SKILL.md), then the `ui-sdk` skill it points to |
+| Anything under `src/ui`, `src/App.tsx`, `src/Root.tsx`, `src/index.css` or `src/holdem.css` | [.agents/skills/guandan-ui/SKILL.md](.agents/skills/guandan-ui/SKILL.md), then the `ui-sdk` skill it points to |
 | Checking a screen change, reproducing a layout bug, or a failing browser test | [.agents/skills/browser-qa/SKILL.md](.agents/skills/browser-qa/SKILL.md) |
 
 The skills above live in this repo, so a fresh clone already has them. The `ui-sdk` skill belongs to the ui-sdk project and is set up per machine:
@@ -65,17 +65,18 @@ Without that install, read the same skill at `node_modules/@ui-sdk/core/skills/u
 
 ## Architecture
 
-Two layers. `src/engine` is pure TypeScript with no React or DOM; `src/ui` and `src/App.tsx` render it. Lint fails if the engine imports from the UI, React or ui-sdk, or touches `window`, `document` or `localStorage`.
+Two layers. `src/engine` and `src/holdem` are pure TypeScript with no React or DOM; `src/ui`, `src/App.tsx` and `src/Root.tsx` render them. `src/Root.tsx` is the whole app: the home page (`ui/Home.tsx`), or the game the player picked, kept under `guandan.game` so a reload returns to the same table. Lint fails if the engine imports from the UI, React or ui-sdk, or touches `window`, `document` or `localStorage`.
 
 ### Texas Hold'em engine (`src/holdem`)
 
-The rules for the second game, 德州扑克: six seats, no-limit, blinds 10/20, practice chips. It is pure TypeScript like `src/engine`, takes its randomness as an `rng` parameter, and has no screen yet. One file per concern, each with its tests beside it:
+The rules for the second game, 德州扑克: six seats, no-limit, blinds 10/20, practice chips. It is pure TypeScript like `src/engine` and takes its randomness as an `rng` parameter. Its screen is described under [UI](#ui). One file per concern, each with its tests beside it:
 
 - `cards.ts`, `hands.ts`: a 52-card deck and the best five of seven. `evaluate()` returns a `score` that orders any two hands.
 - `game.ts`: the table. `act(state, seat, action)` is the only way a hand moves on: it checks the action, deals the next street when a betting round ends, and pays the pots, side pots included, when the hand ends. `legalActions(state)` says what the seat to act may do.
 - `odds.ts`: `equity()` estimates a win rate by dealing the unknown cards many times, so it moves by a few points from call to call. Pass `betting` when facing a bet, or it is far too hopeful. `draws()` counts outs; `potOdds()` prices a call.
 - `bot.ts`, `coach.ts`: the computer players, and the advice and grading the player sees. Both compare the win rate with the price of a call. All coach text is Chinese and written for a beginner.
 - `testing.ts`: helpers for the tests (`rig()` deals chosen cards). Not for the app.
+- `lastWhere()` in `game.ts` stands in for `findLast`, which older phone browsers lack.
 
 Single test: `npx vitest run src/holdem/game.test.ts -t "side pot"`.
 
@@ -106,7 +107,11 @@ Seats: 0 is the human, 1 is 下家, 2 is the partner (对家), 3 is 上家. `tea
   - Labels float over the scene, so nothing in the layout stops one landing on another or on the top bar. `layoutProblems()` in `e2e/page-tools.js` reports any two that overlap. On phones the table is pinned to the screen (`position: fixed`, `--oy` measured from the bottom of the screen) so that a taller hand cannot slide it, and its labels, up under the top bar.
 - **Looking at the 3D table in WebKit.** A screenshot from Playwright's WebKit paints every 3D scene flat, even a correct one, so it cannot show whether Safari draws the table right. Record a video (`recordVideo` on the browser context) and look at a frame from it. Positions from `getBoundingClientRect` are right in both engines but say nothing about what is painted over what.
 - **Mobile Safari in CI.** `.github/workflows/ios-simulator.yml` opens the production build in Mobile Safari inside Apple's iOS Simulator on a macOS runner and checks a picture of the screen. Nothing can drive that browser from outside, so the page drives itself: `e2e/ios/serve.mjs` puts `e2e/ios/driver.js` into the page, which deals a fixed hand, follows the hints until several five-card plays are on the 3D table, stops the game and posts where everything is. `e2e/ios/check-shot.mjs` then looks at the screenshot's pixels at those places: the felt is green, a fan stands in front of the table, the seat labels face the camera, and every played card shows its rank. It runs on pull requests that touch `src/` and is not a required check. When it fails, the `ios-simulator` artifact of the run has the screenshot and the report. It checks one deal, upright, on one iPhone model; it is a simulator, not a phone.
-- Browser storage keys: `guandan.match`, `guandan.skills`, `guandan.coach`, `guandan.tracker`, `guandan.view`. A new key needs the `guandan.` prefix and an entry in this list.
+- **The Texas Hold'em screen** is `ui/holdem/Holdem.tsx`, with its state in `ui/holdem/useHoldem.ts` (the hand, the coach's advice for the player's turn, the graded decisions, and the computer players moving on an 800 ms timer). Its styles, and the home page's, are in `src/holdem.css`. Nothing saves a Hold'em hand: a reload deals a new table.
+- **The Hold'em table is not a 3D scene.** The felt is one tilted surface, and every seat, bet, card and panel lies flat over it, so no browser has to sort anything by depth. A seat stands at design pixels `--x`, `--y`, scaled by `--u` across and `--v` down. What belongs to a seat (its bet, the cards it shows at the end, the dealer badge) is a fixed number of pixels from the seat's label, so the two cannot collide when the table shrinks. The numbers for each layout are custom properties in the matching media block.
+- **Hold'em has four layouts**: a wide screen (1240px and up) with the hand-rank list and the coach as panels at the sides; anything narrower, where the coach is a bar above the table and the full review of a hand opens from 看复盘; an upright phone (`max-width: 620px`), where the table is as wide as the screen, only its height shrinks, and the player's two cards lie over its near edge; and a phone on its side (`max-height: 480px`), where the coach is a box at the bottom left. A phone on its side narrower than about 800px is not supported: the labels are a fixed width and run into each other.
+- **Nothing in that layout stops one label landing on another**, as on the 3D table. `layoutProblems()` in `e2e/page-tools.js` checks every pair of labels on the Hold'em table and every text that could be cut off, and `e2e/holdem.spec.ts` runs it at each decision of three hands. After moving anything on the table, run it at the four test sizes and at one size between them.
+- Browser storage keys: `guandan.match`, `guandan.skills`, `guandan.coach`, `guandan.tracker`, `guandan.view`, `guandan.game`. A new key needs the `guandan.` prefix and an entry in this list.
 
 ## What CI checks
 

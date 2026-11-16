@@ -8,6 +8,10 @@
   const LIMIT_MS = 150_000
   const MARK = 14
 
+  // Before the app starts: skip the home page and open 掼蛋 on the 3D table.
+  localStorage.setItem("guandan.game", "guandan")
+  localStorage.setItem("guandan.view", "3d")
+
   // The game runs on timers. Once the table is in the state to photograph, they are dropped so that no bot
   // plays between this report and the screenshot. The driver keeps the real one for itself.
   const realTimeout = window.setTimeout.bind(window)
@@ -41,7 +45,6 @@
   async function run() {
     const started = Date.now()
     const left = () => LIMIT_MS - (Date.now() - started)
-    localStorage.setItem("guandan.view", "3d")
     while (!document.querySelector('[data-slot="fan-card"]') && left() > 0) await wait(100)
 
     // An exact deal: seed right before the match restarts (page-tools.js says why).

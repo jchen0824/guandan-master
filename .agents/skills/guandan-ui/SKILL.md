@@ -59,7 +59,7 @@ Status text uses plain `role="status"` or `role="alert"` on a paragraph, and gro
 - **All text the player reads is Chinese.**
 - **State lives in `ui/useGame.ts`.** Components receive the `Game` object and call its actions. Do not call engine functions that change the game from a component.
 - **Style from attributes.** Target `data-slot` and state attributes (`data-pressed`, `data-open`, `data-variant`). Card sizes come from the `--cw` custom property; change that, not individual widths.
-- **One stylesheet, three layouts.** Desktop, phone landscape (`max-height: 480px`) and upright phone (`max-width: 620px`). A rule added for one layout must not leak into the others: put it inside the matching media block.
+- **One stylesheet, three layouts.** Desktop, phone landscape (`max-height: 480px`) and upright phone (`max-width: 620px`). A rule added for one layout must not leak into the others: put it inside the matching media block. The home page and the Texas Hold'em table have a stylesheet of their own, `src/holdem.css`, with the same three layouts plus one for screens narrower than 1240px; AGENTS.md describes how that table is laid out.
 - **Dialogs render inside the top bar**, which sets `white-space: nowrap`. `[data-slot="dialog-content"]` resets that; keep the reset when you touch dialog styles.
 - **Avoid ES2023 array additions** such as `toSorted` and `toReversed`: older phone browsers lack them and nothing polyfills them. `slice().sort()` is the house style.
 - **Storage** goes through keys that start with `guandan.` and are listed in AGENTS.md.

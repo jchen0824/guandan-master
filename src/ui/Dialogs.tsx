@@ -133,12 +133,14 @@ function SettingsDialog({
   onStartOver,
   view,
   onViewChange,
+  onHome,
 }: {
   skills: Skills
   onChange: (skills: Skills) => void
   onStartOver: () => void
   view: View
   onViewChange: (view: View) => void
+  onHome?: () => void
 }) {
   const [confirming, setConfirming] = useState(false)
   return (
@@ -174,6 +176,15 @@ function SettingsDialog({
             </Button>
           )}
         </Field>
+        {onHome ? (
+          <Field>
+            <FieldLabel>换一个游戏</FieldLabel>
+            <FieldDescription>首页可以选掼蛋或德州扑克。打完的局已经保存，回来可以接着打。</FieldDescription>
+            <DialogClose data-variant="outline" action={onHome}>
+              回到首页
+            </DialogClose>
+          </Field>
+        ) : null}
         <section data-slot="about" aria-label="关于">
           <div>
             <h3>关于</h3>

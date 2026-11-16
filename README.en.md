@@ -4,7 +4,7 @@
 
 [![CI](https://github.com/jchen0824/guandan-master/actions/workflows/ci.yml/badge.svg)](https://github.com/jchen0824/guandan-master/actions/workflows/ci.yml)
 
-Guandan Coach is a single-player practice game for Guandan (掼蛋), the four-player Chinese card game, for people who have just started. You play in the browser against three computer players, with hints, comments on each play and a card counter.
+Guandan Coach is a single-player card practice game for people who have just started. The home page offers Guandan (掼蛋), the four-player Chinese card game, and Texas Hold'em. You play in the browser against computer players, and a coach gives hints and comments on each move.
 
 Play it: https://guandan-playground.vercel.app
 
@@ -12,7 +12,7 @@ The game itself is in Chinese.
 
 ## Features
 
-- The full rules: every combination, the wild card (逢人配), the bomb ladder, levels, tribute and return, resisting tribute, and the partner taking the lead when a player goes out (接风). Three failed attempts at level A send a team back to 2
+- The full rules of Guandan: every combination, the wild card (逢人配), the bomb ladder, levels, tribute and return, resisting tribute, and the partner taking the lead when a player goes out (接风). Three failed attempts at level A send a team back to 2
 - Computer players at three levels (novice, basic, advanced), set separately for opponents and partner
 - A coach that describes the position, gives hints and comments on each play, and can be hidden
 - A card counter, suit filter, straight-flush finder, and manual piles you can reorder (理牌)
@@ -20,6 +20,7 @@ The game itself is in Chinese.
 - Progress is saved in the browser. No account, no server
 - Works in desktop and phone browsers, upright or landscape
 - A switch between a 2D (flat) and a 3D table
+- Texas Hold'em: a six-seat no-limit table with 10/20 blinds and practice chips. The coach shows your win rate, the pot odds and its advice, and grades each of your decisions when the hand ends
 
 The computer players and the coach are rule-based programs. No large language model is involved.
 
@@ -47,8 +48,9 @@ npm run build              # production build
 
 ## Layout
 
-- `src/engine`: rules, game flow and bots, with no UI dependency
-- `src/ui`, `src/App.tsx`: the interface, built with React and `@ui-sdk/react`
+- `src/engine`: Guandan rules, game flow and bots, with no UI dependency
+- `src/holdem`: Texas Hold'em rules, win-rate estimates, bots and coach, with no UI dependency
+- `src/ui`, `src/App.tsx`, `src/Root.tsx`: the interface, built with React and `@ui-sdk/react`
 - `.agents/skills`: Guandan rules, play skills and UI conventions written for coding agents
 
 ## Versions

@@ -24,8 +24,20 @@
   const button = (name) => all("button").find((b) => b.textContent.trim() === name) ?? null
   const name = (el) => el.getAttribute("aria-label") || el.textContent.trim().slice(0, 12) || el.dataset.slot || el.tagName
 
+  const holdem = () => document.querySelector('[data-slot="holdem"]')
+
   /** Where the game is, read from the screen the way a player would. */
   function state() {
+    if (holdem()) {
+      return {
+        over: button("下一手") !== null,
+        myTurn: button("弃牌") !== null,
+        mustReturn: false,
+        cards: all('[data-slot="he-hole"] [data-slot="playing-card"]').length,
+        selected: 0,
+        dialog: all('[data-slot="dialog-content"]').length > 0,
+      }
+    }
     return {
       over: button("查看结果") !== null,
       myTurn: button("提示") !== null,
@@ -38,13 +50,62 @@
 
   /** Changes whenever any seat plays, passes or finishes. Used to wait for a move to land. */
   function signature() {
+    if (holdem()) return all('[data-slot="he-table"], [data-slot="he-controls"], [data-slot="he-streets"] [aria-current]').map((el) => el.textContent).join("|")
     const seats = all('[data-slot="player"], [data-slot="me-chip"]').map((el) => el.textContent + (el.dataset.active ?? "-"))
     const plays = all('[data-slot="play-zone"]').map((el) => el.textContent)
     return [...seats, ...plays, state().cards, document.querySelector('[data-slot="bubble"]')?.textContent].join("|")
   }
 
+  /**
+   * The Texas Hold'em table. Seats, bets, the board and the panels are all placed by hand over the table, so
+   * nothing in the layout stops one landing on another: every pair is checked.
+   */
+  function holdemProblems(mustBeOnScreen, mustBeReachable) {
+    const problems = []
+    const labels = all(
+      '[data-slot="he-top"] > *, [data-slot="he-chip"], [data-slot="he-bet"], [data-slot="he-pot"], [data-slot="he-board"], [data-slot="he-banner"] > *, [data-slot="he-coach"], [data-slot="he-ranks"], [data-slot="he-me"], [data-slot="he-hole"], [data-slot="he-notice"], [data-slot="he-sizes"] > *, [data-slot="he-buttons"] > *',
+    )
+    const cross = (a, b) => Math.min(a.right, b.right) - Math.max(a.left, b.left) > 3 && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 3
+    // On a phone held sideways the player's label is the last line of the coach's box, by design.
+    const together = (a, b) => [a.dataset.slot, b.dataset.slot].sort().join() === "he-coach,he-me" && window.innerHeight <= 480
+    for (const el of labels) mustBeOnScreen(el, `the label ${name(el)}`)
+    labels.forEach((a, i) => {
+      for (const b of labels.slice(i + 1)) {
+        if (!a.contains(b) && !b.contains(a) && !together(a, b) && cross(box(a), box(b))) problems.push(`the label ${name(a)} overlaps ${name(b)}`)
+      }
+    })
+    for (const el of all('[data-slot="he-who"], [data-slot="he-note"], [data-slot="he-buttons"] > *, [data-slot="he-sizes"] > *')) {
+      if (el.scrollWidth > el.clientWidth + 1) problems.push(`the text of ${name(el)} is cut off`)
+    }
+    for (const el of all('[data-slot="holdem"] button')) mustBeReachable(el, `the ${name(el)} button`)
+    const table = all('[data-slot="he-stage"]')[0]
+    if (table && box(table).height < 180) problems.push(`the table is squeezed to ${Math.round(box(table).height)}px high`)
+    return problems
+  }
+
+  /** The home page. It may scroll up and down, so each game's button is only checked for what could cover it. */
+  function homeProblems() {
+    const problems = []
+    const width = window.innerWidth
+    if (document.documentElement.scrollWidth > width + SLACK) problems.push("the page scrolls sideways")
+    for (const tile of all('[data-slot="game-tile"]')) {
+      const game = name(tile.querySelector("h2"))
+      const picture = tile.querySelector('[data-slot="tile-scene"]')
+      for (const el of all('h2, p, li, button, [data-slot="tile-badge"]', tile)) {
+        const r = box(el)
+        if (r.left < -SLACK || r.right > width + SLACK) problems.push(`${name(el)} of ${game} runs past the side of the screen (${size(r)})`)
+        if (el.dataset.slot !== "tile-badge" && overlap(r, box(picture))) problems.push(`the picture of ${game} covers ${name(el)}`)
+        if (el.scrollWidth > el.clientWidth + 1) problems.push(`the text of ${name(el)} of ${game} is cut off`)
+      }
+      const enter = tile.querySelector("button")
+      if (box(enter).height < 44) problems.push(`the button of ${game} is only ${Math.round(box(enter).height)}px high`)
+    }
+    return problems
+  }
+
   /** Everything wrong with the layout right now, as sentences. An empty list means the screen holds together. */
   function layoutProblems() {
+    if (document.querySelector('[data-slot="home"]')) return homeProblems()
     const problems = []
     const width = window.innerWidth
     const height = window.innerHeight
@@ -70,6 +131,8 @@
       }
       return problems
     }
+
+    if (holdem()) return [...new Set([...problems, ...holdemProblems(mustBeOnScreen, mustBeReachable)])]
 
     const drawer = all('[data-slot="coach"]')[0]
     if (drawer && width <= 1000) {

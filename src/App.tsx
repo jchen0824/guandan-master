@@ -216,7 +216,7 @@ function useSwipeSelect(selected: number[], selectCard: (id: number, on: boolean
   }
 }
 
-function App() {
+function App({ onHome }: { onHome?: () => void }) {
   const g = useGame()
   const swipe = useSwipeSelect(g.selected, g.selectCard)
   const [coachOn, setCoachOn] = useSaved("guandan.coach", true)
@@ -296,6 +296,11 @@ function App() {
             <span data-slot="round">
               第 {game.handNumber} 局 · 逢人配 <b>♥{rankLabel(game.level)}</b>
             </span>
+            {onHome ? (
+              <Button data-variant="text" data-home="" onClick={onHome}>
+                首页
+              </Button>
+            ) : null}
             <ViewSwitch view={view} onChange={setView} />
             <RulesDialog />
             <LogDialog game={game} />
@@ -305,6 +310,7 @@ function App() {
               onStartOver={g.startOver}
               view={view}
               onViewChange={setView}
+              onHome={onHome}
             />
             <Button data-variant="coach" aria-pressed={coachOn} onClick={pressCoach}>
               {coachOn ? null : <span data-slot="badge-long">显示</span>}教练
