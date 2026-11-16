@@ -173,7 +173,7 @@ export function legalActions(state: HoldemState): { canCheck: boolean; callAmoun
 }
 
 /** Side pots: one for each level at which a player still in the hand is all-in or has matched the rest. */
-function buildPots(seats: Seat[]): { amount: number; eligible: number[] }[] {
+export function buildPots(seats: readonly Seat[]): { amount: number; eligible: number[] }[] {
   const levels = [...new Set(seats.filter((seat) => !seat.folded).map((seat) => seat.total))].sort((a, b) => a - b)
   const pots: { amount: number; eligible: number[] }[] = []
   let below = 0

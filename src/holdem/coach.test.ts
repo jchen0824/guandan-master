@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest"
 import { advise, gradeChoice } from "./coach"
 import { HERO, SEATS, act, legalActions, newTable } from "./game"
 import type { Action, HoldemState } from "./game"
-import { bettorsAgainst, draws, equity, potOdds } from "./odds"
+import { bettorsAgainst, draws, equity, potOdds, shareOfPot } from "./odds"
 import { cards, rig, seeded, stacked } from "./testing"
 
 const VILLAIN = 1
@@ -66,6 +66,43 @@ describe("win rates and draws", () => {
     // 80 more to call. The caller can win their own 100, 100 of the raise and the small blind's 10.
     expect(state.pot).toBe(1030)
     expect(potOdds(state, bigBlind)).toEqual({ call: 80, potAfterCall: 210, need: 80 / 210 })
+  })
+
+  it("gives the same win rate pot by pot as overall when there is only one pot", () => {
+    const state = facingBet("AH JH", "KS 9H 4H", 100)
+    expect(shareOfPot(state, HERO, seeded(9), 300)).toBeCloseTo(equity(cards("AH JH"), cards("KS 9H 4H"), 1, seeded(9), 300, 1), 10)
+  })
+
+  it("does not count a short stack's all-in as competing for the side pot", () => {
+    // Three players put in 40 each and the short one is all-in. The board is a royal flush, so all three tie.
+    const short = 2
+    let state = rig(stacked(newTable(seeded(3)), { [short]: 40 }), { [HERO]: "2C 3D", [VILLAIN]: "4C 5D", [short]: "6C 7D" }, "AS KS QS JS TS")
+    const playing = new Set([HERO, VILLAIN, short])
+    while (state.street === "preflop") {
+      const seat = state.toAct as number
+      const legal = legalActions(state)
+      if (!playing.has(seat)) state = act(state, seat, legal.canCheck ? { kind: "check" } : { kind: "fold" })
+      else if (state.currentBet < 40 && legal.minRaiseTo !== null) state = act(state, seat, { kind: "raise", to: 40 })
+      else state = act(state, seat, legal.canCheck ? { kind: "check" } : { kind: "call" })
+    }
+    while (!(state.toAct === HERO && state.currentBet > 0)) {
+      const seat = state.toAct as number
+      state = act(state, seat, seat === VILLAIN && state.street === "river" ? { kind: "raise", to: 1000 } : { kind: "check" })
+    }
+    expect(state.seats[short].allIn).toBe(true)
+    const { call, potAfterCall, need } = potOdds(state)
+    expect(call).toBe(1000)
+    // Calling gets back a third of the main pot and half of the side pot, more than the 1,000 it costs.
+    const main = state.seats.reduce((sum, seat) => sum + Math.min(seat.total, 40), 0)
+    const back = main / 3 + 1000
+    expect(shareOfPot(state, HERO, seeded(5), 50)).toBeCloseTo(back / potAfterCall, 10)
+    expect(back / potAfterCall).toBeGreaterThan(need)
+    // One win rate over the whole pot says a third, which is below the price: that is the mistake this avoids.
+    expect(equity(cards("2C 3D"), state.board, 2, seeded(5), 50)).toBeCloseTo(1 / 3, 10)
+    expect(1 / 3).toBeLessThan(need)
+    const advice = advise(state, seeded(5))
+    expect(advice.action).toEqual({ kind: "call" })
+    expect(advice.reason).not.toMatch(/不够/)
   })
 
   it("counts the players who have bet on this street, for the win rate against them", () => {

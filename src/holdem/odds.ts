@@ -1,6 +1,6 @@
 import { newDeck } from "./cards"
 import type { Card } from "./cards"
-import { HERO } from "./game"
+import { HERO, buildPots } from "./game"
 import type { HoldemState } from "./game"
 import { evaluate } from "./hands"
 
@@ -10,18 +10,14 @@ function unseen(known: Card[]): Card[] {
 }
 
 /**
- * The chance, 0 to 1, that `hole` wins at showdown against `opponents` hands dealt at random. A tie counts as
- * a share. It deals the unknown cards `samples` times, so the answer moves by a few points from call to call.
- *
- * `betting` is how many of those opponents have bet on a board of three or more cards. Someone who bets
- * usually has something, so those opponents are dealt hands that already make at least a pair. Without this
- * the answer is far too rosy when facing a bet.
+ * Deals the cards nobody has seen `samples` times: the rest of the board and two for each of `opponents`, and
+ * passes each deal to `see`. The first `betting` opponents have bet on a board of three or more cards, and
+ * someone who bets usually has something, so they are dealt hands that already make at least a pair.
  */
-export function equity(hole: Card[], board: Card[], opponents: number, rng: () => number, samples = 300, betting = 0): number {
+function deals(hole: Card[], board: Card[], opponents: number, rng: () => number, samples: number, betting: number, see: (full: Card[], hands: Card[][]) => void) {
   const rest = unseen([...hole, ...board])
   const need = 5 - board.length + opponents * 2
   const pick = () => need + Math.floor(rng() * (rest.length - need))
-  let won = 0
   for (let sample = 0; sample < samples; sample++) {
     // Only the cards this deal uses are shuffled to the front.
     for (let i = 0; i < need; i++) {
@@ -38,12 +34,26 @@ export function equity(hole: Card[], board: Card[], opponents: number, rng: () =
       }
     }
     const full = [...board, ...rest.slice(0, 5 - board.length)]
+    const hands = Array.from({ length: opponents }, (_, opponent) => rest.slice(5 - board.length + opponent * 2, 7 - board.length + opponent * 2))
+    see(full, hands)
+  }
+}
+
+/**
+ * The chance, 0 to 1, that `hole` wins at showdown against `opponents` hands dealt at random. A tie counts as
+ * a share. It deals the unknown cards `samples` times, so the answer moves by a few points from call to call.
+ *
+ * `betting` is how many of those opponents have bet on a board of three or more cards. Without it the answer
+ * is far too rosy when facing a bet.
+ */
+export function equity(hole: Card[], board: Card[], opponents: number, rng: () => number, samples = 300, betting = 0): number {
+  let won = 0
+  deals(hole, board, opponents, rng, samples, betting, (full, hands) => {
     const mine = evaluate([...hole, ...full]).score
     let best = 0
     let level = 0
-    for (let opponent = 0; opponent < opponents; opponent++) {
-      const at = 5 - board.length + opponent * 2
-      const theirs = evaluate([rest[at], rest[at + 1], ...full]).score
+    for (const hand of hands) {
+      const theirs = evaluate([...hand, ...full]).score
       if (theirs > best) {
         best = theirs
         level = 1
@@ -51,7 +61,7 @@ export function equity(hole: Card[], board: Card[], opponents: number, rng: () =
     }
     if (mine > best) won += 1
     else if (mine === best) won += 1 / (level + 1)
-  }
+  })
   return won / samples
 }
 
@@ -101,8 +111,40 @@ export function potOdds(state: HoldemState, seat: number = HERO): { call: number
   return { call, potAfterCall, need: call > 0 ? call / potAfterCall : 0 }
 }
 
+function bettingSeats(state: HoldemState, seat: number): Set<number> {
+  const made = state.log.filter((entry) => entry.street === state.street && entry.seat !== seat && (entry.kind === "bet" || entry.kind === "raise") && !state.seats[entry.seat].folded)
+  return new Set(made.map((entry) => entry.seat))
+}
+
 /** How many players still in the hand, not counting `seat`, have bet or raised on this street. Pass it to `equity()`. */
 export function bettorsAgainst(state: HoldemState, seat: number = HERO): number {
-  const made = state.log.filter((entry) => entry.street === state.street && entry.seat !== seat && (entry.kind === "bet" || entry.kind === "raise") && !state.seats[entry.seat].folded)
-  return new Set(made.map((entry) => entry.seat)).size
+  return bettingSeats(state, seat).size
+}
+
+/**
+ * The win rate to set against `potOdds().need`: the share of `potAfterCall` that `seat` can expect back if it
+ * calls now and the hand is shown down. It is worked out pot by pot, so a side pot is shared only among the
+ * players who can win it, and nobody is paid from chips they never matched. Without side pots it is `equity()`.
+ */
+export function shareOfPot(state: HoldemState, seat: number, rng: () => number, samples = 300): number {
+  const me = state.seats[seat]
+  const { call, potAfterCall } = potOdds(state, seat)
+  if (potAfterCall === 0) return 0
+  const seats = state.seats.slice()
+  seats[seat] = { ...me, total: me.total + call }
+  const pots = buildPots(seats).filter((pot) => pot.eligible.includes(seat))
+  const bettors = bettingSeats(state, seat)
+  const others = state.seats.flatMap((other, index) => (index !== seat && !other.folded ? [index] : []))
+  // Bettors first: `deals` gives the first `betting` opponents a hand worth betting.
+  const order = [...others.filter((other) => bettors.has(other)), ...others.filter((other) => !bettors.has(other))]
+  let paid = 0
+  deals(me.hole, state.board, order.length, rng, samples, bettors.size, (full, hands) => {
+    const score = new Map(order.map((other, at) => [other, evaluate([...hands[at], ...full]).score]))
+    score.set(seat, evaluate([...me.hole, ...full]).score)
+    for (const pot of pots) {
+      const best = Math.max(...pot.eligible.map((other) => score.get(other) ?? 0))
+      if (score.get(seat) === best) paid += pot.amount / pot.eligible.filter((other) => score.get(other) === best).length
+    }
+  })
+  return Math.min(1, paid / samples / potAfterCall)
 }

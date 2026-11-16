@@ -2,7 +2,7 @@ import { ACE } from "./cards"
 import type { Card } from "./cards"
 import { BIG_BLIND, SEATS, legalActions } from "./game"
 import type { Action, HoldemState } from "./game"
-import { bettorsAgainst, equity, potOdds } from "./odds"
+import { potOdds, shareOfPot } from "./odds"
 
 /** How good two starting cards are: 3 premium, 2 strong, 1 playable, 0 weak. */
 export function startingTier(hole: Card[]): number {
@@ -56,7 +56,7 @@ export function botAction(state: HoldemState, seat: number, rng: () => number): 
   }
 
   const others = state.seats.filter((other, index) => index !== seat && !other.folded).length
-  const chance = equity(me.hole, state.board, others, rng, 120, bettorsAgainst(state, seat))
+  const chance = shareOfPot(state, seat, rng, 120)
   const { need } = potOdds(state, seat)
   if (legal.callAmount === 0) {
     if (chance > 0.65) return sized(state, state.pot * 0.66)
