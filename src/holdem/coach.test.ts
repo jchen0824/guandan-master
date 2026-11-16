@@ -8,8 +8,9 @@ import { cards, rig, seeded, stacked } from "./testing"
 const VILLAIN = 1
 
 /** A flop where seat 1 raised before it and has now bet `bet`, with the hero left to answer. Everyone else folded. */
-function facingBet(hole: string, board: string, bet: number): HoldemState {
-  let state = rig(newTable(seeded(3)), { [HERO]: hole, [VILLAIN]: "KD KC" }, board)
+function facingBet(hole: string, board: string, bet: number, villainStack?: number): HoldemState {
+  const table = newTable(seeded(3))
+  let state = rig(villainStack === undefined ? table : stacked(table, { [VILLAIN]: villainStack }), { [HERO]: hole, [VILLAIN]: "KD KC" }, board)
   while (state.street === "preflop") {
     const seat = state.toAct as number
     const easy: Action = legalActions(state).canCheck ? { kind: "check" } : { kind: "call" }
@@ -84,6 +85,21 @@ describe("the coach", () => {
     expect(advice.reason).toMatch(/要有 \d+% 的胜率/)
     expect(advice.situation).toMatch(/^甲下注 150，底池现在 /)
     expect(advice.made).toBe("highCard")
+  })
+
+  it("lets a draw call a little below the price only when it can win more later", () => {
+    // An open-ended straight draw facing a bet of 300: about 36% to win, and the call needs 40%.
+    const deep = advise(facingBet("7D 6C", "9S 8H 2C", 300), seeded(5))
+    expect(deep.need).toBeGreaterThan(deep.have)
+    expect(deep.action).toEqual({ kind: "call" })
+    expect(deep.reason).toMatch(/再赢一笔/)
+
+    // The same bet is seat 1's last chips, so the straight would win nothing more.
+    const state = facingBet("7D 6C", "9S 8H 2C", 300, 360)
+    expect(state.seats[VILLAIN].allIn).toBe(true)
+    const shove = advise(state, seeded(5))
+    expect(shove.action).toEqual({ kind: "fold" })
+    expect(shove.reason).not.toMatch(/再赢一笔/)
   })
 
   it("keeps a strong flush draw in the hand when the price is good", () => {
