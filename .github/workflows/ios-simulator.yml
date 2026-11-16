@@ -58,21 +58,27 @@ jobs:
             curl -sf -o /dev/null http://127.0.0.1:4174/ && break
             sleep 1
           done
+          # Right after a first boot the simulator can take minutes to be able to start an app. Start Safari on its
+          # own first, retrying, so that opening a link only has to load a page.
+          for attempt in $(seq 1 12); do
+            xcrun simctl launch "$UDID" com.apple.mobilesafari > /dev/null && break
+            sleep 15
+          done
           missing=""
           # 掼蛋 first: Safari can show a tip over the bottom of the screen on its first page, where the
           # 掼蛋 check looks at nothing, but where the Hold'em table has the player's cards.
           for game in guandan holdem; do
-            # Safari is sometimes not ready to take a link right after the simulator boots, so try a few times.
+            # Safari is sometimes still not ready to take a link, so try for about five minutes.
             opened=no
-            for attempt in 1 2 3 4 5; do
+            for attempt in $(seq 1 12); do
               if xcrun simctl openurl "$UDID" "http://127.0.0.1:4174/?game=$game"; then
                 opened=yes
                 break
               fi
-              sleep 10
+              sleep 15
             done
             if [ "$opened" = no ]; then
-              echo "::error::The simulator did not open the $game link in five tries."
+              echo "::error::The simulator did not open the $game link in twelve tries."
               exit 1
             fi
             # The driver stops itself after 150 seconds and reports either way; this leaves room for a slow page load.
