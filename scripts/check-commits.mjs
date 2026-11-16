@@ -5,7 +5,7 @@
 import { execFileSync } from "node:child_process"
 
 export const TYPES = ["feat", "fix", "docs", "style", "refactor", "perf", "test", "build", "ci", "chore", "revert"]
-export const SCOPES = ["engine", "bot", "ui", "agents", "ci", "deps"]
+export const SCOPES = ["engine", "holdem", "bot", "ui", "agents", "ci", "deps"]
 const MAX = 72
 
 export function problems(subject) {
