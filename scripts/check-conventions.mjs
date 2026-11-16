@@ -37,7 +37,7 @@ for (const file of walk("src", (p) => p.endsWith(".tsx"))) {
 }
 
 // 2. The engine stays deterministic: randomness comes in as a parameter so tests can seed it.
-for (const file of walk("src/engine", (p) => p.endsWith(".ts") && !p.endsWith(".test.ts"))) {
+for (const file of ["src/engine", "src/holdem"].flatMap((dir) => walk(dir, (p) => p.endsWith(".ts") && !p.endsWith(".test.ts")))) {
   const text = read(file)
   for (const match of text.matchAll(/Math\.random\(|Date\.now\(/g)) {
     fail(

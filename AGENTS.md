@@ -67,6 +67,18 @@ Without that install, read the same skill at `node_modules/@ui-sdk/core/skills/u
 
 Two layers. `src/engine` is pure TypeScript with no React or DOM; `src/ui` and `src/App.tsx` render it. Lint fails if the engine imports from the UI, React or ui-sdk, or touches `window`, `document` or `localStorage`.
 
+### Texas Hold'em engine (`src/holdem`)
+
+The rules for the second game, 德州扑克: six seats, no-limit, blinds 10/20, practice chips. It is pure TypeScript like `src/engine`, takes its randomness as an `rng` parameter, and has no screen yet. One file per concern, each with its tests beside it:
+
+- `cards.ts`, `hands.ts`: a 52-card deck and the best five of seven. `evaluate()` returns a `score` that orders any two hands.
+- `game.ts`: the table. `act(state, seat, action)` is the only way a hand moves on: it checks the action, deals the next street when a betting round ends, and pays the pots, side pots included, when the hand ends. `legalActions(state)` says what the seat to act may do.
+- `odds.ts`: `equity()` estimates a win rate by dealing the unknown cards many times, so it moves by a few points from call to call. Pass `betting` when facing a bet, or it is far too hopeful. `draws()` counts outs; `potOdds()` prices a call.
+- `bot.ts`, `coach.ts`: the computer players, and the advice and grading the player sees. Both compare the win rate with the price of a call. All coach text is Chinese and written for a beginner.
+- `testing.ts`: helpers for the tests (`rig()` deals chosen cards). Not for the app.
+
+Single test: `npx vitest run src/holdem/game.test.ts -t "side pot"`.
+
 ### Engine (`src/engine`)
 
 - **`cards.ts`**: a card is `{ id, suit, rank }` with rank 2–14 (A = 14), 16 small joker, 17 big joker. `rankValue` moves the current level's rank to 15 (above A, below jokers). `isWild` is the heart card of the level rank (逢人配).
