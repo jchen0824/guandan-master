@@ -35,7 +35,7 @@ Keep a pull request to one purpose. A bug fix and an unrelated refactor are two 
 Use [Conventional Commits](https://www.conventionalcommits.org/): `<type>(<scope>): <summary>`.
 
 - **Types**: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`.
-- **Scopes**: `engine`, `bot`, `ui`, `agents` (AGENTS.md and skills), `ci`, `deps`. Leave the scope out for a repo-wide change.
+- **Scopes**: `engine`, `holdem` (Texas Hold'em, rules and screen), `bot`, `ui`, `agents` (AGENTS.md and skills), `ci`, `deps`. Leave the scope out for a repo-wide change.
 - **Summary**: imperative, lower case, no trailing full stop. The whole first line is 72 characters at most.
 - **Body**: say why, not what. The diff already shows what.
 - Mark a breaking change with `!` after the type or scope.

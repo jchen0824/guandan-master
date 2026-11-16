@@ -72,6 +72,20 @@ describe("dealing and the betting rounds", () => {
     expect(legalActions(state)).toEqual({ canCheck: false, callAmount: 30, minRaiseTo: null, maxRaiseTo: null })
   })
 
+  it("reopens the betting when all-ins too small to be a raise add up to one", () => {
+    const dealt = newTable(seeded(1))
+    const opener = dealt.toAct as number
+    const [first, second, caller] = [1, 2, 3].map((step) => (opener + step) % SEATS)
+    let state = act(stacked(dealt, { [first]: 140, [second]: 180 }), opener, raise(100))
+    state = act(state, first, raise(140))
+    state = act(state, second, raise(180))
+    state = act(state, caller, CALL)
+    state = foldTo(state, opener)
+    // The opener raised by 80 and now faces 80 more, so a raise is open again, by at least 80.
+    expect(legalActions(state)).toMatchObject({ canCheck: false, callAmount: 80, minRaiseTo: 260 })
+    expect(act(state, opener, raise(260)).currentBet).toBe(260)
+  })
+
   it("ends the hand when everyone else folds, without a showdown", () => {
     const dealt = newTable(seeded(1))
     const bigBlind = from(dealt, 2)

@@ -71,15 +71,19 @@ export interface HoldemState {
   result: HandResult | null
   /** Seats that still have to act in this betting round, in order. */
   pending: number[]
-  /** False for a seat that acted and then faced an all-in too small to count as a raise: it may only call or fold. */
-  mayRaise: boolean[]
+  /**
+   * The bet each seat had made or matched when it last acted on this street, or null before it has acted.
+   * A seat that has acted may raise again only once the bet has grown by a full raise since then, whether
+   * in one raise or in several all-ins that are each too small to count as one.
+   */
+  actedAt: (number | null)[]
   /** The size of the last full bet or raise on this street. */
   lastRaise: number
 }
 
 const after = (seat: number) => (seat + 1) % SEATS
 const canAct = (seat: Seat) => !seat.folded && !seat.allIn
-const everyone = () => Array.from({ length: SEATS }, () => true)
+const nobodyYet = (): (number | null)[] => Array.from({ length: SEATS }, () => null)
 
 /** Seat numbers clockwise, starting at `from`. */
 function clockwise(from: number): number[] {
@@ -130,7 +134,7 @@ function deal(stacks: number[], button: number, handNumber: number, rng: () => n
     log,
     result: null,
     pending,
-    mayRaise: everyone(),
+    actedAt: nobodyYet(),
     lastRaise: BIG_BLIND,
   }
 }
@@ -157,7 +161,9 @@ export function legalActions(state: HoldemState): { canCheck: boolean; callAmoun
   const me = state.seats[state.toAct]
   const most = me.bet + me.stack
   const someoneElse = state.seats.some((seat, index) => index !== state.toAct && canAct(seat))
-  const canRaise = state.mayRaise[state.toAct] && most > state.currentBet && someoneElse
+  const acted = state.actedAt[state.toAct]
+  const open = acted === null || state.currentBet - acted >= state.lastRaise
+  const canRaise = open && most > state.currentBet && someoneElse
   return {
     canCheck: me.bet === state.currentBet,
     callAmount: Math.min(state.currentBet - me.bet, me.stack),
@@ -174,7 +180,7 @@ function buildPots(seats: Seat[]): { amount: number; eligible: number[] }[] {
   for (const level of levels) {
     const amount = seats.reduce((sum, seat) => sum + Math.min(seat.total, level) - Math.min(seat.total, below), 0)
     const eligible = seats.flatMap((seat, index) => (!seat.folded && seat.total >= level ? [index] : []))
-    const last = pots.at(-1)
+    const last = pots[pots.length - 1]
     if (last && last.eligible.join() === eligible.join()) last.amount += amount
     else if (amount > 0) pots.push({ amount, eligible })
     below = level
@@ -232,7 +238,7 @@ function nextStreet(state: HoldemState): HoldemState {
     lastRaise: BIG_BLIND,
     minRaiseTo: BIG_BLIND,
     pending,
-    mayRaise: everyone(),
+    actedAt: nobodyYet(),
     toAct: pending[0] ?? null,
   }
   return pending.length > 0 ? dealt : nextStreet(dealt)
@@ -249,7 +255,7 @@ export function act(state: HoldemState, seat: number, action: Action): HoldemSta
   const me = state.seats[seat]
   const seats = state.seats.slice()
   const entry = { seat, street: state.street, amount: 0, to: me.bet, allIn: false }
-  let { currentBet, lastRaise, mayRaise } = state
+  let { currentBet, lastRaise } = state
   let pending = state.pending.filter((other) => other !== seat)
   let kind: LogEntry["kind"] = action.kind === "raise" ? "raise" : action.kind
 
@@ -268,27 +274,23 @@ export function act(state: HoldemState, seat: number, action: Action): HoldemSta
     }
     seats[seat] = put(me, to - me.bet)
     kind = currentBet === 0 ? "bet" : "raise"
-    const size = to - currentBet
-    if (size >= lastRaise) {
-      lastRaise = size
-      mayRaise = everyone()
-    } else {
-      // An all-in for less than a full raise: those who already acted may not raise again.
-      mayRaise = state.mayRaise.map((allowed, other) => allowed && state.pending.includes(other))
-    }
+    // An all-in for less than a full raise does not change the size of a raise. See `actedAt`.
+    lastRaise = Math.max(lastRaise, to - currentBet)
     currentBet = to
     pending = clockwise(after(seat)).filter((other) => other !== seat && canAct(seats[other]))
   }
 
   const now = seats[seat]
   const added = now.total - me.total
+  const actedAt = state.actedAt.slice()
+  actedAt[seat] = currentBet
   const next: HoldemState = {
     ...state,
     seats,
     currentBet,
     lastRaise,
     minRaiseTo: currentBet + lastRaise,
-    mayRaise,
+    actedAt,
     pending,
     pot: state.pot + added,
     log: [...state.log, { ...entry, kind, amount: added, to: now.bet, allIn: now.allIn && added > 0 }],
@@ -303,6 +305,12 @@ const POSITIONS = ["庄位", "小盲", "大盲", "枪口", "中位", "关位"]
 /** Six-handed positions, counted from the button. */
 export function positionName(state: HoldemState, seat: number): string {
   return POSITIONS[(seat - state.button + SEATS) % SEATS]
+}
+
+/** The newest item that passes the test. `findLast` is missing from older phone browsers. */
+export function lastWhere<T>(items: readonly T[], test: (item: T) => boolean): T | undefined {
+  for (let index = items.length - 1; index >= 0; index--) if (test(items[index])) return items[index]
+  return undefined
 }
 
 export function describeAction(entry: LogEntry): string {

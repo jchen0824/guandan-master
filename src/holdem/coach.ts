@@ -1,10 +1,10 @@
 import { cardName, chips } from "./cards"
 import { startingTier } from "./bot"
-import { BIG_BLIND, HERO, SEAT_NAMES, SEATS, describeAction, legalActions, positionName } from "./game"
+import { BIG_BLIND, HERO, SEAT_NAMES, SEATS, describeAction, lastWhere, legalActions, positionName } from "./game"
 import type { Action, HoldemState } from "./game"
 import { evaluate } from "./hands"
 import type { HandCategory } from "./hands"
-import { draws, equity, potOdds } from "./odds"
+import { bettorsAgainst, draws, equity, potOdds } from "./odds"
 
 export interface Advice {
   action: Action
@@ -43,7 +43,7 @@ function raiseTo(state: HoldemState, to: number): Action {
 
 function situation(state: HoldemState): string {
   const pot = `底池现在 ${chips(state.pot)}`
-  const last = state.log.findLast((entry) => entry.street === state.street && (entry.kind === "bet" || entry.kind === "raise") && entry.seat !== HERO)
+  const last = lastWhere(state.log, (entry) => entry.street === state.street && (entry.kind === "bet" || entry.kind === "raise") && entry.seat !== HERO)
   if (last) return `${SEAT_NAMES[last.seat]}${describeAction(last)}，${pot}。`
   return state.street === "preflop" ? `前面还没有人加注，${pot}。` : `还没有人下注，${pot}。`
 }
@@ -96,8 +96,7 @@ function afterTheFlop(state: HoldemState, have: number, drawText: string | null)
 export function advise(state: HoldemState, rng: () => number): Advice {
   const me = state.seats[HERO]
   const others = state.seats.filter((seat, index) => index !== HERO && !seat.folded).length
-  const bettors = new Set(state.log.filter((entry) => entry.street === state.street && entry.seat !== HERO && (entry.kind === "bet" || entry.kind === "raise") && !state.seats[entry.seat].folded).map((entry) => entry.seat))
-  const have = equity(me.hole, state.board, others, rng, 400, bettors.size)
+  const have = equity(me.hole, state.board, others, rng, 400, bettorsAgainst(state))
   const drawn = draws(me.hole, state.board)
   const { call, need } = potOdds(state)
   const { action, reason } = state.street === "preflop" ? beforeTheFlop(state) : afterTheFlop(state, have, drawn.text)

@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest"
 import { advise, gradeChoice } from "./coach"
-import { HERO, act, legalActions, newTable } from "./game"
+import { HERO, SEATS, act, legalActions, newTable } from "./game"
 import type { Action, HoldemState } from "./game"
-import { draws, equity, potOdds } from "./odds"
-import { cards, rig, seeded } from "./testing"
+import { bettorsAgainst, draws, equity, potOdds } from "./odds"
+import { cards, rig, seeded, stacked } from "./testing"
 
 const VILLAIN = 1
 
@@ -55,6 +55,22 @@ describe("win rates and draws", () => {
     expect(call).toBe(100)
     expect(potAfterCall).toBe(state.pot + 100)
     expect(need).toBeCloseTo(100 / (state.pot + 100))
+  })
+
+  it("prices an all-in call against only the chips the caller can win", () => {
+    const dealt = newTable(seeded(3))
+    const bigBlind = (dealt.button + 2) % SEATS
+    let state = act(stacked(dealt, { [bigBlind]: 100 }), dealt.toAct as number, { kind: "raise", to: 1000 })
+    while (state.toAct !== bigBlind) state = act(state, state.toAct as number, { kind: "fold" })
+    // 80 more to call. The caller can win their own 100, 100 of the raise and the small blind's 10.
+    expect(state.pot).toBe(1030)
+    expect(potOdds(state, bigBlind)).toEqual({ call: 80, potAfterCall: 210, need: 80 / 210 })
+  })
+
+  it("counts the players who have bet on this street, for the win rate against them", () => {
+    const state = facingBet("AH JH", "KS 9H 4H", 100)
+    expect(bettorsAgainst(state)).toBe(1)
+    expect(bettorsAgainst(state, 1)).toBe(0)
   })
 })
 

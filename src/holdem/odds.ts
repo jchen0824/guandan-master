@@ -88,10 +88,21 @@ export function draws(hole: Card[], board: Card[]): Draws {
   return { outs, flushDraw, straightDraw, text: `${what}，还有 ${outs} 张牌能帮你` }
 }
 
-/** The price of a call: `need` is the share of the final pot the call pays for, which is the win rate it needs. */
+/**
+ * The price of a call: `need` is the share of the final pot the call pays for, which is the win rate it needs.
+ * `potAfterCall` is what the caller can win, their own chips included. A caller who cannot cover the bet
+ * wins from each player only as much as they put in themselves, so the rest of the pot is left out.
+ */
 export function potOdds(state: HoldemState, seat: number = HERO): { call: number; potAfterCall: number; need: number } {
   const me = state.seats[seat]
   const call = Math.min(state.currentBet - me.bet, me.stack)
-  const potAfterCall = state.pot + call
+  const mine = me.total + call
+  const potAfterCall = state.seats.reduce((sum, other) => sum + Math.min(other.total, mine), 0) + call
   return { call, potAfterCall, need: call > 0 ? call / potAfterCall : 0 }
+}
+
+/** How many players still in the hand, not counting `seat`, have bet or raised on this street. Pass it to `equity()`. */
+export function bettorsAgainst(state: HoldemState, seat: number = HERO): number {
+  const made = state.log.filter((entry) => entry.street === state.street && entry.seat !== seat && (entry.kind === "bet" || entry.kind === "raise") && !state.seats[entry.seat].folded)
+  return new Set(made.map((entry) => entry.seat)).size
 }
