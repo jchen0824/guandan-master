@@ -1,0 +1,1470 @@
+/* ------------------------------------------------------------------------------------------------
+   The home page and the Texas Hold'em table. Both use the dark room, brass and cream of the 3D 掼蛋
+   table. Nothing here is a 3D scene: a table is one tilted surface, and seats, cards and labels are
+   flat on top of it, so there is nothing for a browser to sort by depth.
+   ------------------------------------------------------------------------------------------------ */
+[data-slot="home"],
+[data-slot="holdem"] {
+  --room: #0f0c0a;
+  --hud: rgb(16 12 10 / 0.9);
+  --line: rgb(255 255 255 / 0.14);
+  --brass: #e9bf62;
+  --brass-ink: #23170a;
+  --cream: #f4ecdf;
+  --cream-soft: #cbbfa9;
+  --digits: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --cw: 46px;
+  color: var(--cream);
+}
+
+/* ---- A face-up card. Everything on it is a share of --cw, the card's width. ---- */
+[data-slot="playing-card"],
+[data-slot="card-gap"] {
+  position: relative;
+  display: block;
+  flex: none;
+  box-sizing: border-box;
+  width: var(--cw);
+  aspect-ratio: 68 / 95;
+  border-radius: calc(var(--cw) * 0.11);
+}
+
+[data-slot="playing-card"] {
+  overflow: hidden;
+  background: linear-gradient(180deg, #fffefb, #efeadf);
+  color: #1c1d22;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.3), 0 2px 0 #cfc8b8, 0 8px 14px rgb(0 0 0 / 0.45);
+}
+
+[data-slot="playing-card"][data-red] {
+  color: #c3271d;
+}
+
+[data-slot="playing-card"][data-mark="used"] {
+  transform: translateY(-10%);
+  box-shadow: 0 0 0 3px #f0c869, 0 2px 0 #cfc8b8, 0 14px 20px rgb(0 0 0 / 0.5);
+}
+
+[data-slot="playing-card"][data-mark="unused"] {
+  background: linear-gradient(180deg, #cfcabd, #b8b2a3);
+}
+
+[data-slot="card-gap"] {
+  border: 1.5px dashed rgb(255 255 255 / 0.4);
+}
+
+[data-slot="pc-rank"] {
+  position: absolute;
+  left: 9%;
+  top: 3%;
+  font: 600 calc(var(--cw) * 0.4) / 1 var(--digits);
+  letter-spacing: -0.02em;
+}
+
+[data-slot="pc-suit"],
+[data-slot="pc-pip"] {
+  position: absolute;
+  fill: currentColor;
+}
+
+[data-slot="pc-suit"] {
+  left: 7%;
+  top: 33%;
+  width: 25%;
+}
+
+[data-slot="pc-pip"] {
+  right: 9%;
+  bottom: 7%;
+  width: 53%;
+}
+
+/* ---- The home page ---- */
+[data-slot="home"] {
+  box-sizing: border-box;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(10px, 2.6vh, 26px);
+  padding: 0 clamp(16px, 5vw, 68px) 18px;
+  background: radial-gradient(ellipse 90% 70% at 50% 108%, #2b1d13, var(--room) 64%);
+}
+
+[data-slot="home-top"] {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 54px;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+[data-slot="home-source"] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin-right: -6px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  color: var(--cream-soft);
+}
+
+[data-slot="home-source"]:hover {
+  border-color: rgb(255 255 255 / 0.32);
+  color: var(--cream);
+}
+
+[data-slot="home-source"]:focus-visible {
+  outline: 2px solid var(--brass);
+  outline-offset: 2px;
+}
+
+[data-slot="home-source"] svg {
+  width: 22px;
+  height: 22px;
+  fill: currentColor;
+}
+
+[data-slot="home-intro"] h1 {
+  margin: 0;
+  font-size: clamp(28px, 4.2vw, 40px);
+  font-weight: 900;
+  line-height: 1.15;
+}
+
+[data-slot="tile-facts"],
+[data-slot="tile-note"],
+[data-slot="home-note"] {
+  margin: 0;
+  color: var(--cream-soft);
+  font-size: 13px;
+}
+
+[data-slot="home-games"] {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  gap: clamp(12px, 2vw, 24px);
+  max-width: 1144px;
+}
+
+[data-slot="game-tile"] {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 22px;
+  border: 1px solid var(--line);
+  background: #17120e;
+}
+
+[data-slot="game-tile"][data-new] {
+  border-color: rgb(233 191 98 / 0.5);
+}
+
+/* The picture is clipped to its own strip, so it can never cover the text under it. */
+[data-slot="tile-scene"] {
+  --felt: #22604b;
+  --cw: clamp(30px, 5.6vh, 46px);
+  position: relative;
+  height: clamp(100px, 24vh, 208px);
+  overflow: hidden;
+  perspective: 900px;
+  perspective-origin: 50% 0%;
+}
+
+[data-game="holdem"] [data-slot="tile-scene"] {
+  --felt: #1f4f6b;
+}
+
+[data-slot="tile-table"] {
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  top: 4%;
+  height: 104%;
+  box-sizing: border-box;
+  padding: 3%;
+  border-radius: 999px;
+  transform: rotateX(58deg);
+  background: #5a341f;
+  box-shadow: 0 14px 0 #33200f;
+}
+
+[data-slot="tile-table"]::before {
+  content: "";
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--felt) radial-gradient(ellipse at 50% 40%, rgb(255 255 255 / 0.16), rgb(255 255 255 / 0) 60%);
+  box-shadow: inset 0 0 0 2px rgb(0 0 0 / 0.4);
+}
+
+[data-slot="tile-cards"] {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: flex;
+  gap: 6px;
+  transform: translate(-50%, -50%);
+}
+
+/* The four eights of the 掼蛋 tile lie as a bomb does: overlapped and fanned. */
+[data-game="guandan"] [data-slot="playing-card"] {
+  margin-inline: calc(var(--cw) * -0.14);
+  box-shadow: 0 0 0 1.5px #f0c869, 0 6px 10px rgb(0 0 0 / 0.45);
+}
+[data-game="guandan"] [data-slot="playing-card"]:nth-child(1) {
+  transform: translateY(8%) rotate(-10deg);
+}
+[data-game="guandan"] [data-slot="playing-card"]:nth-child(2) {
+  transform: rotate(-3.5deg);
+}
+[data-game="guandan"] [data-slot="playing-card"]:nth-child(3) {
+  transform: rotate(3.5deg);
+}
+[data-game="guandan"] [data-slot="playing-card"]:nth-child(4) {
+  transform: translateY(8%) rotate(10deg);
+}
+
+[data-slot="tile-badge"] {
+  position: absolute;
+  right: 14px;
+  top: 14px;
+  padding: 3px 11px;
+  border-radius: 13px;
+  background: var(--brass);
+  color: var(--brass-ink);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+[data-slot="tile-body"] {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: clamp(12px, 2.4vh, 20px) clamp(16px, 2.4vw, 28px) clamp(14px, 2.6vh, 24px);
+  background: #17120e;
+}
+
+[data-slot="tile-body"] h2 {
+  margin: 0;
+  font-size: clamp(26px, 3.4vw, 34px);
+  font-weight: 900;
+  letter-spacing: 2px;
+}
+
+[data-slot="tile-skills"] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+[data-slot="tile-skills"] li {
+  padding: 3px 10px;
+  border-radius: 13px;
+  border: 1px solid var(--line);
+  background: rgb(34 96 75 / 0.55);
+  font-size: 12px;
+}
+
+[data-game="holdem"] [data-slot="tile-skills"] li {
+  background: rgb(31 79 107 / 0.6);
+}
+
+[data-slot="home"] [data-slot="button"][data-variant="enter"] {
+  align-self: flex-start;
+  min-height: 48px;
+  margin-top: auto;
+  padding: 0 30px;
+  border: 0;
+  border-radius: 24px;
+  background: var(--brass);
+  color: var(--brass-ink);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+@media (max-width: 620px) {
+  [data-slot="home"] [data-slot="button"][data-variant="enter"] {
+    align-self: stretch;
+  }
+  [data-slot="tile-note"] {
+    display: none;
+  }
+}
+
+/* ---- The Hold'em screen: top bar, table, and the player's cards and buttons ---- */
+[data-slot="holdem"] {
+  --felt: #1f4f6b;
+  position: relative;
+  height: 100dvh;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  overflow: hidden;
+  background: radial-gradient(ellipse 120% 90% at 50% 112%, #2b1d13, var(--room) 62%);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+[data-slot="he-top"] {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 54px;
+  padding: 0 16px;
+}
+
+[data-slot="holdem"] [data-slot][data-variant="text"] {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  background: none;
+  color: var(--cream, #fff);
+  font-size: 14px;
+}
+
+[data-slot="holdem"] [data-slot="button"][data-home] {
+  padding-left: 4px;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+[data-slot="he-hand"] {
+  padding: 3px 9px;
+  border-radius: 11px;
+  border: 1px solid rgb(255 255 255 / 0.18);
+  color: var(--cream-soft);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+[data-slot="he-streets"] {
+  display: flex;
+  gap: 2px;
+  margin: 0 auto;
+  padding: 4px;
+  list-style: none;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: var(--hud);
+  color: var(--cream-soft);
+  font-size: 13px;
+}
+
+[data-slot="he-streets"] li {
+  padding: 4px 12px;
+  border-radius: 14px;
+  white-space: nowrap;
+}
+
+[data-slot="he-streets"] li[aria-current] {
+  background: var(--brass);
+  color: var(--brass-ink);
+  font-weight: 700;
+}
+
+[data-slot="he-menu"] {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* The same switch as on the 3D 掼蛋 table: brass when the coach is on. */
+[data-slot="holdem"] [data-slot][data-variant="coach"] {
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 0.28);
+  background: var(--hud);
+  color: var(--cream);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+[data-slot="holdem"] [data-slot][data-variant="coach"][aria-pressed="true"] {
+  border-color: var(--brass);
+  color: var(--brass);
+}
+
+/* ---- The table. A seat stands at design pixels (--x, --y): --x times --u across, --y times --v down.
+   The two are the same length except on an upright phone, where a short screen squeezes only the height.
+   What belongs to a seat (its bet, its cards at the end) is a fixed distance from the seat's label, so the
+   two never collide however small the table gets. --coach is the room kept above the table for the coach's bar. ---- */
+[data-slot="he-table"] {
+  --sw: 1280;
+  --sh: 470;
+  --coach: 0px;
+  --u: min(100cqw / var(--sw), (100cqh - var(--coach)) / var(--sh));
+  --v: var(--u);
+  --chip-w: 192px;
+  --board-y: 318;
+  --pot-x: 640;
+  --pot-y: 272;
+  --banner-y: 24;
+  position: relative;
+  min-height: 0;
+  container-type: size;
+}
+
+[data-slot="he-stage"] {
+  position: absolute;
+  left: 50%;
+  top: calc(var(--coach) + (100cqh - var(--coach) - var(--sh) * var(--v)) / 2);
+  width: calc(var(--sw) * var(--u));
+  height: calc(var(--sh) * var(--v));
+  transform: translateX(-50%);
+  perspective: calc(1500 * var(--u));
+  perspective-origin: 50% 0%;
+}
+
+[data-slot="he-felt"] {
+  --fx: 190;
+  --fy: 136;
+  --fw: 900;
+  --fh: 500;
+  --tilt: 52deg;
+  position: absolute;
+  left: calc(var(--fx) * var(--u));
+  top: calc(var(--fy) * var(--v));
+  box-sizing: border-box;
+  width: calc(var(--fw) * var(--u));
+  height: calc(var(--fh) * var(--v));
+  padding: calc(var(--fw) * 0.031 * var(--u));
+  border-radius: 999px;
+  transform: rotateX(var(--tilt));
+  background: linear-gradient(180deg, #7b4c2f 0%, #5a341f 46%, #6c4128 100%);
+  box-shadow: 0 calc(22 * var(--u)) 0 #3a2114, 0 calc(44 * var(--u)) 0 #22120a, 0 calc(90 * var(--u)) calc(90 * var(--u)) rgb(0 0 0 / 0.7);
+}
+
+[data-slot="he-felt"]::before {
+  content: "";
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background-color: var(--felt);
+  background-image:
+    radial-gradient(ellipse at 50% 42%, rgb(255 255 255 / 0.17), rgb(255 255 255 / 0) 58%),
+    radial-gradient(ellipse at 50% 50%, rgb(0 0 0 / 0) 48%, rgb(0 0 0 / 0.42) 100%);
+  box-shadow: inset 0 0 0 2px rgb(0 0 0 / 0.4), inset 0 10px 22px rgb(0 0 0 / 0.45), inset 0 0 0 calc(var(--fw) * 0.03 * var(--u)) var(--felt), inset 0 0 0 calc(var(--fw) * 0.03 * var(--u) + 1.5px) rgb(233 191 98 / 0.4);
+}
+
+[data-slot="he-seat"] {
+  position: absolute;
+  left: calc(var(--x) * var(--u));
+  top: calc(var(--y) * var(--v));
+  width: 0;
+  height: 0;
+}
+
+[data-slot="he-seat"][data-seat="1"] {
+  --x: 204;
+  --y: 440;
+  --bx: 120px;
+  --by: -44px;
+}
+[data-slot="he-seat"][data-seat="2"] {
+  --x: 372;
+  --y: 242;
+  --bx: -60px;
+  --by: 56px;
+}
+[data-slot="he-seat"][data-seat="3"] {
+  --x: 640;
+  --y: 202;
+  --bx: 0px;
+  --by: -44px;
+}
+[data-slot="he-seat"][data-seat="4"] {
+  --x: 884;
+  --y: 242;
+  --bx: 60px;
+  --by: 56px;
+}
+[data-slot="he-seat"][data-seat="5"] {
+  --x: 1078;
+  --y: 440;
+  --bx: -120px;
+  --by: -44px;
+}
+
+[data-slot="he-chip"],
+[data-slot="he-me"] {
+  position: relative;
+  box-sizing: border-box;
+  width: var(--chip-w);
+  height: 52px;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-content: center;
+  align-items: center;
+  gap: 0 9px;
+  padding: 0 12px 0 8px;
+  border-radius: 26px;
+  border: 1px solid rgb(255 255 255 / 0.16);
+  background: var(--hud);
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+[data-slot="he-chip"] {
+  position: absolute;
+  transform: translate(-50%, -50%);
+}
+
+[data-slot="he-seat"][data-active] [data-slot="he-chip"],
+[data-slot="he-me"][data-active] {
+  border-color: var(--brass);
+  box-shadow: 0 0 0 1px var(--brass);
+}
+
+[data-slot="he-seat"][data-folded] [data-slot="he-chip"] {
+  opacity: 0.55;
+}
+
+[data-slot="he-avatar"] {
+  grid-row: 1 / span 2;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #9cc0e0;
+  color: #17110b;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+[data-slot="he-me"] [data-slot="he-avatar"] {
+  background: var(--brass);
+}
+
+[data-slot="he-who"] {
+  font-size: 13px;
+}
+
+[data-slot="he-who"] b {
+  font-weight: 600;
+}
+
+[data-slot="he-who"] span,
+[data-slot="he-note"] {
+  color: var(--cream-soft);
+  font-size: 12px;
+}
+
+[data-slot="he-note"] {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The dealer button is a badge on the corner of the label of whoever has it. */
+[data-slot="he-dealer"] {
+  position: absolute;
+  left: -5px;
+  top: -9px;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--cream);
+  color: #17110b;
+  font-size: 12px;
+  font-weight: 900;
+  box-shadow: 0 2px 0 #a8a294, 0 4px 6px rgb(0 0 0 / 0.5);
+}
+
+[data-slot="he-bet"],
+[data-slot="he-pot"] {
+  position: absolute;
+  margin: 0;
+  padding: 2px 10px;
+  border-radius: 12px;
+  background: var(--hud);
+  font: 600 16px / 1.3 var(--digits);
+  white-space: nowrap;
+  transform: translate(-50%, -50%);
+}
+
+[data-slot="he-seat"] [data-slot="he-bet"] {
+  left: var(--bx);
+  top: var(--by);
+}
+
+[data-slot="he-bet"]::before {
+  content: "";
+  display: inline-block;
+  width: 0.7em;
+  height: 0.7em;
+  margin-right: 0.4em;
+  border-radius: 50%;
+  background: #d9483b;
+  box-shadow: inset 0 0 0 2px rgb(255 255 255 / 0.55);
+}
+
+[data-slot="he-pot"] {
+  left: calc(var(--pot-x) * var(--u));
+  top: calc(var(--pot-y) * var(--v));
+  border: 1px solid rgb(233 191 98 / 0.55);
+  color: var(--cream-soft);
+  font: 400 12px / 1.6 inherit;
+}
+
+[data-slot="he-pot"] b {
+  margin-left: 4px;
+  color: #f0c869;
+  font: 700 20px / 1 var(--digits);
+}
+
+/* Cards shown at the end lie on the seat's own label, where its initial was. */
+[data-slot="he-shown"] {
+  --cw: 38px;
+  position: absolute;
+  left: calc(var(--chip-w) / -2 + 6px);
+  top: 0;
+  display: flex;
+  transform: translateY(-50%);
+}
+
+[data-slot="he-shown"] > * + * {
+  margin-left: calc(var(--cw) * -0.3);
+}
+
+[data-slot="he-shown"] [data-slot="playing-card"][data-mark="used"] {
+  transform: none;
+  box-shadow: 0 0 0 2px #f0c869, 0 4px 8px rgb(0 0 0 / 0.5);
+}
+
+[data-slot="he-seat"][data-shown] [data-slot="he-chip"] {
+  grid-template-columns: 62px minmax(0, 1fr);
+}
+
+[data-slot="he-seat"][data-shown] [data-slot="he-avatar"] {
+  visibility: hidden;
+}
+
+[data-slot="he-board"] {
+  --cw: calc(68 * var(--v));
+  position: absolute;
+  left: 50%;
+  top: calc(var(--board-y) * var(--v));
+  display: flex;
+  gap: calc(10 * var(--v));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  transform: translateX(-50%);
+}
+
+[data-slot="he-banner"] {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(var(--banner-y) * var(--v));
+  z-index: 1;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+}
+
+[data-slot="he-banner"] b {
+  margin-right: -0.12em;
+  color: #ffe9ae;
+  font-size: clamp(28px, min(5cqw, 16cqh), 64px);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+  text-shadow: 0 0.06em 0 #7a4410, 0 0 0.5em rgb(255 180 70 / 0.7);
+}
+
+[data-slot="he-banner"] span {
+  padding: 4px 14px;
+  border-radius: 14px;
+  background: var(--hud);
+  color: #f6e7c4;
+  font-size: 14px;
+}
+
+/* ---- The two panels over the table ---- */
+[data-slot="he-ranks"],
+[data-slot="he-coach"] {
+  position: absolute;
+  top: 8px;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--hud);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+[data-slot="he-ranks"] h2,
+[data-slot="he-coach"] h2,
+[data-slot="he-coach"] h3 {
+  margin: 0;
+  color: var(--cream-soft);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+[data-slot="he-coach"] h3 {
+  margin-top: 8px;
+  color: #f0c869;
+}
+
+[data-slot="he-coach"] p {
+  margin: 4px 0 0;
+}
+
+[data-slot="he-ranks"] {
+  left: 20px;
+  width: 184px;
+}
+
+[data-slot="he-ranks"] ol,
+[data-slot="he-review"] {
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+[data-slot="he-ranks"] li {
+  display: flex;
+  justify-content: space-between;
+  padding: 2px 8px;
+  border-radius: 7px;
+  border: 1px solid transparent;
+}
+
+[data-slot="he-ranks"] li[data-mine] {
+  background: var(--brass);
+  color: var(--brass-ink);
+  font-weight: 700;
+}
+
+[data-slot="he-ranks"] li[data-theirs] {
+  border-color: #9cc0e0;
+  color: #c5dcf0;
+}
+
+[data-slot="he-ranks"] li[data-draw] {
+  border: 1px dashed var(--brass);
+  color: #f0c869;
+}
+
+[data-slot="he-ranks"] li[data-draw]::after {
+  content: "差一张";
+}
+
+/* The panel stops above the label of the seat under it (戊, at 440 of the stage's 470). */
+/* At 1240px wide the panel just clears the label of 丁 (884 of the stage's 1280). */
+[data-slot="he-coach"] {
+  right: 16px;
+  width: 260px;
+  max-height: calc(50cqh + 205 * var(--u) - 40px);
+  overflow-y: auto;
+}
+
+[data-slot="he-odds"] {
+  margin: 8px 0 0;
+  padding: 10px;
+  border-radius: 10px;
+  background: rgb(255 255 255 / 0.06);
+}
+
+[data-slot="he-odds"] div {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: baseline;
+  gap: 2px 8px;
+}
+
+[data-slot="he-odds"] div + div {
+  margin-top: 6px;
+}
+
+[data-slot="he-odds"] dt {
+  color: var(--cream-soft);
+  font-size: 12px;
+}
+
+[data-slot="he-odds"] dd {
+  margin: 0;
+  font: 600 17px / 1 var(--digits);
+}
+
+[data-slot="he-bar"] {
+  grid-column: 1 / -1;
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #9cc0e0 calc(var(--share) * 100%), rgb(255 255 255 / 0.12) 0);
+}
+
+[data-slot="he-bar"][data-kind="have"] {
+  background: linear-gradient(90deg, var(--brass) calc(var(--share) * 100%), rgb(255 255 255 / 0.12) 0);
+}
+
+[data-slot="he-review"] li + li {
+  margin-top: 8px;
+}
+
+[data-slot="he-review"] p {
+  margin: 4px 0 0;
+}
+
+[data-slot="he-decision"] {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+[data-slot="he-decision"] span:first-child {
+  opacity: 0.75;
+}
+
+[data-slot="he-grade"] {
+  margin-left: auto;
+  padding: 0 9px;
+  border-radius: 10px;
+  background: var(--brass);
+  color: var(--brass-ink);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+[data-verdict="ok"] [data-slot="he-grade"] {
+  background: #9cc0e0;
+}
+
+[data-verdict="poor"] [data-slot="he-grade"] {
+  background: #c3271d;
+  color: #fff;
+}
+
+[data-slot="he-review"] p + p {
+  font-size: 12px;
+}
+
+/* With the coach off, its box keeps one line of table news. At the end of a hand the banner says the same, so it goes. */
+[data-slot="holdem"][data-over] [data-slot="he-coach"][data-quiet] {
+  display: none;
+}
+
+/* Only where the coach is a bar: the result in words, the grades counted, and a button for the full review. */
+[data-slot="he-outcome"],
+[data-slot="he-tally"],
+[data-slot="he-short"],
+[data-slot="holdem"] [data-review] {
+  display: none;
+}
+
+/* ---- The player's own strip: who they are, their two cards, and the buttons ---- */
+[data-slot="he-controls"] {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: end;
+  gap: 12px;
+  padding: 0 20px 16px;
+}
+
+[data-slot="he-me"] {
+  width: 250px;
+}
+
+[data-slot="he-controls"] > [data-slot="he-bet"] {
+  left: 50%;
+  top: auto;
+  bottom: calc(100% + 6px);
+  transform: translateX(-50%);
+}
+
+[data-slot="he-hole"] {
+  --cw: clamp(76px, 8.2vw, 104px);
+  grid-column: 2;
+  display: flex;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+[data-slot="he-hole"] li {
+  transform: rotate(-4deg);
+}
+
+[data-slot="he-hole"] li + li {
+  margin-left: calc(var(--cw) * -0.18);
+  transform: rotate(4deg);
+}
+
+[data-slot="he-hole"][data-folded] {
+  opacity: 0.5;
+}
+
+[data-slot="he-notice"] {
+  position: absolute;
+  right: 20px;
+  bottom: 100%;
+  margin: 0;
+  padding: 4px 12px;
+  border-radius: 12px;
+  background: #c3271d;
+  color: #fff;
+  font-size: 13px;
+}
+
+[data-slot="he-actions"] {
+  grid-column: 3;
+  justify-self: end;
+  width: min(424px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+[data-slot="he-sizes"],
+[data-slot="he-buttons"] {
+  display: flex;
+  gap: 6px;
+}
+
+[data-slot="holdem"] [data-slot="button"][data-variant="size"] {
+  flex: 1;
+  min-width: 0;
+  min-height: 46px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  border: 1px solid rgb(255 255 255 / 0.18);
+  background: var(--hud);
+  color: var(--cream);
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+[data-slot="button"][data-variant="size"] b {
+  font: 600 15px / 1 var(--digits);
+}
+
+[data-slot="holdem"] [data-slot="button"][data-variant="size"][aria-pressed="true"] {
+  border-color: var(--brass);
+  background: var(--brass);
+  color: var(--brass-ink);
+}
+
+[data-slot="he-slider"] {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 4px;
+  color: var(--cream-soft);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+[data-slot="he-slider"] input {
+  flex: 1;
+  min-width: 0;
+  height: 24px;
+  accent-color: var(--brass);
+}
+
+[data-slot="he-buttons"] [data-variant] {
+  flex: 1;
+  min-width: 0;
+  min-height: 50px;
+  padding: 0 8px;
+  border-radius: 25px;
+  border: 1px solid rgb(255 255 255 / 0.22);
+  background: var(--hud);
+  color: var(--cream);
+  font-size: 16px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+[data-slot="he-buttons"] [data-variant="call"] {
+  flex: 1.2;
+  border: 0;
+  background: var(--brass);
+  color: var(--brass-ink);
+}
+
+[data-slot="he-buttons"] [data-variant="raise"] {
+  flex: 1.4;
+  border: 1.5px solid var(--brass);
+  color: #f0c869;
+}
+
+[data-slot="rules-list"] {
+  margin: 0;
+  padding-left: 1.2em;
+  line-height: 1.7;
+}
+
+/* ---- Anything narrower than a laptop, and a phone on its side: the coach is a bar across the top of the
+   table, with the table under it. The hand-rank panel and the full review move into dialogs. ---- */
+@media (max-width: 1239px), (max-height: 480px) {
+  [data-slot="he-table"] {
+    --coach: 100px;
+  }
+  /* With the coach off its bar is one line, so the table gets the rest of the room. */
+  [data-slot="holdem"][data-coach-off] [data-slot="he-table"] {
+    --coach: 36px;
+  }
+  [data-slot="holdem"][data-over] [data-slot="he-coach"][data-quiet] {
+    display: block;
+  }
+  [data-slot="he-ranks"],
+  [data-slot="he-coach"] h2,
+  [data-slot="he-coach"] [data-slot="he-odds"],
+  [data-slot="he-coach"] [data-slot="he-remind"],
+  [data-slot="he-coach"] [data-slot="he-review"],
+  [data-slot="he-banner"] span {
+    display: none;
+  }
+  [data-slot="he-outcome"],
+  [data-slot="he-tally"],
+  [data-slot="holdem"][data-over] [data-slot="he-coach"] h2 {
+    display: block;
+  }
+  [data-slot="holdem"] [data-review] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  [data-slot="he-coach"] {
+    left: 50%;
+    right: auto;
+    top: 2px;
+    width: min(100% - 16px, 720px);
+    max-height: calc(var(--coach) - 6px);
+    padding: 5px 12px;
+    font-size: 12px;
+    transform: translateX(-50%);
+  }
+  [data-slot="he-coach"] h3,
+  [data-slot="he-coach"] p {
+    margin-top: 2px;
+  }
+  [data-slot="he-outcome"] {
+    color: #f6e7c4;
+    font-weight: 700;
+  }
+  [data-slot="he-tally"] {
+    color: #f0c869;
+  }
+}
+
+/* ---- Anything narrower than a laptop, and short windows: smaller seat labels that say less. Below 1240px wide,
+   or about 580px high at any width, the table has shrunk but full-size labels have not, and the labels of 乙,
+   丙 and 丁 run into each other. ---- */
+@media (max-width: 1239px), (max-height: 640px) {
+  [data-slot="he-long"],
+  [data-slot="he-chip"] [data-slot="he-who"] b {
+    display: none;
+  }
+  [data-slot="he-short"] {
+    display: inline;
+  }
+  [data-slot="he-table"] {
+    --chip-w: 122px;
+  }
+  [data-slot="he-chip"] {
+    height: 42px;
+    grid-template-columns: 28px minmax(0, 1fr);
+    gap: 0 6px;
+    padding: 0 8px 0 5px;
+    border-radius: 21px;
+  }
+  [data-slot="he-chip"] [data-slot="he-avatar"] {
+    width: 28px;
+    height: 28px;
+    font-size: 13px;
+  }
+  [data-slot="he-chip"] [data-slot="he-who"],
+  [data-slot="he-chip"] [data-slot="he-who"] span {
+    color: var(--cream);
+    font-size: 12px;
+  }
+  [data-slot="he-shown"] {
+    --cw: 30px;
+    left: calc(var(--chip-w) / -2 + 4px);
+  }
+  [data-slot="he-seat"][data-shown] [data-slot="he-chip"] {
+    grid-template-columns: 48px minmax(0, 1fr);
+  }
+  [data-slot="he-seat"][data-shown] [data-slot="he-who"] b {
+    display: inline;
+  }
+  [data-slot="he-top"] {
+    gap: 6px;
+    min-height: 46px;
+    padding: 0 8px 0 4px;
+  }
+  [data-slot="he-streets"] li {
+    padding: 3px 8px;
+  }
+}
+
+/* ---- Phone upright: a tall table as wide as the screen. The player's two cards and label lie over its
+   near edge, and the buttons run across the bottom. ---- */
+@media (max-width: 620px) {
+  [data-slot="holdem"] [data-slot="button"][data-home] {
+    min-width: 44px;
+    padding: 0 6px;
+    font-size: 0;
+  }
+  [data-slot="holdem"] [data-slot="button"][data-home] span {
+    font-size: 26px;
+  }
+  [data-slot="he-top"] {
+    flex-wrap: wrap;
+    row-gap: 0;
+    padding-bottom: 4px;
+  }
+  [data-slot="he-menu"] {
+    margin-left: auto;
+  }
+  [data-slot="he-streets"] {
+    order: 5;
+    flex: 0 0 100%;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 3px;
+    font-size: 12px;
+  }
+  [data-slot="he-streets"] li {
+    flex: 1;
+    padding: 3px 0;
+    text-align: center;
+  }
+  [data-slot="he-table"] {
+    --sw: 393;
+    --sh: 436;
+    --u: calc(100cqw / var(--sw));
+    --v: min(var(--u), (100cqh - var(--coach)) / var(--sh));
+    --board-y: 208;
+    --pot-x: 196;
+    --pot-y: 180;
+    --banner-y: 98;
+  }
+  [data-slot="he-stage"] {
+    perspective: calc(1100 * var(--u));
+  }
+  [data-slot="he-felt"] {
+    --fx: 14;
+    --fy: -4;
+    --fw: 365;
+    --fh: 470;
+    --tilt: 36deg;
+  }
+  [data-slot="he-seat"][data-seat="1"] {
+    --x: 66;
+    --y: 326;
+    --bx: -30px;
+    --by: -36px;
+  }
+  [data-slot="he-seat"][data-seat="2"] {
+    --x: 70;
+    --y: 132;
+    --bx: 14px;
+    --by: 36px;
+  }
+  [data-slot="he-seat"][data-seat="3"] {
+    --x: 196;
+    --y: 56;
+    --bx: 0px;
+    --by: 38px;
+  }
+  [data-slot="he-seat"][data-seat="4"] {
+    --x: 323;
+    --y: 132;
+    --bx: -14px;
+    --by: 36px;
+  }
+  [data-slot="he-seat"][data-seat="5"] {
+    --x: 327;
+    --y: 326;
+    --bx: 30px;
+    --by: -36px;
+  }
+  [data-slot="he-board"] {
+    --cw: calc(49 * var(--v));
+    gap: calc(6 * var(--v));
+  }
+  [data-slot="he-banner"] b {
+    font-size: 28px;
+  }
+  /* The two cards fill the gap between the labels of 甲 and 戊, which are a fixed width. */
+  [data-slot="he-controls"] {
+    --hole: clamp(52px, 36.5vw - 68px, 76px);
+    display: block;
+    padding: 0 8px 8px;
+  }
+  [data-slot="he-me"] {
+    position: absolute;
+    left: 8px;
+    bottom: calc(100% + 8px);
+    width: auto;
+    max-width: 118px;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1px;
+    padding: 6px 10px;
+    border-radius: 14px;
+  }
+  [data-slot="he-me"] [data-slot="he-avatar"] {
+    display: none;
+  }
+  /* There is no avatar under the dealer badge here, so the text moves over to make room for it. */
+  [data-slot="he-me"]:has(> [data-slot="he-dealer"]) {
+    padding-left: 22px;
+  }
+  [data-slot="he-hole"] {
+    --cw: var(--hole);
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 4px);
+    transform: translateX(-50%);
+  }
+  [data-slot="he-controls"] > [data-slot="he-bet"] {
+    left: calc(50% + var(--hole) * 0.91 + 36px);
+    bottom: calc(100% + 28px);
+  }
+  /* Always as tall as its two rows, so the table does not change size between turns. */
+  [data-slot="he-actions"] {
+    justify-self: stretch;
+    width: auto;
+    min-height: 100px;
+    justify-content: flex-end;
+  }
+  [data-slot="he-slider"] {
+    display: none;
+  }
+  [data-slot="holdem"] [data-slot="button"][data-variant="size"] {
+    min-height: 44px;
+  }
+  [data-slot="he-notice"] {
+    right: 8px;
+  }
+}
+
+/* A short upright phone: smaller cards in hand, and the bar says only what to do and why. */
+@media (max-width: 620px) and (max-height: 620px) {
+  [data-slot="he-table"] {
+    --coach: 78px;
+  }
+  [data-slot="he-controls"] {
+    --hole: min(56px, 36.5vw - 68px);
+  }
+  [data-slot="he-controls"] > [data-slot="he-bet"] {
+    bottom: calc(100% + 16px);
+  }
+  [data-slot="he-coach"][data-advice] [role="status"],
+  [data-slot="he-hand"] {
+    display: none;
+  }
+  [data-slot="he-top"] {
+    flex-wrap: nowrap;
+    padding-bottom: 0;
+  }
+  [data-slot="he-streets"] {
+    order: 0;
+    flex: 1;
+  }
+  /* The street names share this row with three buttons, so the buttons give up some of their padding. */
+  [data-slot="he-menu"] {
+    gap: 2px;
+  }
+  [data-slot="holdem"] [data-slot="he-menu"] [data-variant="text"] {
+    min-width: 38px;
+    padding: 0 6px;
+  }
+  [data-slot="holdem"] [data-slot="he-menu"] [data-variant="coach"] {
+    padding: 0 10px;
+  }
+  [data-slot="he-me"] {
+    flex-direction: row;
+    gap: 6px;
+    max-width: none;
+    padding: 3px 10px;
+  }
+  [data-slot="he-me"] [data-slot="he-who"] b {
+    display: none;
+  }
+}
+
+/* ---- Phone on its side: the table fills the screen. The coach is a box at the bottom left with the
+   player's label as its last line, the two cards lie on the table's near edge, the buttons are a column. ---- */
+@media (max-height: 480px) and (min-width: 621px) {
+  [data-slot="holdem"] {
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+  [data-slot="he-table"],
+  [data-slot="holdem"][data-coach-off] [data-slot="he-table"] {
+    --sw: 852;
+    --sh: 256;
+    --coach: 0px;
+    --board-y: 72;
+    --pot-x: 264;
+    --pot-y: 100;
+  }
+  [data-slot="he-stage"] {
+    perspective: calc(1000 * var(--u));
+  }
+  [data-slot="he-felt"] {
+    --fx: 106;
+    --fy: -22;
+    --fw: 640;
+    --fh: 290;
+    --tilt: 56deg;
+  }
+  [data-slot="he-seat"][data-seat="1"] {
+    --x: 140;
+    --y: 106;
+    --bx: -36px;
+    --by: -36px;
+  }
+  [data-slot="he-seat"][data-seat="2"] {
+    --x: 232;
+    --y: 34;
+    --bx: 30px;
+    --by: 36px;
+  }
+  [data-slot="he-seat"][data-seat="3"] {
+    --x: 426;
+    --y: 28;
+    --bx: -92px;
+    --by: 0px;
+  }
+  [data-slot="he-seat"][data-seat="4"] {
+    --x: 620;
+    --y: 34;
+    --bx: -30px;
+    --by: 36px;
+  }
+  [data-slot="he-seat"][data-seat="5"] {
+    --x: 622;
+    --y: 106;
+    --bx: 36px;
+    --by: -36px;
+  }
+  [data-slot="he-board"] {
+    --cw: calc(42 * var(--v));
+    gap: calc(5 * var(--v));
+  }
+  [data-slot="he-banner"],
+  [data-slot="he-coach"][data-advice] [role="status"] {
+    display: none;
+  }
+  /* The box stops under the label of the seat above it (甲, at 106 of the stage's 256). */
+  [data-slot="he-coach"] {
+    left: 8px;
+    top: auto;
+    bottom: 8px;
+    width: min(300px, 36%);
+    max-height: calc(50cqh + 22 * var(--u) - 33px);
+    padding: 6px 10px 28px;
+    transform: none;
+  }
+  [data-slot="he-controls"] {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 0 8px 8px;
+    pointer-events: none;
+  }
+  [data-slot="he-controls"] > * {
+    pointer-events: auto;
+  }
+  [data-slot="he-me"] {
+    position: absolute;
+    left: 19px;
+    bottom: 13px;
+    width: auto;
+    height: auto;
+    display: flex;
+    gap: 6px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  [data-slot="he-me"][data-active] {
+    box-shadow: none;
+  }
+  [data-slot="he-me"][data-active] b {
+    color: #f0c869;
+  }
+  [data-slot="he-me"] [data-slot="he-avatar"] {
+    display: none;
+  }
+  [data-slot="he-me"] [data-slot="he-dealer"] {
+    position: static;
+    order: -1;
+    width: 18px;
+    height: 18px;
+    box-shadow: none;
+  }
+  [data-slot="he-hole"] {
+    --cw: 64px;
+  }
+  [data-slot="he-controls"] > [data-slot="he-bet"] {
+    left: calc(50% + 104px);
+    bottom: 40px;
+  }
+  [data-slot="he-actions"] {
+    width: 140px;
+    gap: 6px;
+  }
+  /* No room for the five size buttons: the slider alone sets the raise, from the minimum to all-in. */
+  [data-slot="he-sizes"] {
+    display: none;
+  }
+  [data-slot="he-slider"] {
+    gap: 6px;
+    padding: 0 2px;
+    font-size: 11px;
+  }
+  [data-slot="he-slider"] input {
+    height: 28px;
+  }
+  [data-slot="he-buttons"] {
+    flex-direction: column;
+  }
+  [data-slot="he-buttons"] [data-variant] {
+    flex: none;
+    min-height: 44px;
+    font-size: 15px;
+  }
+}

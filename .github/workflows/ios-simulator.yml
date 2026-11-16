@@ -3,7 +3,8 @@ name: iOS Simulator
 # Opens the production build in Mobile Safari inside Apple's iOS Simulator and checks a picture of the
 # screen. The WebKit in ci.yml is Playwright's own build on Linux: it is not Safari, and its screenshots
 # paint any 3D scene flat. Safari has painted the 3D table wrong three times with every other test green,
-# so this job looks at what the iPhone's browser really draws.
+# so this job looks at what the iPhone's browser really draws: the 3D 掼蛋 table, then a Texas Hold'em
+# showdown.
 #
 # The page drives itself (e2e/ios/driver.js), because no test tool can drive that browser from outside.
 # This check is not one of the three that branch protection requires.
@@ -49,47 +50,64 @@ jobs:
           xcrun simctl boot "$udid"
           xcrun simctl bootstatus "$udid" -b
           echo "UDID=$udid" >> "$GITHUB_ENV"
-      - name: Open the game in Mobile Safari, let it play to the state to photograph, and take the picture
+      - name: Open each game in Mobile Safari, let it play to the state to photograph, and take the picture
         run: |
-          node e2e/ios/serve.mjs ios-report.json &
+          node e2e/ios/serve.mjs ios-report &
           # A slow runner can take more than a minute to start the server. Safari must not get the link before it answers.
           for attempt in $(seq 1 90); do
             curl -sf -o /dev/null http://127.0.0.1:4174/ && break
             sleep 1
           done
-          # Safari is sometimes not ready to take a link right after the simulator boots, so try a few times.
-          opened=no
-          for attempt in 1 2 3 4 5; do
-            if xcrun simctl openurl "$UDID" "http://127.0.0.1:4174/"; then
-              opened=yes
-              break
+          # Right after a first boot the simulator can take minutes to be able to start an app. Start Safari on its
+          # own first, retrying, so that opening a link only has to load a page.
+          for attempt in $(seq 1 12); do
+            xcrun simctl launch "$UDID" com.apple.mobilesafari > /dev/null && break
+            sleep 15
+          done
+          missing=""
+          # 掼蛋 first: Safari can show a tip over the bottom of the screen on its first page, where the
+          # 掼蛋 check looks at nothing, but where the Hold'em table has the player's cards.
+          for game in guandan holdem; do
+            # Safari is sometimes still not ready to take a link, so try for about five minutes.
+            opened=no
+            for attempt in $(seq 1 12); do
+              if xcrun simctl openurl "$UDID" "http://127.0.0.1:4174/?game=$game"; then
+                opened=yes
+                break
+              fi
+              sleep 15
+            done
+            if [ "$opened" = no ]; then
+              echo "::error::The simulator did not open the $game link in twelve tries."
+              exit 1
             fi
-            sleep 10
+            # The driver stops itself after 150 seconds and reports either way; this leaves room for a slow page load.
+            for attempt in $(seq 1 150); do
+              [ -f "ios-report-$game.json" ] && break
+              sleep 2
+            done
+            sleep 1
+            xcrun simctl io "$UDID" screenshot "ios-screenshot-$game.png"
+            [ -f "ios-report-$game.json" ] || missing="$missing $game"
           done
-          if [ "$opened" = no ]; then
-            echo "::error::The simulator did not open the link in five tries."
-            exit 1
-          fi
-          # The driver stops itself after 150 seconds and reports either way; this leaves room for a slow page load.
-          for attempt in $(seq 1 150); do
-            [ -f ios-report.json ] && break
-            sleep 2
-          done
-          sleep 1
-          xcrun simctl io "$UDID" screenshot ios-screenshot.png
-          if [ ! -f ios-report.json ]; then
-            echo "::error::The page did not report within 300 seconds. The screenshot in the artifact shows what Safari had on screen."
+          if [ -n "$missing" ]; then
+            echo "::error::No report within 300 seconds from:$missing. The screenshots in the artifact show what Safari had on screen."
             exit 1
           fi
       - name: Check what Safari painted
-        run: node e2e/ios/check-shot.mjs ios-screenshot.png ios-report.json
+        run: |
+          status=0
+          for game in guandan holdem; do
+            node e2e/ios/check-shot.mjs "ios-screenshot-$game.png" "ios-report-$game.json" || status=1
+          done
+          exit $status
       - name: Keep the screenshot and the report
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ios-simulator
           path: |
-            ios-screenshot.png
-            ios-report.json
+            ios-screenshot-*.png
+            ios-report-*.json
           if-no-files-found: ignore
           retention-days: 14

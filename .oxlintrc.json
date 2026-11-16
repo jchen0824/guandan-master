@@ -198,7 +198,8 @@
     },
     {
       "files": [
-        "src/engine/benchmark.test.ts"
+        "src/engine/benchmark.test.ts",
+        "src/holdem/levels.test.ts"
       ],
       "rules": {
         "no-console": "off",

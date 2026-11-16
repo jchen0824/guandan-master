@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest"
+import { botAction } from "./bot"
 import { advise, gradeChoice } from "./coach"
 import { HERO, SEATS, act, legalActions, newTable } from "./game"
 import type { Action, HoldemState } from "./game"
@@ -103,6 +104,13 @@ describe("win rates and draws", () => {
     const advice = advise(state, seeded(5))
     expect(advice.action).toEqual({ kind: "call" })
     expect(advice.reason).not.toMatch(/不够/)
+  })
+
+  it("has a novice call a bet that is slightly too big, where an advanced player folds", () => {
+    // An open-ended straight draw facing 300: about 36% to win, and the call needs 40%.
+    const state = facingBet("7D 6C", "9S 8H 2C", 300)
+    expect(botAction(state, HERO, seeded(5), "novice")).toEqual({ kind: "call" })
+    expect(botAction(state, HERO, seeded(5), "advanced")).toEqual({ kind: "fold" })
   })
 
   it("counts the players who have bet on this street, for the win rate against them", () => {

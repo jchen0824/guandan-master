@@ -85,11 +85,33 @@ button {
   white-space: nowrap;
 }
 
+[data-slot="top-left"],
 [data-slot="scores"],
 [data-slot="menu"] {
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+[data-slot="top-left"] {
+  min-width: 0;
+}
+
+/* Back to the home page, at the left of the top bar like the one on the Texas Hold'em table. */
+[data-slot="top-left"] > [data-home] {
+  flex: none;
+  min-width: 32px;
+  min-height: 44px;
+  /* A full-height target that does not make the row taller than the scores beside it, and does not reach
+     above a top bar with only 4px of padding. */
+  margin-block: -4px -6px;
+  margin-left: -6px;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font-size: 26px;
+  line-height: 1;
 }
 
 [data-slot="menu"] {
@@ -1514,7 +1536,35 @@ button {
   }
 }
 
+/* Upright phones of iPhone width and less: the back button, the scores and the menu share one row, so all three tighten. */
+@media (max-width: 400px) {
+  [data-slot="top-left"] {
+    gap: 3px;
+  }
+  [data-slot="top-left"] > [data-home] {
+    min-width: 24px;
+    margin-left: -6px;
+    padding: 0;
+  }
+  [data-slot="level-badge"],
+  [data-slot="score"] {
+    padding-inline: 5px;
+  }
+  [data-slot="menu"] [data-variant="text"] {
+    min-width: 32px;
+  }
+  [data-view="2d"] [data-slot="menu"] > [data-view-switch] [data-slot="segmented-control-item"][data-checked] {
+    display: none;
+  }
+}
+
 @media (max-width: 380px) {
+  [data-slot="topbar"] {
+    padding-inline: 6px;
+  }
+  [data-slot][data-variant="coach"] {
+    padding: 0 8px;
+  }
   /* On the narrowest phones only the table you can switch to fits, so the half for the table you are on goes. */
   [data-view="2d"] [data-slot="menu"] > [data-view-switch] [data-slot="segmented-control-item"][data-checked] {
     display: none;

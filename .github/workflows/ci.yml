@@ -35,6 +35,8 @@ jobs:
         run: npm run check:conventions
       - name: Tests (rules engine, bots, game screen)
         run: npm test
+      - name: Texas Hold'em computer player levels (each level must beat the one below)
+        run: npm run test:levels
       - name: Typecheck and production build
         run: npm run build
       - name: Bundle size budget

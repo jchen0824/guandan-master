@@ -36,13 +36,13 @@ npx playwright show-trace test-results/<folder>/trace.zip   # step through a fai
 
 A failure lists what is wrong in sentences, for example `the 出牌 button is partly off screen (369,466 88×44 in 393×745)`. The numbers are left, top, width×height. Fix the layout. Do not loosen the check: if a rule in `e2e/page-tools.js` is wrong for a real reason, change it in the same pull request and say why.
 
-When you add something a player can see or press, add it to a test in `e2e/game.spec.ts`. Keep rules out of there; they belong in `src/engine/engine.test.ts`.
+When you add something a player can see or press, add it to a test in `e2e/game.spec.ts`, or in `e2e/holdem.spec.ts` for the home page and the Texas Hold'em table. Keep rules out of there; they belong in `src/engine/engine.test.ts` and `src/holdem`.
 
 ## Pass 2: look at it yourself
 
 Automated checks only cover what someone thought to assert. Use whatever browser tool you have (a built-in browser, Playwright MCP, Chrome DevTools).
 
-1. Start the dev server with `npm run dev` and open it as **`http://qa.localhost:<port>`**, not `localhost`. Same server, separate storage, so you never overwrite a real saved match. Never drive a tab the maintainer is playing in.
+1. Start the dev server with `npm run dev` and open it as **`http://qa.localhost:<port>`**, not `localhost`. Same server, separate storage, so you never overwrite a real saved match. Never drive a tab the maintainer is playing in. The first screen is the home page: pick the game there, or set `localStorage['guandan.game']` to `guandan` or `holdem` and reload. `guandanQa.layoutProblems()` works on all three screens.
 2. Load the page tools: read `e2e/page-tools.js` and evaluate its whole text in the page. It defines `window.guandanQa`.
 3. At each of the three sizes (about 375×550, 852×300, 1280×720), reach the states below and run `guandanQa.layoutProblems()`. An empty list means nothing is off screen, covered or overlapping.
 4. Look at a screenshot too. The probe cannot judge whether something is ugly, cramped or confusing.

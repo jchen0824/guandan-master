@@ -1,23 +1,25 @@
 // Serves the production build to Mobile Safari in the iOS Simulator, with page-tools.js and driver.js put
-// into the page ahead of the app, and saves the report the page posts back.
-// Usage: node e2e/ios/serve.mjs <report file>   (after `npm run build`)
+// into the page ahead of the app, and saves the report the page posts back as <prefix>-<game>.json.
+// Usage: node e2e/ios/serve.mjs [prefix]   (after `npm run build`; the prefix defaults to ios-report)
 import { createServer } from "node:http"
 import { readFile, writeFile } from "node:fs/promises"
 import { extname, join, normalize, resolve } from "node:path"
 
 const PORT = Number(process.env.PORT ?? 4174)
 const dist = resolve("dist")
-const reportFile = process.argv[2] ?? "ios-report.json"
+const prefix = process.argv[2] ?? "ios-report"
+const GAMES = new Set(["guandan", "holdem"])
 const here = (name) => readFile(new URL(name, import.meta.url), "utf8")
 const inject = `<script>${await here("../page-tools.js")}\n${await here("./driver.js")}</script>`
 const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".css": "text/css", ".svg": "image/svg+xml", ".woff": "font/woff", ".woff2": "font/woff2" }
 
 createServer(async (request, response) => {
-  const { pathname } = new URL(request.url, "http://localhost")
+  const { pathname, searchParams } = new URL(request.url, "http://localhost")
   if (request.method === "POST" && pathname === "/qa-report") {
     const parts = []
     for await (const part of request) parts.push(part)
-    await writeFile(reportFile, Buffer.concat(parts))
+    const game = GAMES.has(searchParams.get("game")) ? searchParams.get("game") : "unknown"
+    await writeFile(`${prefix}-${game}.json`, Buffer.concat(parts))
     response.end("saved")
     return
   }

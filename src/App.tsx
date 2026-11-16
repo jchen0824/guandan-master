@@ -32,6 +32,7 @@ import { HUMAN, PLACE_NAMES, SEAT_NAMES, SIDES, TEAM_NAMES } from "./ui/names"
 import { useGame } from "./ui/useGame"
 import { useView } from "./ui/view"
 import { ViewSwitch } from "./ui/ViewSwitch"
+import { useSaved } from "./ui/useSaved"
 
 function PlayZone({ game, record, seat }: { game: GameState; record: PlayRecord | null; seat: number }) {
   return (
@@ -144,26 +145,6 @@ const SUITS: [Suit, string, string][] = [
   ["D", "♦", "只看方块"],
 ]
 
-function useSaved(key: string, fallback: boolean): [boolean, (value: boolean) => void] {
-  const [value, setValue] = useState(() => {
-    try {
-      const saved = localStorage.getItem(key)
-      return saved === null ? fallback : saved === "1"
-    } catch {
-      return fallback
-    }
-  })
-  const save = (next: boolean) => {
-    setValue(next)
-    try {
-      localStorage.setItem(key, next ? "1" : "0")
-    } catch {
-      return
-    }
-  }
-  return [value, save]
-}
-
 function cardIdAt(x: number, y: number): number | null {
   const card = document.elementFromPoint(x, y)?.closest<HTMLElement>("[data-card-id]")
   return card ? Number(card.dataset.cardId) : null
@@ -216,7 +197,7 @@ function useSwipeSelect(selected: number[], selectCard: (id: number, on: boolean
   }
 }
 
-function App() {
+function App({ onHome }: { onHome?: () => void }) {
   const g = useGame()
   const swipe = useSwipeSelect(g.selected, g.selectCard)
   const [coachOn, setCoachOn] = useSaved("guandan.coach", true)
@@ -267,22 +248,29 @@ function App() {
     >
       <div data-slot="board">
         <header data-slot="topbar">
-          {three ? (
-            <div data-slot="brand">
-              <strong>掼蛋教练</strong>
-              <span>第 {game.handNumber} 局</span>
+          <div data-slot="top-left">
+            {onHome ? (
+              <Button data-variant="text" data-home="" aria-label="回到首页" onClick={onHome}>
+                <span aria-hidden="true">‹</span>
+              </Button>
+            ) : null}
+            {three ? (
+              <div data-slot="brand">
+                <strong>掼蛋教练</strong>
+                <span>第 {game.handNumber} 局</span>
+              </div>
+            ) : null}
+            <div data-slot="scores">
+              <span data-slot="level-badge">
+                <span data-slot="badge-long">本局</span>打 <b>{rankLabel(game.level)}</b>
+              </span>
+              <span data-slot="score">
+                {TEAM_NAMES[0]} <b>{rankLabel(game.levels[0])}</b>
+              </span>
+              <span data-slot="score">
+                {TEAM_NAMES[1]} <b>{rankLabel(game.levels[1])}</b>
+              </span>
             </div>
-          ) : null}
-          <div data-slot="scores">
-            <span data-slot="level-badge">
-              <span data-slot="badge-long">本局</span>打 <b>{rankLabel(game.level)}</b>
-            </span>
-            <span data-slot="score">
-              {TEAM_NAMES[0]} <b>{rankLabel(game.levels[0])}</b>
-            </span>
-            <span data-slot="score">
-              {TEAM_NAMES[1]} <b>{rankLabel(game.levels[1])}</b>
-            </span>
           </div>
           {three ? (
             <div data-slot="top-middle">{trackerOn ? <Tracker game={game} /> : null}</div>
@@ -305,6 +293,7 @@ function App() {
               onStartOver={g.startOver}
               view={view}
               onViewChange={setView}
+              onHome={onHome}
             />
             <Button data-variant="coach" aria-pressed={coachOn} onClick={pressCoach}>
               {coachOn ? null : <span data-slot="badge-long">显示</span>}教练
