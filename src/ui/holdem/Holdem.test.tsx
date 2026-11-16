@@ -126,6 +126,22 @@ describe("the Texas Hold'em table", () => {
     expect(within(screen.getByLabelText("牌桌动态")).getByRole("status").textContent).toMatch(/赢得|平分底池/)
   })
 
+  it("sets the raise to exactly all-in at the far end of the slider, and to the minimum at the near end", () => {
+    render(<Holdem onHome={() => {}} />)
+    waitForButtons()
+    const slider = screen.getByRole("slider")
+    const sizes = within(screen.getByRole("group", { name: /多少$/ }))
+    for (const [end, preset] of [
+      [slider.getAttribute("max") ?? "", "全下"],
+      ["0", "最小"],
+    ]) {
+      fireEvent.change(slider, { target: { value: end } })
+      const amount = sizes.getByRole("button", { name: new RegExp(`^${preset}`) }).querySelector("b")?.textContent ?? ""
+      expect(slider.getAttribute("aria-valuetext")).toBe(amount)
+      expect(screen.getByRole("button", { name: new RegExp(`^(下注|加注到) ${amount}$`) })).toBeTruthy()
+    }
+  })
+
   it("raises to the size the player picked", () => {
     render(<Holdem onHome={() => {}} />)
     waitForButtons()

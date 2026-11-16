@@ -71,13 +71,13 @@ test("a raise of any size can be chosen, the minimum and all-in included", async
   const slider = page.getByRole("slider")
   // A phone on its side has only the slider; an upright phone only the size buttons; a wide screen both.
   if (await slider.isVisible()) {
-    const min = Number(await slider.getAttribute("min"))
-    const max = Number(await slider.getAttribute("max"))
+    // The slider says the amount it is set to; the raise button must say the same at both ends.
     await slider.focus()
-    await page.keyboard.press("End")
-    await expect(raise).toHaveText(new RegExp(`${max.toLocaleString("en-US")}$`))
-    await page.keyboard.press("Home")
-    await expect(raise).toHaveText(new RegExp(`${min.toLocaleString("en-US")}$`))
+    for (const key of ["End", "Home"]) {
+      await page.keyboard.press(key)
+      const amount = (await slider.getAttribute("aria-valuetext")) ?? ""
+      await expect(raise).toHaveText(new RegExp(`${amount}$`))
+    }
   } else {
     const sizes = page.getByRole("group", { name: /多少$/ })
     for (const name of ["全下", "最小"]) {

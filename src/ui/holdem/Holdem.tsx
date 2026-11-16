@@ -13,6 +13,7 @@ import type { HandCategory } from "../../holdem/hands"
 import { place } from "../place"
 import { useSaved } from "../useSaved"
 import { PlayingCard } from "./PlayingCard"
+import { nearestStep, raiseSteps } from "./sizes"
 import { biggestWinner, resultLine } from "./summary"
 import { useHoldem } from "./useHoldem"
 import type { Decision } from "./useHoldem"
@@ -240,7 +241,8 @@ function Coach({ on, game, advice, decisions, outcome }: { on: boolean; game: Ho
 function Actions({ game, advice, coached, onChoose }: { game: HoldemState; advice: Advice; coached: boolean; onChoose: (action: Action) => void }) {
   const legal = legalActions(game)
   const { minRaiseTo: least, maxRaiseTo: most } = legal
-  const fit = (to: number) => Math.min(most ?? 0, Math.max(least ?? 0, Math.round(to / 10) * 10))
+  const steps = least === null || most === null ? [0] : raiseSteps(least, most)
+  const fit = (to: number) => nearestStep(steps, to)
   const ofPot = (share: number) => fit(game.currentBet + (game.pot + legal.callAmount) * share)
   const [size, setSize] = useState(() => ({ name: "", to: coached && advice.action.kind === "raise" ? advice.action.to : ofPot(2 / 3) }))
   const amount = size.to
@@ -269,7 +271,16 @@ function Actions({ game, advice, coached, onChoose }: { game: HoldemState; advic
           </div>
           <label data-slot="he-slider">
             <span>{raising}</span>
-            <input type="range" min={least ?? 0} max={most ?? 0} step={10} value={amount} onChange={(event) => setSize({ name: "", to: fit(Number(event.target.value)) })} />
+            {/* The slider moves through the allowed amounts by position, so both ends are exact. */}
+            <input
+              type="range"
+              min={0}
+              max={steps.length - 1}
+              step={1}
+              value={steps.indexOf(fit(amount))}
+              aria-valuetext={chips(amount)}
+              onChange={(event) => setSize({ name: "", to: steps[Number(event.target.value)] })}
+            />
           </label>
         </>
       ) : null}
