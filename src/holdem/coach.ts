@@ -86,7 +86,10 @@ function afterTheFlop(state: HoldemState, have: number, drawText: string | null)
   const price = `花 ${chips(call)} 去赢 ${chips(potAfterCall)}，要有 ${percent(need)} 的胜率才不亏`
   if (have >= 0.75) return { action: raiseTo(state, state.currentBet * 2.5 + state.pot * 0.3), reason: `${mine}，远高于需要的 ${percent(need)}。加注，把底池做大。` }
   if (have >= need + 0.03) return { action: { kind: "call" }, reason: `${price}。${mine}，比需要的高，这样跟下去长期是赚的。` }
-  if (drawText && have >= need - 0.06) {
+  // A draw may call a little below the price only when hitting it can still win more: the hero and someone
+  // still in the hand both keep chips after this call. Against an all-in there is no later betting.
+  const later = state.seats[HERO].stack > call && state.seats.some((seat, index) => index !== HERO && !seat.folded && seat.stack > 0)
+  if (drawText && later && have >= need - 0.06) {
     return { action: { kind: "call" }, reason: `${price}。${mine}，差一点；不过你${drawText.split("，")[0]}，中了还能再赢一笔，可以跟。` }
   }
   return { action: { kind: "fold" }, reason: `${price}。${mine}，不够。弃牌，少输就是赢。` }
