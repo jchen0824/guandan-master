@@ -217,6 +217,18 @@ describe("the 3D table", () => {
     }
   })
 
+  it("draws a joker the same way on both tables: JOKER down the corner and the jester", () => {
+    // This deal gives the player a big joker.
+    vi.spyOn(Math, "random").mockImplementation(seeded(4))
+    localStorage.setItem("guandan.view", "3d")
+    render(<App />)
+    const joker = () => [...hand()].find((card) => card.hasAttribute("data-joker"))
+    const face = () => [joker()?.textContent, joker()?.querySelector('[data-slot="card-jester"]') !== null]
+    expect(face()).toEqual(["JOKER", true])
+    fireEvent.click(screen.getByRole("radio", { name: "2D" }))
+    expect(face()).toEqual(["JOKER", true])
+  })
+
   it("gives a bomb its moment: its name, who played it, and where it ranks among bombs", () => {
     // With this deal the player goes out on four 9s.
     vi.spyOn(Math, "random").mockImplementation(seeded(4))
