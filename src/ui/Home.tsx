@@ -32,7 +32,6 @@ function Home({ onPick }: { onPick: (game: GameChoice) => void }) {
           <svg aria-hidden="true" viewBox="0 0 16 16">
             <path d={GITHUB_MARK} />
           </svg>
-          <span>源代码</span>
         </a>
       </header>
       <div data-slot="home-intro">
