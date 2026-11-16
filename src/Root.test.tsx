@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from "@testing-library/react"
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { Root } from "./Root"
 
@@ -32,11 +32,11 @@ describe("the home page", () => {
     expect(screen.queryByLabelText("你的操作")).toBeNull()
   })
 
-  it("opens the 掼蛋 table and comes back from its menu", () => {
+  it("opens the 掼蛋 table and comes back from the button at the left of its top bar", () => {
     render(<Root />)
     fireEvent.click(screen.getByRole("button", { name: "进入掼蛋牌桌" }))
     expect(screen.getByLabelText("你的操作").querySelectorAll("[data-card-id]")).toHaveLength(27)
-    fireEvent.click(screen.getByRole("button", { name: "首页" }))
+    fireEvent.click(screen.getByRole("button", { name: "回到首页" }))
     expect(screen.getByRole("heading", { name: "今天练哪一桌？" })).toBeTruthy()
   })
 
@@ -44,7 +44,7 @@ describe("the home page", () => {
     render(<Root />)
     fireEvent.click(screen.getByRole("button", { name: "进入掼蛋牌桌" }))
     fireEvent.click(screen.getByRole("button", { name: "设置" }))
-    fireEvent.click(screen.getByRole("button", { name: "回到首页" }))
+    fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "回到首页" }))
     expect(screen.getByRole("heading", { name: "今天练哪一桌？" })).toBeTruthy()
     expect(localStorage.getItem("guandan.game")).toBeNull()
   })

@@ -1,11 +1,22 @@
 import { useEffect, useState } from "react"
-import { botAction } from "../../holdem/bot"
+import { BOT_SKILLS, botAction } from "../../holdem/bot"
+import type { BotSkill } from "../../holdem/bot"
 import { advise, gradeChoice } from "../../holdem/coach"
 import type { Advice, Grade } from "../../holdem/coach"
 import { HERO, act, describeAction, newTable, nextHand } from "../../holdem/game"
 import type { Action, HoldemState, Street } from "../../holdem/game"
 
 const BOT_DELAY = 800
+const SKILL_KEY = "guandan.holdem.skill"
+
+function savedSkill(): BotSkill {
+  try {
+    const saved = localStorage.getItem(SKILL_KEY)
+    return BOT_SKILLS.find((skill) => skill === saved) ?? "basic"
+  } catch {
+    return "basic"
+  }
+}
 
 /** One choice the player made in this hand, with the coach's grade for it. */
 export interface Decision {
@@ -32,16 +43,27 @@ function look(game: HoldemState, decisions: Decision[]): View {
 /** The Hold'em table as the screen needs it: the hand, the coach's advice, and the computer players moving on a timer. */
 export function useHoldem() {
   const [view, setView] = useState<View>(() => look(newTable(random), []))
+  const [skill, setSkillState] = useState<BotSkill>(savedSkill)
   const { game } = view
 
   useEffect(() => {
     const seat = game.toAct
     if (seat === null || seat === HERO) return
     const timer = setTimeout(() => {
-      setView((now) => (now.game === game ? look(act(game, seat, botAction(game, seat, random)), now.decisions) : now))
+      setView((now) => (now.game === game ? look(act(game, seat, botAction(game, seat, random, skill)), now.decisions) : now))
     }, BOT_DELAY)
     return () => clearTimeout(timer)
-  }, [game])
+  }, [game, skill])
+
+  /** The computer players' level. It takes effect from their next move. */
+  const setSkill = (next: BotSkill) => {
+    setSkillState(next)
+    try {
+      localStorage.setItem(SKILL_KEY, next)
+    } catch {
+      return
+    }
+  }
 
   const choose = (action: Action) =>
     setView((now) => {
@@ -57,5 +79,5 @@ export function useHoldem() {
 
   const deal = () => setView((now) => (now.game.result ? look(nextHand(now.game, random), []) : now))
 
-  return { ...view, choose, deal }
+  return { ...view, skill, setSkill, choose, deal }
 }

@@ -74,7 +74,7 @@
         if (!a.contains(b) && !b.contains(a) && !together(a, b) && cross(box(a), box(b))) problems.push(`the label ${name(a)} overlaps ${name(b)}`)
       }
     })
-    for (const el of all('[data-slot="he-who"], [data-slot="he-note"], [data-slot="he-buttons"] > *, [data-slot="he-sizes"] > *')) {
+    for (const el of all('[data-slot="he-who"], [data-slot="he-note"], [data-slot="he-streets"] li, [data-slot="he-buttons"] > *, [data-slot="he-sizes"] > *')) {
       if (el.scrollWidth > el.clientWidth + 1) problems.push(`the text of ${name(el)} is cut off`)
     }
     // The dealer badge sits on a corner of its seat's label, so it is inside the label and the pair check skips it.
@@ -155,8 +155,9 @@
       mustBeOnScreen(el, `the ${name(el)} button`)
       mustBeReachable(el, `the ${name(el)} button`)
     }
-    for (const el of [...tools, ...menu]) mustBeOnScreen(el, `the ${name(el)} button`)
-    for (const el of menu) mustBeReachable(el, `the ${name(el)} button`)
+    const back = all('[data-slot="top-left"] > button')
+    for (const el of [...tools, ...menu, ...back]) mustBeOnScreen(el, `the ${name(el)} button`)
+    for (const el of [...menu, ...back]) mustBeReachable(el, `the ${name(el)} button`)
     for (const el of cards) mustBeOnScreen(el, `the card ${name(el)}`)
     for (const el of all('[data-slot="scores"], [data-slot="player"], [data-slot="tracker"], [data-slot="bubble"]')) {
       const r = box(el)
@@ -187,7 +188,7 @@
         return false
       }
       const labels = all(
-        '[data-layer="labels"] [data-slot="player"], [data-slot="play-tag"], [data-slot="pass-mark"], [data-slot="turn-note"], [data-slot="bubble"], [data-slot="score-panel"], [data-slot="bomb-banner"] > *, [data-slot="tracker"], [data-slot="brand"], [data-slot="menu"] > *, [data-slot="pills"] button',
+        '[data-layer="labels"] [data-slot="player"], [data-slot="play-tag"], [data-slot="pass-mark"], [data-slot="turn-note"], [data-slot="bubble"], [data-slot="score-panel"], [data-slot="bomb-banner"] > *, [data-slot="tracker"], [data-slot="brand"], [data-slot="top-left"] > button, [data-slot="menu"] > *, [data-slot="pills"] button',
       ).filter((el) => !faint(el))
       const cross = (a, b) => Math.min(a.right, b.right) - Math.max(a.left, b.left) > 3 && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 3
       labels.forEach((a, i) => {

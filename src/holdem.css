@@ -296,8 +296,7 @@
   padding: 0 16px;
 }
 
-[data-slot="holdem"] [data-slot][data-variant="text"],
-[data-view] [data-slot="button"][data-home] {
+[data-slot="holdem"] [data-slot][data-variant="text"] {
   min-height: 44px;
   padding: 0 12px;
   border: 0;
@@ -1052,10 +1051,6 @@
 
 /* ---- Narrow or short screens: smaller seat labels that say less ---- */
 @media (max-width: 899px), (max-height: 480px) {
-  /* The 掼蛋 top bar has no room for one more button on a phone. 设置 has the same button. */
-  [data-view] [data-slot="menu"] > [data-home] {
-    display: none;
-  }
   [data-slot="he-long"],
   [data-slot="he-chip"] [data-slot="he-who"] b {
     display: none;
@@ -1270,6 +1265,17 @@
   [data-slot="he-streets"] {
     order: 0;
     flex: 1;
+  }
+  /* The street names share this row with three buttons, so the buttons give up some of their padding. */
+  [data-slot="he-menu"] {
+    gap: 2px;
+  }
+  [data-slot="holdem"] [data-slot="he-menu"] [data-variant="text"] {
+    min-width: 38px;
+    padding: 0 6px;
+  }
+  [data-slot="holdem"] [data-slot="he-menu"] [data-variant="coach"] {
+    padding: 0 10px;
   }
   [data-slot="he-me"] {
     flex-direction: row;

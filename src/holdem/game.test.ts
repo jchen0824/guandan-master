@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
-import { botAction } from "./bot"
+import { BOT_SKILLS, botAction } from "./bot"
+import type { BotSkill } from "./bot"
 import { BIG_BLIND, SEATS, STARTING_STACK, act, describeAction, legalActions, newTable, nextHand, positionName } from "./game"
 import type { Action, HoldemState } from "./game"
 import { allSeats, rig, seeded, stacked } from "./testing"
@@ -151,7 +152,7 @@ describe("from one hand to the next", () => {
     expect(state.log.map(describeAction)).toEqual(["小盲 10", "大盲 20", "加注到 60", "跟注 60", "弃牌"])
   })
 
-  it("keeps every chip accounted for through three hundred hands of computer players", () => {
+  it.each(BOT_SKILLS)("keeps every chip accounted for through three hundred hands of %s computer players", (skill) => {
     const rng = seeded(7)
     let state = newTable(rng)
     let showdowns = 0
@@ -159,7 +160,7 @@ describe("from one hand to the next", () => {
       const before = chipsInPlay(state)
       for (let step = 0; state.toAct !== null; step++) {
         expect(step).toBeLessThan(200)
-        state = act(state, state.toAct, botAction(state, state.toAct, rng))
+        state = act(state, state.toAct, botAction(state, state.toAct, rng, skill))
         expect(chipsInPlay(state)).toBe(before)
       }
       expect(state.result?.winnings.reduce((sum, won) => sum + won, 0)).toBe(state.pot)
@@ -167,5 +168,36 @@ describe("from one hand to the next", () => {
       state = nextHand(state, rng)
     }
     expect(showdowns).toBeGreaterThan(30)
+  })
+})
+
+describe("how well the computer players play", () => {
+  /** Six computer players at one level, for `hands` hands: how often they fold before the flop and bet after it. */
+  function habits(skill: BotSkill, hands = 200) {
+    const rng = seeded(11)
+    let state = newTable(rng)
+    const count = { before: 0, folds: 0, after: 0, bets: 0 }
+    for (let hand = 0; hand < hands; hand++) {
+      while (state.toAct !== null) {
+        const action = botAction(state, state.toAct, rng, skill)
+        if (state.street === "preflop") {
+          count.before++
+          if (action.kind === "fold") count.folds++
+        } else {
+          count.after++
+          if (action.kind === "raise") count.bets++
+        }
+        state = act(state, state.toAct, action)
+      }
+      state = nextHand(state, rng)
+    }
+    return { folds: count.folds / count.before, bets: count.bets / count.after }
+  }
+
+  it("has a novice play more hands, and bet less after the flop, than an advanced player", () => {
+    const novice = habits("novice")
+    const advanced = habits("advanced")
+    expect(novice.folds).toBeLessThan(advanced.folds - 0.1)
+    expect(novice.bets).toBeLessThan(advanced.bets)
   })
 })

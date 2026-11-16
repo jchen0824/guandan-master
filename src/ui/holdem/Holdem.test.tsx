@@ -185,6 +185,29 @@ describe("the Texas Hold'em table", () => {
     expect(dialog.getAllByRole("listitem")).toHaveLength(decisions)
   })
 
+  it("sets the computer players' level in 设置 and remembers it", () => {
+    const first = render(<Holdem onHome={() => {}} />)
+    fireEvent.click(screen.getByRole("button", { name: "设置" }))
+    const dialog = within(screen.getByRole("dialog", { name: "电脑玩家水平" }))
+    expect(dialog.getByRole("radio", { name: "普通" }).getAttribute("aria-checked")).toBe("true")
+    fireEvent.click(dialog.getByRole("radio", { name: "进阶" }))
+    expect(dialog.getByRole("radio", { name: "进阶" }).getAttribute("aria-checked")).toBe("true")
+    expect(dialog.getByText(/偷盲/)).toBeTruthy()
+    expect(localStorage.getItem("guandan.holdem.skill")).toBe("advanced")
+    first.unmount()
+
+    render(<Holdem onHome={() => {}} />)
+    fireEvent.click(screen.getByRole("button", { name: "设置" }))
+    expect(within(screen.getByRole("dialog")).getByRole("radio", { name: "进阶" }).getAttribute("aria-checked")).toBe("true")
+  })
+
+  it("plays a whole hand with novice computer players", () => {
+    localStorage.setItem("guandan.holdem.skill", "novice")
+    render(<Holdem onHome={() => {}} />)
+    expect(playHand()).toBeGreaterThan(0)
+    expect(button("下一手")).toBeTruthy()
+  })
+
   it("explains the rules in a dialog", () => {
     render(<Holdem onHome={() => {}} />)
     fireEvent.click(screen.getByRole("button", { name: "规则" }))

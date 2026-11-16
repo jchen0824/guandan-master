@@ -1,6 +1,9 @@
 import { Button } from "@ui-sdk/react/button"
 import { Dialog, DialogBackdrop, DialogClose, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from "@ui-sdk/react/dialog"
+import { Field, FieldDescription, FieldLabel } from "@ui-sdk/react/field"
+import { SegmentedControl, SegmentedControlItem } from "@ui-sdk/react/segmented-control"
 import { useState } from "react"
+import type { BotSkill } from "../../holdem/bot"
 import { cardName, chips } from "../../holdem/cards"
 import type { Advice } from "../../holdem/coach"
 import { HERO, SEAT_NAMES, describeAction, lastWhere, legalActions, positionName } from "../../holdem/game"
@@ -330,9 +333,46 @@ function Rules() {
   )
 }
 
+const LEVELS: [BotSkill, string][] = [
+  ["novice", "新手"],
+  ["basic", "普通"],
+  ["advanced", "进阶"],
+]
+
+const LEVEL_NOTES: Record<BotSkill, string> = {
+  novice: "什么牌都想看一眼，爱跟注，很少加注，从不诈唬。适合先练看牌力和底池赔率。",
+  basic: "按牌力和位置打，会算底池赔率，偶尔诈唬。",
+  advanced: "好牌主动加注，后位会偷盲，只在价钱合适时跟注，人少时更敢诈唬。",
+}
+
+function Settings({ skill, onSkill }: { skill: BotSkill; onSkill: (skill: BotSkill) => void }) {
+  return (
+    <Dialog>
+      <DialogTrigger data-variant="text">设置</DialogTrigger>
+      <DialogBackdrop />
+      <DialogContent>
+        <DialogTitle>电脑玩家水平</DialogTitle>
+        <DialogDescription>五位电脑对手都按这个水平打，从他们的下一步开始生效。教练的建议不受影响。</DialogDescription>
+        <Field>
+          <FieldLabel>五位对手</FieldLabel>
+          <SegmentedControl value={skill} onValueChange={(next) => next && onSkill(next as BotSkill)}>
+            {LEVELS.map(([level, name]) => (
+              <SegmentedControlItem key={level} value={level}>
+                {name}
+              </SegmentedControlItem>
+            ))}
+          </SegmentedControl>
+          <FieldDescription>{LEVEL_NOTES[skill]}</FieldDescription>
+        </Field>
+        <DialogClose data-variant="play">好了</DialogClose>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 /** The Texas Hold'em table: six seats, the board, the coach, and the player's cards and buttons. */
 function Holdem({ onHome }: { onHome: () => void }) {
-  const { game, advice, decisions, notice, choose, deal } = useHoldem()
+  const { game, advice, decisions, notice, skill, setSkill, choose, deal } = useHoldem()
   const [coachOn, setCoachOn] = useSaved("guandan.holdem.coach", true)
   const hero = game.seats[HERO]
   const over = game.result !== null
@@ -366,6 +406,7 @@ function Holdem({ onHome }: { onHome: () => void }) {
             教练
           </Button>
           <Rules />
+          <Settings skill={skill} onSkill={setSkill} />
         </div>
       </header>
 

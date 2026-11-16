@@ -42,13 +42,35 @@ test("a first visit picks a game, and the choice survives a reload until the pla
   await expect(page.getByRole("region", { name: "你的操作" })).toBeVisible()
 })
 
-test("the 掼蛋 table leads back to the home page", async ({ page }) => {
-  await openGame(page)
-  // A wide screen also has 首页 in the top bar. 设置 has the way home at every size.
+for (const view of ["2d", "3d"] as const) {
+  test(`the ${view} 掼蛋 table has a back button at the left of its top bar, and another in 设置`, async ({ page }) => {
+    await openGame(page, { view })
+    const back = page.getByRole("button", { name: "回到首页", exact: true })
+    await expect(back).toBeInViewport({ ratio: 1 })
+    const box = (await back.boundingBox())!
+    expect(box.x, "the back button is at the left of the top bar").toBeLessThan(40)
+    await expectLayoutToHold(page, "with the back button in the top bar")
+    await back.click()
+    await expect(page.getByRole("heading", { name: "今天练哪一桌？" })).toBeVisible()
+    await expectLayoutToHold(page, "back on the home page")
+
+    await page.getByRole("button", { name: "进入掼蛋牌桌" }).click()
+    await page.getByRole("button", { name: "设置", exact: true }).click()
+    await page.getByRole("dialog").getByRole("button", { name: "回到首页", exact: true }).click()
+    await expect(page.getByRole("heading", { name: "今天练哪一桌？" })).toBeVisible()
+  })
+}
+
+test("the computer players' level is set in 设置, in a dialog that fits", async ({ page }) => {
+  await openHoldem(page)
   await page.getByRole("button", { name: "设置", exact: true }).click()
-  await page.getByRole("button", { name: "回到首页", exact: true }).click()
-  await expect(page.getByRole("heading", { name: "今天练哪一桌？" })).toBeVisible()
-  await expectLayoutToHold(page, "back on the home page")
+  const dialog = page.getByRole("dialog", { name: "电脑玩家水平" })
+  await dialog.getByRole("radio", { name: "新手", exact: true }).click()
+  await expect(dialog.getByRole("radio", { name: "新手", exact: true })).toHaveAttribute("aria-checked", "true")
+  await expectLayoutToHold(page, "with 设置 open")
+  await dialog.getByRole("button", { name: "好了" }).click()
+  await expect(page.getByRole("dialog")).toHaveCount(0)
+  await expectLayoutToHold(page, "after 设置 closes")
 })
 
 test("a fresh Texas Hold'em deal fits the screen", async ({ page }) => {

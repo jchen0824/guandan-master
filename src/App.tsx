@@ -248,22 +248,29 @@ function App({ onHome }: { onHome?: () => void }) {
     >
       <div data-slot="board">
         <header data-slot="topbar">
-          {three ? (
-            <div data-slot="brand">
-              <strong>掼蛋教练</strong>
-              <span>第 {game.handNumber} 局</span>
+          <div data-slot="top-left">
+            {onHome ? (
+              <Button data-variant="text" data-home="" aria-label="回到首页" onClick={onHome}>
+                <span aria-hidden="true">‹</span>
+              </Button>
+            ) : null}
+            {three ? (
+              <div data-slot="brand">
+                <strong>掼蛋教练</strong>
+                <span>第 {game.handNumber} 局</span>
+              </div>
+            ) : null}
+            <div data-slot="scores">
+              <span data-slot="level-badge">
+                <span data-slot="badge-long">本局</span>打 <b>{rankLabel(game.level)}</b>
+              </span>
+              <span data-slot="score">
+                {TEAM_NAMES[0]} <b>{rankLabel(game.levels[0])}</b>
+              </span>
+              <span data-slot="score">
+                {TEAM_NAMES[1]} <b>{rankLabel(game.levels[1])}</b>
+              </span>
             </div>
-          ) : null}
-          <div data-slot="scores">
-            <span data-slot="level-badge">
-              <span data-slot="badge-long">本局</span>打 <b>{rankLabel(game.level)}</b>
-            </span>
-            <span data-slot="score">
-              {TEAM_NAMES[0]} <b>{rankLabel(game.levels[0])}</b>
-            </span>
-            <span data-slot="score">
-              {TEAM_NAMES[1]} <b>{rankLabel(game.levels[1])}</b>
-            </span>
           </div>
           {three ? (
             <div data-slot="top-middle">{trackerOn ? <Tracker game={game} /> : null}</div>
@@ -277,11 +284,6 @@ function App({ onHome }: { onHome?: () => void }) {
             <span data-slot="round">
               第 {game.handNumber} 局 · 逢人配 <b>♥{rankLabel(game.level)}</b>
             </span>
-            {onHome ? (
-              <Button data-variant="text" data-home="" onClick={onHome}>
-                首页
-              </Button>
-            ) : null}
             <ViewSwitch view={view} onChange={setView} />
             <RulesDialog />
             <LogDialog game={game} />
