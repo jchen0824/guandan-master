@@ -1,6 +1,8 @@
 import { Button } from "@ui-sdk/react/button"
-import { newDeck } from "../holdem/cards"
+import { chips, newDeck } from "../holdem/cards"
+import { HERO, parseTableSave, rebuy } from "../holdem/game"
 import { REPO_URL } from "./buildInfo"
+import { TABLE_KEY } from "./holdem/useHoldem"
 import { PlayingCard } from "./holdem/PlayingCard"
 
 // The GitHub mark, from GitHub's Octicons (MIT licence).
@@ -13,6 +15,16 @@ const DECK = newDeck()
 const find = (rank: number, suit: string) => DECK.find((card) => card.rank === rank && card.suit === suit) ?? DECK[0]
 const EIGHTS = ["S", "H", "C", "D"].map((suit) => find(8, suit))
 const FLOP = [find(13, "S"), find(9, "H"), find(4, "H")]
+
+/** Where the player left the Texas Hold'em table, in words for its tile, or null when nothing was saved. */
+function holdemProgress(): string | null {
+  try {
+    const save = parseTableSave(localStorage.getItem(TABLE_KEY))
+    return save ? `上次打到第 ${save.handNumber} 手，你有 ${chips(rebuy(save.stacks)[HERO])} 筹码，进去接着打` : null
+  } catch {
+    return null
+  }
+}
 
 function hasUnfinishedMatch(): boolean {
   try {
@@ -59,7 +71,9 @@ function Home({ onPick }: { onPick: (game: GameChoice) => void }) {
             <Button data-variant="enter" aria-label="进入掼蛋牌桌" onClick={() => onPick("guandan")}>
               进入牌桌
             </Button>
-            <p data-slot="tile-note">{hasUnfinishedMatch() ? "有一场没打完的比赛，进去可以接着打" : "和三个电脑玩家打，从打 2 开始"}</p>
+            <p data-slot="tile-note" data-progress={hasUnfinishedMatch() ? "" : undefined}>
+              {hasUnfinishedMatch() ? "有一场没打完的比赛，进去可以接着打" : "和三个电脑玩家打，从打 2 开始"}
+            </p>
           </div>
         </section>
         <section data-slot="game-tile" data-game="holdem" data-new="" aria-labelledby="home-holdem">
@@ -86,7 +100,9 @@ function Home({ onPick }: { onPick: (game: GameChoice) => void }) {
             <Button data-variant="enter" aria-label="进入德州扑克牌桌" onClick={() => onPick("holdem")}>
               进入牌桌
             </Button>
-            <p data-slot="tile-note">和 5 个电脑对手打，从 2,000 筹码开始</p>
+            <p data-slot="tile-note" data-progress={holdemProgress() ? "" : undefined}>
+              {holdemProgress() ?? "和 5 个电脑对手打，从 2,000 筹码开始"}
+            </p>
           </div>
         </section>
       </div>

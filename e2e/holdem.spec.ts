@@ -153,6 +153,16 @@ test("a hand that reaches a showdown shows the winner and the cards that made th
   await expect(page.getByRole("list", { name: "这一手打到哪一步" }).locator("[aria-current]")).toHaveText("摊牌")
 })
 
+test("a hand played is kept: a reload carries on from the next hand, and the home page says so", async ({ page }) => {
+  await openHoldem(page)
+  await playHoldemHand(page)
+  await page.reload()
+  await expect(page.locator('[data-slot="he-hand"]')).toContainText("第 2 手")
+  await page.getByRole("button", { name: /牌桌教练/ }).click()
+  await expect(page.getByText(/^上次打到第 1 手，你有 [\d,]+ 筹码，进去接着打$/)).toBeVisible()
+  await expectLayoutToHold(page, "on the home page with a saved table")
+})
+
 test("the rules and the review of a hand open in dialogs that fit", async ({ page }) => {
   await openHoldem(page)
   await page.getByRole("button", { name: "规则", exact: true }).click()

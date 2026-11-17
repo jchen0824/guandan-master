@@ -150,9 +150,63 @@ export function newTable(rng: () => number): HoldemState {
 }
 
 /** Moves the button on, gives a seat that cannot post the big blind a full stack again, and deals. */
+/** The stacks a new hand starts with: anyone below one big blind gets a full stack again. */
+export function rebuy(stacks: readonly number[]): number[] {
+  return stacks.map((stack) => (stack < BIG_BLIND ? STARTING_STACK : stack))
+}
+
 export function nextHand(state: HoldemState, rng: () => number): HoldemState {
-  const stacks = state.seats.map((seat) => (seat.stack < BIG_BLIND ? STARTING_STACK : seat.stack))
-  return deal(stacks, after(state.button), state.handNumber + 1, rng)
+  return deal(
+    rebuy(state.seats.map((seat) => seat.stack)),
+    after(state.button),
+    state.handNumber + 1,
+    rng,
+  )
+}
+
+/**
+ * What is kept between visits: the stacks, the button and the hand number at the end of a hand. No cards are
+ * kept, so a hand left halfway is dealt afresh, from the stacks it started with.
+ */
+export interface TableSave {
+  version: 1
+  savedAt: string
+  handNumber: number
+  button: number
+  stacks: number[]
+}
+
+/** The save for a hand that has ended, or null while it is still being played. */
+export function toTableSave(state: HoldemState, now: Date = new Date()): TableSave | null {
+  if (state.result === null) return null
+  return { version: 1, savedAt: now.toISOString(), handNumber: state.handNumber, button: state.button, stacks: state.seats.map((seat) => seat.stack) }
+}
+
+/** A save read back from storage, or null when there is none or it is not one this version wrote. */
+export function parseTableSave(text: string | null): TableSave | null {
+  if (!text) return null
+  try {
+    const data = JSON.parse(text)
+    const valid =
+      data?.version === 1 &&
+      typeof data.savedAt === "string" &&
+      Number.isInteger(data.handNumber) &&
+      data.handNumber >= 1 &&
+      Number.isInteger(data.button) &&
+      data.button >= 0 &&
+      data.button < SEATS &&
+      Array.isArray(data.stacks) &&
+      data.stacks.length === SEATS &&
+      data.stacks.every((stack: unknown) => Number.isInteger(stack) && (stack as number) >= 0)
+    return valid ? { version: 1, savedAt: data.savedAt, handNumber: data.handNumber, button: data.button, stacks: data.stacks } : null
+  } catch {
+    return null
+  }
+}
+
+/** The next hand after a saved one, as `nextHand` would have dealt it. */
+export function resumeTable(save: TableSave, rng: () => number): HoldemState {
+  return deal(rebuy(save.stacks), after(save.button), save.handNumber + 1, rng)
 }
 
 /** What the seat to act may do. The raise fields are null when it cannot raise. */

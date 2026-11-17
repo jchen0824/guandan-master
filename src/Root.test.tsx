@@ -78,6 +78,12 @@ describe("the home page", () => {
     expect(link.querySelector("svg")).toBeTruthy()
   })
 
+  it("says where the player left the Texas Hold'em table", () => {
+    localStorage.setItem("guandan.holdem.table", JSON.stringify({ version: 1, savedAt: "", handNumber: 7, button: 2, stacks: [2350, 1800, 2000, 1500, 2350, 2000] }))
+    render(<Root />)
+    expect(screen.getByText("上次打到第 7 手，你有 2,350 筹码，进去接着打")).toBeTruthy()
+  })
+
   it("says so when a 掼蛋 match is waiting to be continued", () => {
     localStorage.setItem("guandan.match", "{}")
     render(<Root />)

@@ -238,6 +238,27 @@ describe("the Texas Hold'em table", () => {
     expect(button("下一手")).toBeTruthy()
   })
 
+  it("keeps the table between visits, from the next hand, and starts over from 设置", () => {
+    const first = render(<Holdem onHome={() => {}} />)
+    playHand()
+    const saved = JSON.parse(localStorage.getItem("guandan.holdem.table") ?? "null")
+    expect(saved).toMatchObject({ version: 1, handNumber: 1 })
+    first.unmount()
+
+    render(<Holdem onHome={() => {}} />)
+    expect(document.querySelector('[data-slot="he-hand"]')?.textContent).toContain("第 2 手")
+    const mine = saved.stacks[0] < 20 ? 2000 : saved.stacks[0]
+    const me = document.querySelector('[data-slot="he-me"]')?.textContent ?? ""
+    const inHand = Number(/本手已下 ([\d,]+)/.exec(me)?.[1]?.replace(/,/g, "") ?? 0)
+    expect(Number(/筹码 ([\d,]+)/.exec(me)?.[1]?.replace(/,/g, "")) + inHand).toBe(mine)
+
+    fireEvent.click(screen.getByRole("button", { name: "设置" }))
+    fireEvent.click(screen.getByRole("button", { name: "重新开始" }))
+    fireEvent.click(screen.getByRole("button", { name: /^确认：所有人回到 2,000 筹码/ }))
+    expect(document.querySelector('[data-slot="he-hand"]')?.textContent).toContain("第 1 手")
+    expect(localStorage.getItem("guandan.holdem.table")).toBeNull()
+  })
+
   it("explains the rules in a dialog", () => {
     render(<Holdem onHome={() => {}} />)
     fireEvent.click(screen.getByRole("button", { name: "规则" }))

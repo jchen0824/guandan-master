@@ -331,9 +331,10 @@ const LEVEL_NOTES: Record<BotSkill, string> = {
   advanced: "好牌主动加注，后位会偷盲，只在价钱合适时跟注，牌稍好就下注拿价值。",
 }
 
-function Settings({ skill, onSkill }: { skill: BotSkill; onSkill: (skill: BotSkill) => void }) {
+function Settings({ skill, onSkill, onRestart }: { skill: BotSkill; onSkill: (skill: BotSkill) => void; onRestart: () => void }) {
+  const [confirming, setConfirming] = useState(false)
   return (
-    <Dialog>
+    <Dialog onOpenChange={(open) => !open && setConfirming(false)}>
       <DialogTrigger data-variant="text">设置</DialogTrigger>
       <DialogBackdrop />
       <DialogContent>
@@ -350,6 +351,19 @@ function Settings({ skill, onSkill }: { skill: BotSkill; onSkill: (skill: BotSki
           </SegmentedControl>
           <FieldDescription>{LEVEL_NOTES[skill]}</FieldDescription>
         </Field>
+        <Field>
+          <FieldLabel>存档</FieldLabel>
+          <FieldDescription>每打完一手，六个人的筹码都会保存在这个浏览器里，下次打开从下一手接着打。没打完的一手不保存。</FieldDescription>
+          {confirming ? (
+            <DialogClose data-variant="danger" action={onRestart}>
+              确认：所有人回到 2,000 筹码，从第 1 手开始
+            </DialogClose>
+          ) : (
+            <Button data-variant="outline" onClick={() => setConfirming(true)}>
+              重新开始
+            </Button>
+          )}
+        </Field>
         <DialogClose data-variant="play">好了</DialogClose>
       </DialogContent>
     </Dialog>
@@ -358,7 +372,7 @@ function Settings({ skill, onSkill }: { skill: BotSkill; onSkill: (skill: BotSki
 
 /** The Texas Hold'em table: six seats, the board, the coach, and the player's cards and buttons. */
 function Holdem({ onHome }: { onHome: () => void }) {
-  const { game, advice, decisions, notice, skill, setSkill, choose, deal } = useHoldem()
+  const { game, advice, decisions, notice, skill, setSkill, choose, deal, restart } = useHoldem()
   const [coachOn, setCoachOn] = useSaved("guandan.holdem.coach", true)
   const hero = game.seats[HERO]
   const over = game.result !== null
@@ -392,7 +406,7 @@ function Holdem({ onHome }: { onHome: () => void }) {
             教练
           </Button>
           <Rules />
-          <Settings skill={skill} onSkill={setSkill} />
+          <Settings skill={skill} onSkill={setSkill} onRestart={restart} />
         </div>
       </header>
 
