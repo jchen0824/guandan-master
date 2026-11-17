@@ -313,6 +313,61 @@ describe("the Texas Hold'em table", () => {
     expect(screen.queryAllByRole("region", { name: /出局/ })).toHaveLength(0)
   })
 
+  const seatNames = () => Array.from(document.querySelectorAll('[data-slot="he-seat"] [data-slot="he-who"] b'), (name) => name.textContent)
+
+  it("starts a nine-seat table from 设置 after a confirm, and keeps the size across a reload before the first hand ends", () => {
+    const first = render(<Holdem onHome={() => {}} />)
+    expect(seatNames()).toEqual(["甲", "乙", "丙", "丁", "戊"])
+    expect(document.querySelector('[data-slot="holdem"]')?.getAttribute("data-seats")).toBe("6")
+    fireEvent.click(screen.getByRole("button", { name: "设置" }))
+    const dialog = within(screen.getByRole("dialog", { name: "电脑玩家水平" }))
+    expect(dialog.getByRole("radio", { name: "6 人" }).getAttribute("aria-checked")).toBe("true")
+    fireEvent.click(dialog.getByRole("radio", { name: "9 人" }))
+    expect(dialog.getByText(/枪口\+1、枪口\+2 和劫位/)).toBeTruthy()
+    expect(localStorage.getItem("guandan.holdem.seats")).toBeNull()
+    fireEvent.click(dialog.getByRole("button", { name: "确认：换成 9 人桌，所有人回到 2,000 筹码，从第 1 手开始" }))
+    expect(seatNames()).toEqual(["甲", "乙", "丙", "丁", "戊", "己", "庚", "辛"])
+    expect(document.querySelector('[data-slot="holdem"]')?.getAttribute("data-seats")).toBe("9")
+    expect(document.querySelector('[data-slot="he-hand"]')?.textContent).toContain("第 1 手")
+    expect(localStorage.getItem("guandan.holdem.seats")).toBe("9")
+    first.unmount()
+
+    render(<Holdem onHome={() => {}} />)
+    expect(seatNames()).toHaveLength(8)
+    expect(screen.getByLabelText(/^你的手牌/).querySelectorAll('[data-slot="playing-card"]')).toHaveLength(2)
+  })
+
+  it("changes nothing when 设置 is closed without confirming a new size", () => {
+    render(<Holdem onHome={() => {}} />)
+    fireEvent.click(screen.getByRole("button", { name: "设置" }))
+    fireEvent.click(within(screen.getByRole("dialog")).getByRole("radio", { name: "9 人" }))
+    expect(within(screen.getByRole("dialog")).getByRole("radio", { name: "9 人" }).getAttribute("aria-checked")).toBe("true")
+    fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "好了" }))
+    expect(seatNames()).toHaveLength(5)
+    expect(localStorage.getItem("guandan.holdem.seats")).toBeNull()
+    fireEvent.click(screen.getByRole("button", { name: "设置" }))
+    expect(within(screen.getByRole("dialog")).getByRole("radio", { name: "6 人" }).getAttribute("aria-checked")).toBe("true")
+    expect(within(screen.getByRole("dialog")).getByRole("button", { name: "重新开始" })).toBeTruthy()
+  })
+
+  it("deals 再开一桌 at the size of the table that ended", () => {
+    localStorage.setItem("guandan.holdem.table", JSON.stringify({ version: 1, savedAt: "", handNumber: 9, button: 0, stacks: [40, 0, 0, 0, 0, 0, 0, 0, 11960] }))
+    render(<Holdem onHome={() => {}} />)
+    expect(seatNames()).toHaveLength(8)
+    for (let step = 0; step < 600 && !button("再开一桌"); step++) {
+      act(() => {
+        vi.advanceTimersByTime(1000)
+      })
+      const next = button("下一手")
+      if (next) fireEvent.click(next)
+      else if (button("弃牌")) followAdvice()
+    }
+    fireEvent.click(button("再开一桌") as HTMLElement)
+    expect(seatNames()).toHaveLength(8)
+    expect(document.querySelector('[data-slot="he-hand"]')?.textContent).toContain("第 1 手")
+    expect(localStorage.getItem("guandan.holdem.seats")).toBe("9")
+  })
+
   it("explains the rules in a dialog", () => {
     render(<Holdem onHome={() => {}} />)
     fireEvent.click(screen.getByRole("button", { name: "规则" }))
@@ -325,5 +380,6 @@ describe("the Texas Hold'em table", () => {
     // The price counts only the chips the player can win, as potOdds() does: not side-pot chips beyond their stack.
     expect(estimate.getByText(/跟注的钱 ÷ 跟注后你能赢的全部筹码/)).toBeTruthy()
     expect(estimate.queryByText(/底池里的全部筹码/)).toBeNull()
+    expect(dialog.getByText(/位置：庄位左边是小盲、大盲/)).toBeTruthy()
   })
 })
