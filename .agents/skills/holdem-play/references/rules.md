@@ -1,21 +1,35 @@
 # Texas Hold'em rules, as `src/holdem` implements them
 
-No-limit Texas Hold'em for six seats. Where this repo makes a choice that other rule sets make differently, it says so. All of it is in `game.ts` (the table) and `hands.ts` (hand ranking) unless noted.
+No-limit Texas Hold'em for six or nine seats. Where this repo makes a choice that other rule sets make differently, it says so. All of it is in `game.ts` (the table) and `hands.ts` (hand ranking) unless noted.
 
 ## The table
 
-- Six seats: seat 0 is the player (`HERO`), seats 1–5 are 甲 乙 丙 丁 戊 (`SEAT_NAMES`).
+- Six or nine seats (`TABLE_SIZES`). Seat 0 is the player (`HERO`). The computer players are 甲 乙 丙 丁 戊 at six, and 甲 乙 丙 丁 戊 己 庚 辛 at nine (`SEAT_NAMES`).
+- The size is the length of `seats` and is stored nowhere else. `newTable(rng, size)` picks it; every other function reads it from the table it is given. The player picks the size in 设置 (牌桌人数), which starts a new table after a confirm. A table never changes size while it is played.
 - Everyone starts with 2,000 practice chips (`STARTING_STACK`). Small blind 10, big blind 20 (`SMALL_BLIND`, `BIG_BLIND`). No antes, no rake.
 - **Out of chips, out of the table.** As in a real game, a seat that has no chips when a hand is dealt is out (`Seat.out`, also `folded`): no cards, no blinds, no turn, and its label says 出局. Nobody is given chips again. A stack shorter than its blind posts what it has and is all-in; the bet to match is still a full big blind.
 - **The end of a table** (`tableOver`, `stacksOver`): when the player has no chips left (你出局了), or nobody else has any (全桌冠军). The table then offers 再开一桌 instead of 下一手, and `nextHand` throws. `knockedOut` lists the seats that lost their last chips in a hand; the result line names them (甲输光了筹码，出局).
 - The button moves clockwise to the next seat still in each hand. The first button is random (`newTable`).
-- **Between visits.** At the end of every hand the stacks, the button and the hand number are saved (`toTableSave`), and the next visit deals the hand after it (`resumeTable`); a seat saved with no chips stays out. No cards are saved, so a hand left halfway is dealt afresh from the stacks it started with, as with a 掼蛋 match. A table that had ended is not resumed: the next visit starts a new one. 重新开始 in 设置 puts everyone back to 2,000 at hand 1.
+- **Between visits.** At the end of every hand the stacks, the button and the hand number are saved (`toTableSave`), and the next visit deals the hand after it (`resumeTable`); a seat saved with no chips stays out. No cards are saved, so a hand left halfway is dealt afresh from the stacks it started with, as with a 掼蛋 match. A table that had ended is not resumed: the next visit starts a new one. 重新开始 in 设置 puts everyone back to 2,000 at hand 1. The save is the same at both sizes, and its size is the number of stacks, so a six-seat save written before nine-seat tables existed still loads. With nothing to carry on, the next table has the size the player last started (`guandan.holdem.seats`), or six on a first visit.
 
 ## Dealing and positions
 
 - The small blind is the next seat still in left of the button, the big blind the one after. Both post before the cards. **Heads-up** (two left) the button posts the small blind, acts first before the flop and last after it.
 - Two cards each, one at a time, starting from the small blind, to the seats still in.
-- Positions are counted from the button among the seats still in (`position`, `positionName`): 庄位 (button), 小盲, 大盲, 枪口 (first to act before the flop), 中位, 关位 (just before the button). With five there is no 中位; with four the seat after the big blind is 枪口; heads-up there are only 庄位 and 大盲. A seat that is out is 出局. The coach and the computer players count 庄位 and 关位 as late, the blinds as blinds.
+- Positions are counted clockwise from the button among the seats still in (`positionName`, `positionGroup`). One table in `game.ts` gives each seat its name for every number of players still in, so a nine-seat table with three out is named like a six-seat one:
+
+  | In | Clockwise from the button |
+  | --- | --- |
+  | 9 | 庄位 小盲 大盲 枪口 枪口+1 枪口+2 中位 劫位 关位 |
+  | 8 | 庄位 小盲 大盲 枪口 枪口+1 中位 劫位 关位 |
+  | 7 | 庄位 小盲 大盲 枪口 中位 劫位 关位 |
+  | 6 | 庄位 小盲 大盲 枪口 中位 关位 |
+  | 5 | 庄位 小盲 大盲 枪口 关位 |
+  | 4 | 庄位 小盲 大盲 枪口 |
+  | 3 | 庄位 小盲 大盲 |
+  | 2 | 庄位 大盲 (the button also posts the small blind) |
+
+  枪口 is first to act before the flop and 关位 is the seat before the button. A seat that is out is 出局. The coach and the computer players read the group, not the name: 庄位 and 关位 are late, 小盲 and 大盲 are blinds, the 枪口 seats are early, and 中位 and 劫位 are middle. 劫位 is middle because it is the same seat, two before the button, that six-handed is called 中位.
 
 ## Betting
 
@@ -50,4 +64,4 @@ Strongest first (`CATEGORIES`): 同花顺 straight flush, 四条 four of a kind,
 
 ## What the 规则 dialog tells the player
 
-`Rules` in `src/ui/holdem/Holdem.tsx` is the player's version of this page in six lines. Change it whenever a rule here changes.
+`Rules` in `src/ui/holdem/Holdem.tsx` is the player's version of this page in a few lines, one of them on positions at six and nine seats. Change it whenever a rule here changes.
