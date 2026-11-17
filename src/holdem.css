@@ -1336,6 +1336,62 @@
   display: inline;
 }
 
+/* A tablet held upright: the table is as wide as the screen with height to spare, and at that width eight labels
+   and their bets do not fit round the wide table. A nine-seat table stands taller there, its seats spread up and down. */
+@media (min-width: 621px) and (max-width: 899px) and (min-height: 760px) {
+  [data-seats="9"] [data-slot="he-table"] {
+    --sh: 580;
+  }
+  [data-seats="9"] [data-seat="1"] {
+    --x: 380;
+    --y: 520;
+    --bx: 0px;
+    --by: -36px;
+  }
+  [data-seats="9"] [data-seat="2"] {
+    --x: 200;
+    --y: 380;
+    --bx: 0px;
+    --by: 36px;
+  }
+  [data-seats="9"] [data-seat="3"] {
+    --x: 290;
+    --y: 230;
+    --bx: 0px;
+    --by: 36px;
+  }
+  [data-seats="9"] [data-seat="4"] {
+    --x: 520;
+    --y: 120;
+    --bx: 0px;
+    --by: -40px;
+  }
+  [data-seats="9"] [data-seat="5"] {
+    --x: 760;
+    --y: 120;
+    --bx: 0px;
+    --by: -40px;
+  }
+  [data-seats="9"] [data-seat="6"] {
+    --x: 990;
+    --y: 230;
+    --bx: 0px;
+    --by: 36px;
+  }
+  [data-seats="9"] [data-seat="7"] {
+    --x: 1080;
+    --y: 380;
+    --bx: 0px;
+    --by: 36px;
+  }
+  [data-seats="9"] [data-seat="8"] {
+    --x: 900;
+    --y: 520;
+    --bx: 0px;
+    --by: -36px;
+  }
+}
+
 /* ---- Phone upright: a tall table as wide as the screen. The player's two cards and label lie over its
    near edge, and the buttons run across the bottom. ---- */
 @media (max-width: 620px) {
