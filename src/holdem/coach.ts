@@ -64,7 +64,14 @@ function beforeTheFlop(state: HoldemState): Pick<Advice, "action" | "reason"> {
   const late = where === "button" || where === "late"
   const blind = where === "smallBlind" || where === "bigBlind"
   const cards = `${cardName(hole[0])}、${cardName(hole[1])}是${TIER_WORDS[tier]}`
-  const seat = `你在${positionName(state, HERO)}${late ? "，后面行动，能先看别人怎么做" : blind ? "，已经放了盲注" : "，后面还有好几个人没行动"}`
+  // Heads-up the button is also the small blind and acts first before the flop, though it still acts last after it.
+  const headsUp = state.seats.filter((seat) => !seat.out).length === 2
+  const order =
+    headsUp && where === "button" ? "，两个人时庄位也是小盲：翻牌前你先行动，翻牌后你最后行动"
+    : late ? "，后面行动，能先看别人怎么做"
+    : blind ? "，已经放了盲注"
+    : "，后面还有好几个人没行动"
+  const seat = `你在${positionName(state, HERO)}${order}`
   const stay: Action = legal.canCheck ? { kind: "check" } : { kind: "fold" }
 
   if (state.currentBet <= BIG_BLIND) {

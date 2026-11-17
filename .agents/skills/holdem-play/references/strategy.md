@@ -36,7 +36,7 @@ Where the coach is a bar (narrower than 1240px, or a phone on its side), the bar
 
 Shown only on the player's turn, with the coach on. The panel shows what just happened, the win rate a call needs, the player's own win rate (`shareOfPot`, 400 deals), after the flop the working above, the reason, and a reminder when players behind have still to act.
 
-**Before the flop** (`beforeTheFlop`), by tier and position. Late means the button or 关位; the blinds are 小盲 and 大盲.
+**Before the flop** (`beforeTheFlop`), by tier and position. Late means the button or 关位; the blinds are 小盲 and 大盲. Heads-up the button is still played as late, but the coach says it acts first before the flop and last after it, since it is also the small blind.
 
 - Nobody has raised: tier 2–3 raises to three big blinds plus whatever the limpers put in; tier 1 raises to three big blinds from late position, checks in the big blind, calls in the small blind, and otherwise folds; tier 0 checks when it can and folds otherwise.
 - Someone has raised (the price is the call in big blinds): tier 3 re-raises to three times the bet; tier 2 calls up to 5 big blinds; tier 1 calls up to 3 big blinds from late position or the blinds; anything else folds, or checks when it can.

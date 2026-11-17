@@ -277,6 +277,27 @@ test("folding against a covered short blind deals the board out at once", async 
   await expectLayoutToHold(page, "after a covered short blind is dealt out")
 })
 
+test("heads-up, the coach tells the button it acts first before the flop", async ({ page }) => {
+  await openHoldem(page)
+  await page.evaluate((key) => localStorage.setItem(key, JSON.stringify({ version: 1, savedAt: "", handNumber: 20, button: 5, stacks: [2000, 2000, 0, 0, 0, 0] })), TABLE_KEY)
+  await page.reload()
+  // The coach names the seat with a weak or middling hand; fold the others until such a hand comes on the button.
+  const coach = page.getByRole("complementary", { name: "教练" })
+  let said = ""
+  for (let step = 0; step < 200 && !said; step++) {
+    const now = await screen(page)
+    const preflop = (await page.locator('[data-slot="he-board"] [data-slot="playing-card"]').count()) === 0
+    const text = (await coach.textContent()) ?? ""
+    if (now.myTurn && preflop && text.includes("你在庄位")) said = text
+    else if (now.over) await page.getByRole("button", { name: "下一手" }).click()
+    else if (now.myTurn) await page.getByRole("button", { name: "弃牌", exact: true }).click()
+    else await waitForNextMove(page)
+  }
+  expect(said).toContain("两个人时庄位也是小盲：翻牌前你先行动，翻牌后你最后行动")
+  expect(said).not.toContain("能先看别人怎么做")
+  await expectLayoutToHold(page, "with the heads-up advice showing")
+})
+
 test("a player who loses every chip is out, and 再开一桌 starts a new table", async ({ page }) => {
   await openHoldem(page)
   // All-in with seven-two; 甲 calls with aces, and the board gives the player nothing.

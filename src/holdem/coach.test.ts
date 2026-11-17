@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { botAction } from "./bot"
 import { advise, gradeChoice } from "./coach"
-import { HERO, SEATS, act, legalActions, newTable } from "./game"
+import { HERO, SEATS, act, legalActions, newTable, resumeTable } from "./game"
 import type { Action, HoldemState } from "./game"
 import { bettorsAgainst, draws, equity, potOdds, shareOfPot } from "./odds"
 import { cards, rig, seeded, stacked } from "./testing"
@@ -231,6 +231,15 @@ describe("the coach", () => {
     const set = advise(facingBet("9C 9D", "9S 5H 2C", 40), seeded(5))
     expect(set.explain[0].text).toBe("暗三条 9：口袋对子中了第三张，很强")
     expect(last(set.explain).text).toMatch(/^你多半已经领先，不用数有效牌/)
+  })
+
+  it("tells the heads-up button it acts first before the flop, not that it can watch the other player first", () => {
+    const save = { version: 1 as const, savedAt: "", handNumber: 1, button: 5, stacks: [2000, 2000, 0, 0, 0, 0] }
+    const state = rig(resumeTable(save, seeded(1)), { [HERO]: "7C 2D", [VILLAIN]: "KD KC" }, "AS 8C 3D 2S 4H")
+    expect([state.button, state.toAct]).toEqual([HERO, HERO])
+    const advice = advise(state, seeded(5))
+    expect(advice.reason).toContain("你在庄位，两个人时庄位也是小盲：翻牌前你先行动，翻牌后你最后行动")
+    expect(advice.reason).not.toContain("能先看别人怎么做")
   })
 
   it("raises the best starting hands and folds the worst ones from an early seat", () => {
