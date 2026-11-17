@@ -94,6 +94,25 @@ describe("the home page", () => {
     expect(screen.queryByText(/上次打到/)).toBeNull()
   })
 
+  it("says how big the Texas Hold'em table is that the player will walk into", () => {
+    const first = render(<Root />)
+    expect(screen.getByText("6 人 · 一副牌 · 无限注")).toBeTruthy()
+    expect(screen.getByText("和 5 个电脑对手打，从 2,000 筹码开始")).toBeTruthy()
+    first.unmount()
+
+    localStorage.setItem("guandan.holdem.seats", "9")
+    const second = render(<Root />)
+    expect(screen.getByText("9 人 · 一副牌 · 无限注")).toBeTruthy()
+    expect(screen.getByText("和 8 个电脑对手打，从 2,000 筹码开始")).toBeTruthy()
+    second.unmount()
+
+    localStorage.setItem("guandan.holdem.table", JSON.stringify({ version: 1, savedAt: "", handNumber: 12, button: 3, stacks: [3000, 0, 2000, 0, 2500, 2000, 2000, 2500, 0] }))
+    localStorage.removeItem("guandan.holdem.seats")
+    render(<Root />)
+    expect(screen.getByText("9 人 · 一副牌 · 无限注")).toBeTruthy()
+    expect(screen.getByText("上次打到第 12 手，你有 3,000 筹码，桌上还剩 6 人，进去接着打")).toBeTruthy()
+  })
+
   it("says so when a 掼蛋 match is waiting to be continued", () => {
     localStorage.setItem("guandan.match", "{}")
     render(<Root />)

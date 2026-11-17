@@ -3,12 +3,12 @@ import { BOT_SKILLS, botAction } from "../../holdem/bot"
 import type { BotSkill } from "../../holdem/bot"
 import { advise, gradeChoice } from "../../holdem/coach"
 import type { Advice, Grade } from "../../holdem/coach"
-import { HERO, act, describeAction, newTable, nextHand, parseTableSave, resumeTable, stacksOver, tableOver, toTableSave } from "../../holdem/game"
-import type { Action, HoldemState, Street } from "../../holdem/game"
+import { HERO, act, describeAction, newTable, nextHand, resumeTable, tableOver, tableSize, toTableSave } from "../../holdem/game"
+import type { Action, HoldemState, Street, TableSize } from "../../holdem/game"
+import { savedSize, savedTable, startOver, writeTable } from "./storage"
 
 const BOT_DELAY = 800
 const SKILL_KEY = "guandan.holdem.skill"
-export const TABLE_KEY = "guandan.holdem.table"
 
 function savedSkill(): BotSkill {
   try {
@@ -37,16 +37,10 @@ interface View {
 
 const random = () => Math.random()
 
-/** The table to open with: the hand after the last one played, or a new table when nothing was saved. */
+/** The table to open with: the hand after the last one played, or a new table of the last size picked. */
 function opening(): HoldemState {
-  try {
-    const save = parseTableSave(localStorage.getItem(TABLE_KEY))
-    // A table that ended, with the player out or the last one left, starts afresh.
-    if (save && !stacksOver(save.stacks)) return resumeTable(save, random)
-  } catch {
-    return newTable(random)
-  }
-  return newTable(random)
+  const save = savedTable()
+  return save ? resumeTable(save, random) : newTable(random, savedSize())
 }
 
 function look(game: HoldemState, decisions: Decision[]): View {
@@ -71,12 +65,7 @@ export function useHoldem() {
   // Every hand that ends is saved, as on the 掼蛋 table, so the next visit carries on from the next hand.
   useEffect(() => {
     const save = toTableSave(game)
-    if (!save) return
-    try {
-      localStorage.setItem(TABLE_KEY, JSON.stringify(save))
-    } catch {
-      return
-    }
+    if (save) writeTable(save)
   }, [game])
 
   /** The computer players' level. It takes effect from their next move. */
@@ -103,15 +92,11 @@ export function useHoldem() {
 
   const deal = () => setView((now) => (now.game.result && !tableOver(now.game) ? look(nextHand(now.game, random), []) : now))
 
-  /** Everyone back to 2,000 chips, from hand 1: from 设置, or once the table has ended. */
-  const restart = () => {
-    try {
-      localStorage.removeItem(TABLE_KEY)
-    } catch {
-      // Storage is optional: the table still starts over.
-    }
-    setView(look(newTable(random), []))
+  /** A new table of `size` seats, everyone back to 2,000 chips from hand 1: from 设置, or once the table has ended. */
+  const restart = (size: TableSize) => {
+    startOver(size)
+    setView(look(newTable(random, size), []))
   }
 
-  return { ...view, skill, setSkill, choose, deal, restart }
+  return { ...view, size: tableSize(game), skill, setSkill, choose, deal, restart }
 }

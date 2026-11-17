@@ -6,8 +6,8 @@ import { useState } from "react"
 import type { BotSkill } from "../../holdem/bot"
 import { cardName, chips } from "../../holdem/cards"
 import type { Advice } from "../../holdem/coach"
-import { HERO, SEAT_NAMES, describeAction, lastWhere, legalActions, positionName, tableOver } from "../../holdem/game"
-import type { Action, HoldemState, Street } from "../../holdem/game"
+import { HERO, SEAT_NAMES, TABLE_SIZES, describeAction, lastWhere, legalActions, positionName, tableOver } from "../../holdem/game"
+import type { Action, HoldemState, Street, TableSize } from "../../holdem/game"
 import { CATEGORIES, categoryName, describeHand, evaluate } from "../../holdem/hands"
 import type { HandCategory } from "../../holdem/hands"
 import { place } from "../place"
@@ -26,7 +26,6 @@ const STREETS: [Street, string][] = [
   ["showdown", "摊牌"],
 ]
 const STREET_NAMES = Object.fromEntries(STREETS)
-const OPPONENTS = [1, 2, 3, 4, 5]
 const BOARD_SLOTS = ["flop-1", "flop-2", "flop-3", "turn", "river"]
 const percent = (value: number) => `${Math.round(value * 100)}%`
 
@@ -352,6 +351,7 @@ function Rules() {
           <li>加注至少要和上一次加的一样多。筹码不够时可以全下。</li>
           <li>只剩一个人没弃牌，他直接赢下底池；否则河牌之后摊牌比大小。</li>
           <li>牌型从大到小：同花顺、四条、葫芦、同花、顺子、三条、两对、一对、高牌。</li>
+          <li>位置：庄位左边是小盲、大盲，先放盲注。翻牌前大盲左边的枪口第一个行动，按顺时针轮到庄位：6 人桌是枪口、中位、关位、庄位，9 人桌是枪口、枪口+1、枪口+2、中位、劫位、关位、庄位。越晚行动越有利，能先看别人怎么做。有人出局后，位置按还在的人重新数。</li>
           <li>这里只用练习筹码。输光筹码就出局，和真的比赛一样：你出局了，或者别人都出局了，这一桌就结束，可以再开一桌。</li>
         </ul>
         <h3 data-slot="rules-heading">自己估胜率</h3>
@@ -384,18 +384,31 @@ const LEVEL_NOTES: Record<BotSkill, string> = {
   advanced: "好牌主动加注，后位会偷盲，只在价钱合适时跟注，牌稍好就下注拿价值。",
 }
 
-function Settings({ skill, onSkill, onRestart }: { skill: BotSkill; onSkill: (skill: BotSkill) => void; onRestart: () => void }) {
+const SIZE_NOTES: Record<TableSize, string> = {
+  6: "6 人桌：对手少，能玩的起手牌多一些，很快又轮到你。",
+  9: "9 人桌：对手多，还多了枪口+1、枪口+2 和劫位这几个位置；位置越靠前，越要拿好牌才进。",
+}
+
+function Settings({ skill, onSkill, size, onRestart }: { skill: BotSkill; onSkill: (skill: BotSkill) => void; size: TableSize; onRestart: (size: TableSize) => void }) {
+  // The other size the player has picked, and whether they have asked to start over at this one. Closing the dialog drops both.
+  const [next, setNext] = useState<TableSize | null>(null)
   const [confirming, setConfirming] = useState(false)
   return (
-    <Dialog onOpenChange={(open) => !open && setConfirming(false)}>
+    <Dialog
+      onOpenChange={(open) => {
+        if (open) return
+        setNext(null)
+        setConfirming(false)
+      }}
+    >
       <DialogTrigger data-variant="text">设置</DialogTrigger>
       <DialogBackdrop />
       <DialogContent>
         <DialogTitle>电脑玩家水平</DialogTitle>
-        <DialogDescription>五位电脑对手都按这个水平打，从他们的下一步开始生效。教练的建议不受影响。</DialogDescription>
+        <DialogDescription>每位电脑对手都按这个水平打，从他们的下一步开始生效。教练的建议不受影响。</DialogDescription>
         <Field>
-          <FieldLabel>五位对手</FieldLabel>
-          <SegmentedControl value={skill} onValueChange={(next) => next && onSkill(next as BotSkill)}>
+          <FieldLabel>电脑对手</FieldLabel>
+          <SegmentedControl value={skill} onValueChange={(picked) => picked && onSkill(picked as BotSkill)}>
             {LEVELS.map(([level, name]) => (
               <SegmentedControlItem key={level} value={level}>
                 {name}
@@ -405,10 +418,33 @@ function Settings({ skill, onSkill, onRestart }: { skill: BotSkill; onSkill: (sk
           <FieldDescription>{LEVEL_NOTES[skill]}</FieldDescription>
         </Field>
         <Field>
+          <FieldLabel>牌桌人数</FieldLabel>
+          <SegmentedControl
+            value={String(next ?? size)}
+            onValueChange={(picked) => {
+              const chosen = TABLE_SIZES.find((option) => String(option) === picked)
+              if (!chosen) return
+              setNext(chosen === size ? null : chosen)
+              setConfirming(false)
+            }}
+          >
+            {TABLE_SIZES.map((option) => (
+              <SegmentedControlItem key={option} value={String(option)}>
+                {option} 人
+              </SegmentedControlItem>
+            ))}
+          </SegmentedControl>
+          <FieldDescription>{SIZE_NOTES[next ?? size]}</FieldDescription>
+        </Field>
+        <Field>
           <FieldLabel>存档</FieldLabel>
-          <FieldDescription>每打完一手，六个人的筹码都会保存在这个浏览器里，下次打开从下一手接着打。没打完的一手不保存。</FieldDescription>
-          {confirming ? (
-            <DialogClose data-variant="danger" action={onRestart}>
+          <FieldDescription>每打完一手，全桌的筹码都会保存在这个浏览器里，下次打开从下一手接着打。没打完的一手不保存。</FieldDescription>
+          {next !== null ? (
+            <DialogClose data-variant="danger" action={() => onRestart(next)}>
+              确认：换成 {next} 人桌，所有人回到 2,000 筹码，从第 1 手开始
+            </DialogClose>
+          ) : confirming ? (
+            <DialogClose data-variant="danger" action={() => onRestart(size)}>
               确认：所有人回到 2,000 筹码，从第 1 手开始
             </DialogClose>
           ) : (
@@ -423,11 +459,12 @@ function Settings({ skill, onSkill, onRestart }: { skill: BotSkill; onSkill: (sk
   )
 }
 
-/** The Texas Hold'em table: six seats, the board, the coach, and the player's cards and buttons. */
+/** The Texas Hold'em table: six or nine seats, the board, the coach, and the player's cards and buttons. */
 function Holdem({ onHome }: { onHome: () => void }) {
-  const { game, advice, decisions, notice, skill, setSkill, choose, deal, restart } = useHoldem()
+  const { game, size, advice, decisions, notice, skill, setSkill, choose, deal, restart } = useHoldem()
   const [coachOn, setCoachOn] = useSaved("guandan.holdem.coach", true)
   const hero = game.seats[HERO]
+  const opponents = game.seats.flatMap((_, seat) => (seat === HERO ? [] : [seat]))
   const over = game.result !== null
   const ending = tableOver(game)
   const result = resultLine(game)
@@ -440,7 +477,7 @@ function Holdem({ onHome }: { onHome: () => void }) {
   const reached = STREETS.findIndex(([street]) => street === game.street)
 
   return (
-    <main data-slot="holdem" data-over={over ? "" : undefined} data-coach-off={coachOn ? undefined : ""}>
+    <main data-slot="holdem" data-seats={size} data-over={over ? "" : undefined} data-coach-off={coachOn ? undefined : ""}>
       <header data-slot="he-top">
         <Button data-variant="text" data-home="" onClick={onHome}>
           <span aria-hidden="true">‹</span> 牌桌教练
@@ -460,14 +497,14 @@ function Holdem({ onHome }: { onHome: () => void }) {
             教练
           </Button>
           <Rules />
-          <Settings skill={skill} onSkill={setSkill} onRestart={restart} />
+          <Settings skill={skill} onSkill={setSkill} size={size} onRestart={restart} />
         </div>
       </header>
 
       <div data-slot="he-table">
         <div data-slot="he-stage">
           <span data-slot="he-felt" aria-hidden="true" />
-          {OPPONENTS.map((seat) => (
+          {opponents.map((seat) => (
             <Seat key={seat} game={game} seat={seat} mark={mark} />
           ))}
           <p data-slot="he-pot">
@@ -523,7 +560,7 @@ function Holdem({ onHome }: { onHome: () => void }) {
             <div data-slot="he-buttons">
               {coachOn ? <ReviewDialog decisions={decisions} /> : null}
               {ending ? (
-                <Button data-variant="raise" onClick={restart}>
+                <Button data-variant="raise" onClick={() => restart(size)}>
                   再开一桌
                 </Button>
               ) : (
