@@ -4,7 +4,8 @@ import { HERO, buildPots } from "./game"
 import type { HoldemState } from "./game"
 import { evaluate } from "./hands"
 
-function unseen(known: Card[]): Card[] {
+/** Every card not in `known`. */
+export function unseenCards(known: Card[]): Card[] {
   const ids = new Set(known.map((card) => card.id))
   return newDeck().filter((card) => !ids.has(card.id))
 }
@@ -15,7 +16,7 @@ function unseen(known: Card[]): Card[] {
  * someone who bets usually has something, so they are dealt hands that already make at least a pair.
  */
 function deals(hole: Card[], board: Card[], opponents: number, rng: () => number, samples: number, betting: number, see: (full: Card[], hands: Card[][]) => void) {
-  const rest = unseen([...hole, ...board])
+  const rest = unseenCards([...hole, ...board])
   const need = 5 - board.length + opponents * 2
   const pick = () => need + Math.floor(rng() * (rest.length - need))
   for (let sample = 0; sample < samples; sample++) {
@@ -83,7 +84,7 @@ export function draws(hole: Card[], board: Card[]): Draws {
   let flushOuts = 0
   const straightRanks = new Set<number>()
   let outs = 0
-  for (const card of unseen([...hole, ...board])) {
+  for (const card of unseenCards([...hole, ...board])) {
     const made = evaluate([...hole, ...board, card]).category
     const flush = made === "flush" || made === "straightFlush"
     const straight = made === "straight" || made === "straightFlush"

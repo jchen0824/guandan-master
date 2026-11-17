@@ -185,6 +185,33 @@ test("the rules and the review of a hand open in dialogs that fit", async ({ pag
   }
 })
 
+test("the coach's working after the flop fits, and a narrow screen opens all of it in a dialog", async ({ page }) => {
+  await openHoldem(page)
+  const working = page.getByRole("complementary", { name: "教练" }).locator('[data-slot="he-explain"]')
+  // Checking or calling every time reaches the flop with the player still in.
+  for (let step = 0; step < 300 && (await working.count()) === 0; step++) {
+    const now = await screen(page)
+    if (now.over) await page.getByRole("button", { name: "下一手" }).click()
+    else if (now.myTurn) await page.getByRole("button", { name: /^(过牌|跟注)/ }).click()
+    else await waitForNextMove(page)
+  }
+  await expect(working).toHaveCount(1)
+  await expectLayoutToHold(page, "with the coach's working showing")
+  // A wide screen shows every line in the panel. Where the coach is a bar, it keeps at most the 估算 line,
+  // and a button opens the rest.
+  const open = page.getByRole("button", { name: "怎么算的" })
+  if (await open.isVisible()) {
+    await open.click()
+    const dialog = page.getByRole("dialog", { name: "教练是怎么算的" })
+    await expect(dialog.getByText("你的牌", { exact: true })).toBeVisible()
+    await expectLayoutToHold(page, "with the working open")
+    await dialog.getByRole("button", { name: "知道了" }).click()
+    await expect(page.getByRole("dialog")).toHaveCount(0)
+  } else {
+    await expect(working.getByText("对手", { exact: true })).toBeVisible()
+  }
+})
+
 test("with the coach off, a hand still fits and the table news stays in one line", async ({ page }) => {
   await openHoldem(page)
   await page.getByRole("button", { name: "教练", exact: true }).click()

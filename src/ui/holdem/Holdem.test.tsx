@@ -215,6 +215,25 @@ describe("the Texas Hold'em table", () => {
     expect(dialog.getAllByRole("listitem")).toHaveLength(decisions)
   })
 
+  it("shows how the coach worked out the win rate after the flop, and all of it in a dialog", () => {
+    render(<Holdem onHome={() => {}} />)
+    // Checking or calling every time reaches the flop with the player still in.
+    for (let step = 0; step < 300 && !button("怎么算的"); step++) {
+      waitForButtons()
+      const next = button("下一手")
+      if (next) fireEvent.click(next)
+      else fireEvent.click(action(/^(过牌|跟注)/) as HTMLElement)
+    }
+    const panel = within(coach())
+    expect(panel.getByText("估算")).toBeTruthy()
+    expect(panel.getByText(/二四法则|不用数有效牌|只能靠对手在诈唬/)).toBeTruthy()
+    fireEvent.click(screen.getByRole("button", { name: "怎么算的" }))
+    const dialog = within(screen.getByRole("dialog", { name: "教练是怎么算的" }))
+    for (const label of ["你的牌", "对手", "估算", "你的胜率，大约"]) expect(dialog.getByText(label)).toBeTruthy()
+    // The situation is announced once, by the panel, not again by the copy in the dialog.
+    expect(dialog.queryByRole("status")).toBeNull()
+  })
+
   it("sets the computer players' level in 设置 and remembers it", () => {
     const first = render(<Holdem onHome={() => {}} />)
     fireEvent.click(screen.getByRole("button", { name: "设置" }))

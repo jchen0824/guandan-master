@@ -205,9 +205,19 @@ function Coach({ on, game, advice, decisions, outcome }: { on: boolean; game: Ho
   return (
     <aside data-slot="he-coach" data-advice={advice.action.kind} aria-label="教练">
       <h2>教练 · {STREET_NAMES[game.street]}</h2>
-      <p role="status">
+      {advice.explain.length > 0 ? <WorkingDialog advice={advice} /> : null}
+      <Working advice={advice} live />
+    </aside>
+  )
+}
+
+/** The coach's numbers and working. `live` announces the situation to screen readers; only the panel does. */
+function Working({ advice, live = false }: { advice: Advice; live?: boolean }) {
+  return (
+    <>
+      <p role={live ? "status" : undefined} data-slot="he-situation">
         {advice.situation}
-        {advice.drawText ? `你${advice.drawText}。` : ""}
+        {advice.explain.length === 0 && advice.drawText ? `你${advice.drawText}。` : ""}
       </p>
       <dl data-slot="he-odds">
         {advice.need === null ? null : (
@@ -225,6 +235,16 @@ function Coach({ on, game, advice, decisions, outcome }: { on: boolean; game: Ho
           <span aria-hidden="true" data-slot="he-bar" data-kind="have" style={place({ share: advice.have })} />
         </div>
       </dl>
+      {advice.explain.length > 0 ? (
+        <dl data-slot="he-explain">
+          {advice.explain.map((line) => (
+            <div key={line.key} data-line={line.key}>
+              <dt>{line.label}</dt>
+              <dd>{line.text}</dd>
+            </div>
+          ))}
+        </dl>
+      ) : null}
       <p data-slot="he-why">{advice.reason}</p>
       {advice.reminder ? (
         <div data-slot="he-remind">
@@ -232,7 +252,26 @@ function Coach({ on, game, advice, decisions, outcome }: { on: boolean; game: Ho
           <p>{advice.reminder}</p>
         </div>
       ) : null}
-    </aside>
+    </>
+  )
+}
+
+/** On screens where the coach is only a bar, the full working opens here. */
+function WorkingDialog({ advice }: { advice: Advice }) {
+  return (
+    <Dialog>
+      <DialogTrigger data-variant="text" data-working="">
+        怎么算的
+      </DialogTrigger>
+      <DialogBackdrop />
+      <DialogContent>
+        <DialogTitle>教练是怎么算的</DialogTitle>
+        <div data-slot="he-working">
+          <Working advice={advice} />
+        </div>
+        <DialogClose data-variant="play">知道了</DialogClose>
+      </DialogContent>
+    </Dialog>
   )
 }
 

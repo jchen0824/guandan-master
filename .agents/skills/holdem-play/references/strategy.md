@@ -10,6 +10,18 @@ The coach (`coach.ts`) and the computer players (`bot.ts`) share their measuring
 - **Draws.** `draws(hole, board)` on the flop and turn only, and only for a hand that is not already a straight or better: a flush draw (8 or more cards make a flush), an open-ended straight draw (two ranks complete it) or a gutshot (one rank), and the number of outs. Its `text` is what the coach says: 听同花 / 两头听顺子 / 听卡顺 / 听同花，也听顺子，还有 N 张牌能帮你.
 - **Bettors.** `bettorsAgainst(state, seat)` counts the players still in who bet or raised on this street.
 
+## The working a player can do (`read.ts`)
+
+A win rate from 400 deals is not something a person can repeat at the table, so after the flop the coach also shows how a player would estimate it. `advise` returns these lines as `explain`, in this order:
+
+- **你的牌** (`readHand`): what the player holds against the board, in the words a player would use: 只有 A 高, 顶对 K with a 踢脚 that is 不错 (Q or better) or 偏小, 中对 / 底对 (a pair below the top board card; 底对 when it pairs the lowest), 超对 (a pocket pair above every board card), 一对 X：口袋对子 below a board card, 两对, 三条 / 暗三条, or a straight or better (很强). A pair, two pair or trips that are only on the board count as nothing: everyone has them. Each read has a strength: nothing, weak pair, top pair, overpair, two pair, trips, strong.
+- **能帮你的牌** (`countOuts`): the unseen cards that would make a hand that usually wins against one opponent. From nothing that is top pair or better; from a weak pair, top pair or overpair it is two pair or better; from two pair, trips or better; from trips, a straight or better. Cards are grouped by what they make and named as a player would: one rank (3 张 A), one suit (9 张红桃), or up to three ranks (8 张 10 或 5). A card that only improves the board is not an out. Only on the flop and turn.
+- **对手**: who bet on this street (下注的人通常至少有一对) and, from the player's strength, whether they are probably behind; or, when nobody bet, how many are left (人越多，越可能有人牌比你好 from three).
+- **估算**: from top pair up, 你多半已经领先，不用数有效牌. Otherwise the 2-and-4 rule (二四法则, `ruleOfThumb`): outs times 4 with the turn and river to come, times 2 with only the river. With no outs, the hand wins only when the opponents are bluffing. Each ends with the simulated rate (电脑模拟约 X%).
+- **为什么不同**, only when the rule and the simulation differ by more than 8 points: higher, because the simulation also counts the times the opponents have less or are bluffing; lower, because some outs do not win (and, with more than 8 outs on the flop, times 4 counts too many).
+
+Where the coach is a bar (narrower than 1240px, or a phone on its side), the bar shows only the 估算 line (not on a short phone or a phone on its side) and the reason; 怎么算的 opens the panel's full content in a dialog.
+
 ## Starting hands (`startingTier` in `bot.ts`)
 
 | Tier | Coach calls it | Hands |
@@ -21,7 +33,7 @@ The coach (`coach.ts`) and the computer players (`bot.ts`) share their measuring
 
 ## What the coach advises (`advise`)
 
-Shown only on the player's turn, with the coach on. The panel shows what just happened, the win rate a call needs, the player's own win rate (`shareOfPot`, 400 deals), the reason, and a reminder when players behind have still to act.
+Shown only on the player's turn, with the coach on. The panel shows what just happened, the win rate a call needs, the player's own win rate (`shareOfPot`, 400 deals), after the flop the working above, the reason, and a reminder when players behind have still to act.
 
 **Before the flop** (`beforeTheFlop`), by tier and position. Late means the button or 关位; the blinds are 小盲 and 大盲.
 

@@ -7,6 +7,7 @@ import { bettorsAgainst, draws, equity, potOdds, shareOfPot } from "./odds"
 import { cards, rig, seeded, stacked } from "./testing"
 
 const VILLAIN = 1
+const last = <T>(list: T[]) => list[list.length - 1]
 
 /** A flop where seat 1 raised before it and has now bet `bet`, with the hero left to answer. Everyone else folded. */
 function facingBet(hole: string, board: string, bet: number, villainStack?: number): HoldemState {
@@ -153,6 +154,38 @@ describe("the coach", () => {
     expect(advice.action.kind).not.toBe("fold")
     expect(advice.have).toBeGreaterThan(advice.need as number)
     expect(advice.drawText).toBe("听同花，还有 9 张牌能帮你")
+  })
+
+  it("shows its working after the flop: the hand, the outs, the opponents and the 2-and-4 rule", () => {
+    const advice = advise(facingBet("AH JH", "KS 9H 4H", 40), seeded(5))
+    expect(advice.explain.map((line) => line.key)).toEqual(["hand", "outs", "opponents", "estimate"])
+    expect(advice.explain.map((line) => line.text)).toEqual([
+      "只有 A 高，还没成牌",
+      "9 张红桃能成同花，3 张 A 能成顶对",
+      "甲下注了，下注的人通常至少有一对；你现在多半落后",
+      `还有转牌和河牌两张，二四法则：12 张有效牌 × 4 ≈ 48%（电脑模拟约 ${Math.round(advice.have * 100)}%）`,
+    ])
+  })
+
+  it("says why the simulation and the 2-and-4 rule differ, when they are far apart", () => {
+    // Only a 4 makes a hand, but a bettor often has less than the pair on the board can beat.
+    const higher = advise(facingBet("5D 3S", "6H 6C 2C", 40), seeded(5))
+    expect(higher.explain.find((line) => line.key === "estimate")?.text).toMatch(/4 张有效牌 × 4 ≈ 16%/)
+    expect(higher.have).toBeGreaterThan(0.24)
+    expect(last(higher.explain).text).toMatch(/^电脑模拟更高/)
+
+    // 21 outs times 4 is 84%, far more than the turn and river can deliver.
+    const lower = advise(facingBet("QH JH", "TH 9S 2H", 40), seeded(5))
+    expect(lower.have).toBeLessThan(0.76)
+    expect(last(lower.explain).text).toMatch(/^电脑模拟更低：有效牌多于 8 张时，乘 4 会算多/)
+  })
+
+  it("keeps the working for after the flop, and says a strong hand need not count outs", () => {
+    const table = newTable(seeded(3))
+    expect(advise({ ...table, toAct: HERO }, seeded(5)).explain).toEqual([])
+    const set = advise(facingBet("9C 9D", "9S 5H 2C", 40), seeded(5))
+    expect(set.explain[0].text).toBe("暗三条 9：口袋对子中了第三张，很强")
+    expect(last(set.explain).text).toMatch(/^你多半已经领先，不用数有效牌/)
   })
 
   it("raises the best starting hands and folds the worst ones from an early seat", () => {

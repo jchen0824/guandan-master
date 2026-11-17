@@ -1,0 +1,84 @@
+import { describe, expect, it } from "vitest"
+import { newDeck, shuffle } from "./cards"
+import { evaluate } from "./hands"
+import { unseenCards } from "./odds"
+import { Strength, countOuts, readHand, ruleOfThumb } from "./read"
+import { cards, seeded } from "./testing"
+
+describe("reading a hand the way a player does", () => {
+  it("calls ace-jack on a queen-high board ace high, with three aces to make top pair", () => {
+    const hole = cards("AH JH")
+    const board = cards("8D QS 2H")
+    expect(readHand(hole, board)).toMatchObject({ text: "只有 A 高，还没成牌", strength: Strength.Nothing })
+    // A jack only makes the second pair, which is not a card a player should count on.
+    expect(countOuts(hole, board)).toEqual({ count: 3, text: "3 张 A 能成顶对" })
+    expect(ruleOfThumb(3, board)).toEqual({ times: 4, percent: 12 })
+  })
+
+  it("counts a flush draw and the overcard together", () => {
+    const outs = countOuts(cards("AH JH"), cards("KH 9H 4S"))
+    expect(outs).toEqual({ count: 12, text: "9 张红桃能成同花，3 张 A 能成顶对" })
+    expect(ruleOfThumb(outs.count, cards("KH 9H 4S 2C"))).toEqual({ times: 2, percent: 24 })
+  })
+
+  it("names top pair with its kicker, and the cards that make two pair or trips", () => {
+    expect(readHand(cards("KS QD"), cards("KH 7C 2D"))).toMatchObject({ text: "顶对 K，踢脚 Q，踢脚不错", strength: Strength.TopPair })
+    expect(countOuts(cards("KS QD"), cards("KH 7C 2D"))).toEqual({ count: 5, text: "3 张 Q 能成两对，2 张 K 能成三条" })
+    expect(readHand(cards("KS 4D"), cards("KH 7C 2D")).text).toBe("顶对 K，踢脚 4，踢脚偏小")
+  })
+
+  it("tells an overpair, a weaker pocket pair, middle and bottom pair apart", () => {
+    expect(readHand(cards("AS AD"), cards("KH 7C 2D")).strength).toBe(Strength.Overpair)
+    expect(readHand(cards("5S 5D"), cards("KH 7C 2D")).text).toBe("一对 5：口袋对子，但公共牌上有比它大的牌")
+    expect(readHand(cards("7S QD"), cards("KH 7C 2D")).text).toBe("中对 7：公共牌上有比它大的牌")
+    expect(readHand(cards("2S QD"), cards("KH 7C 2D")).text).toBe("底对 2：公共牌上有比它大的牌")
+  })
+
+  it("does not credit the player with what is only on the board", () => {
+    expect(readHand(cards("5S 6D"), cards("KH KC 2D"))).toMatchObject({ text: "只有 6 高：这对 K 在公共牌上，大家都有", strength: Strength.Nothing })
+    // Two pair with one pair on the board is only the player's own pair.
+    expect(readHand(cards("7S 3D"), cards("KH KC 7D")).text).toBe("底对 7：公共牌上有比它大的牌")
+  })
+
+  it("does not count a card that only improves the board as an out", () => {
+    // A 2 makes two pair and a 6 makes three of a kind, but both are on the board for everyone. Only a 4 helps.
+    expect(countOuts(cards("5D 3S"), cards("6H 6C 2C"))).toEqual({ count: 4, text: "4 张 4 能成顺子" })
+    expect(readHand(cards("5D 3S"), cards("6H 6C 2C 2D")).text).toBe("只有 5 高：公共牌上的两对大家都有")
+    expect(readHand(cards("5D 3S"), cards("6H 6C 6D 2C")).text).toBe("只有 5 高：公共牌上的三条大家都有")
+  })
+
+  it("names the ranks of outs that are neither one rank nor one suit", () => {
+    expect(countOuts(cards("7D 6C"), cards("9S 8H 2C"))).toEqual({ count: 8, text: "8 张 10 或 5 能成顺子" })
+    // The two hearts among the straight cards make a flush, so they are counted there.
+    expect(countOuts(cards("QH JH"), cards("TH 9S 2H")).text).toBe("9 张红桃能成同花，6 张 K 或 8 能成顺子，6 张 Q 或 J 能成顶对")
+  })
+
+  it("names sets, trips and made hands as strong, with no outs to count", () => {
+    expect(readHand(cards("7S 7D"), cards("7H KC 2D")).text).toBe("暗三条 7：口袋对子中了第三张，很强")
+    expect(readHand(cards("AH 5H"), cards("KH 9H 2H")).strength).toBe(Strength.Strong)
+    expect(countOuts(cards("AH 5H"), cards("KH 9H 2H"))).toEqual({ count: 0, text: null })
+  })
+})
+
+describe("outs on random flops and turns", () => {
+  it("counts only cards that give the player a better hand than the board alone", () => {
+    const rng = seeded(21)
+    let checked = 0
+    for (let deal = 0; deal < 300; deal++) {
+      const deck = shuffle(newDeck(), rng)
+      const hole = deck.slice(0, 2)
+      const board = deck.slice(2, deal % 2 === 0 ? 5 : 6)
+      const target = countOuts(hole, board).count
+      const helping = unseenCards([...hole, ...board]).filter((card) => {
+        const mine = evaluate([...hole, ...board, card]).score
+        return mine > evaluate([...board, card]).score
+      })
+      // Every out is among the cards that make the player's own hand better than the board's.
+      expect(target).toBeLessThanOrEqual(helping.length)
+      const read = readHand(hole, board)
+      if (read.strength > Strength.Nothing) expect(evaluate([...hole, ...board]).score).toBeGreaterThan(evaluate(board).score)
+      checked++
+    }
+    expect(checked).toBe(300)
+  })
+})
