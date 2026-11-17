@@ -72,7 +72,7 @@ Each seat also has a fixed looseness (`LOOSENESS`), so the computer players do n
 | Bluffs against one or two players | never | sometimes (10%) | sometimes (10%) |
 | Raises a bet with | 90% | 80% | 75% |
 
-`npm run test:levels` keeps the order honest (numbers from November 2026): 普通 wins about 24 and 进阶 about 31 big blinds per 100 hands from 新手, played on the same cards both ways round; and in 600 real spots facing a bet, the wrong calls or folds were 新手 53, 普通 21, 进阶 2 of 508 clear ones. 进阶's edge over 普通 at the table is real but small (about 5 big blinds per 100 hands) and too noisy to assert, which is why the test also counts mistakes. When this measuring was first done, 进阶 bluffed three times as often and lost chips to 普通: more aggression is not more skill.
+`npm run test:levels` keeps the order honest at both table sizes (numbers from November 2026). At six seats 普通 wins about 24 and 进阶 about 31 big blinds per 100 hands from 新手, played on the same cards both ways round; and in 600 real spots facing a bet, the wrong calls or folds were 新手 53, 普通 21, 进阶 2 of 508 clear ones. At nine seats the edges are larger, about 41 and 50, and the wrong calls or folds were 新手 59, 普通 13, 进阶 0 of 529. The thresholds are the same at both sizes. 进阶's edge over 普通 at the table is real but small (about 5 big blinds per 100 hands) and too noisy to assert, which is why the test also counts mistakes. When this measuring was first done, 进阶 bluffed three times as often and lost chips to 普通: more aggression is not more skill.
 
 ## What the coach does not do
 
