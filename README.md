@@ -50,7 +50,7 @@ npm run build              # 生产构建
 - `src/engine`：掼蛋的规则引擎、对局流程和电脑玩家，不依赖界面
 - `src/holdem`：德州扑克的规则、胜率估算、电脑玩家和教练，不依赖界面
 - `src/ui`、`src/App.tsx`、`src/Root.tsx`：界面，使用 React 和 `@ui-sdk/react`
-- `.agents/skills`：给编程智能体看的掼蛋规则、打法要点和界面开发约定
+- `.agents/skills`：给编程智能体看的掼蛋和德州扑克规则、打法要点和界面开发约定
 
 ## 版本
 

@@ -52,6 +52,7 @@ A skill is a folder of instructions under `.agents/skills/`. If your agent does 
 | When you touch | Read first |
 | --- | --- |
 | Game rules, bots, hints, coach text, the 记牌器, or any Chinese wording about play | [.agents/skills/guandan-play/SKILL.md](.agents/skills/guandan-play/SKILL.md) |
+| Texas Hold'em rules, computer players, coach advice or grading, the Hold'em 规则 dialog, or Chinese wording about Hold'em play (`src/holdem`, `ui/holdem`) | [.agents/skills/holdem-play/SKILL.md](.agents/skills/holdem-play/SKILL.md) |
 | Anything under `src/ui`, `src/App.tsx`, `src/Root.tsx`, `src/index.css` or `src/holdem.css` | [.agents/skills/guandan-ui/SKILL.md](.agents/skills/guandan-ui/SKILL.md), then the `ui-sdk` skill it points to |
 | Checking a screen change, reproducing a layout bug, or a failing browser test | [.agents/skills/browser-qa/SKILL.md](.agents/skills/browser-qa/SKILL.md) |
 
@@ -71,7 +72,7 @@ Two layers. `src/engine` and `src/holdem` are pure TypeScript with no React or D
 
 ### Texas Hold'em engine (`src/holdem`)
 
-The rules for the second game, 德州扑克: six seats, no-limit, blinds 10/20, practice chips. It is pure TypeScript like `src/engine` and takes its randomness as an `rng` parameter. Its screen is described under [UI](#ui). One file per concern, each with its tests beside it:
+The rules for the second game, 德州扑克: six seats, no-limit, blinds 10/20, practice chips. It is pure TypeScript like `src/engine` and takes its randomness as an `rng` parameter. Its screen is described under [UI](#ui), and the rules and strategy it implements are in the [holdem-play skill](.agents/skills/holdem-play/SKILL.md). One file per concern, each with its tests beside it:
 
 - `cards.ts`, `hands.ts`: a 52-card deck and the best five of seven. `evaluate()` returns a `score` that orders any two hands.
 - `game.ts`: the table. `act(state, seat, action)` is the only way a hand moves on: it checks the action, deals the next street when a betting round ends, and pays the pots, side pots included, when the hand ends. `legalActions(state)` says what the seat to act may do.

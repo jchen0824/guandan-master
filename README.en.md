@@ -52,7 +52,7 @@ npm run build              # production build
 - `src/engine`: Guandan rules, game flow and bots, with no UI dependency
 - `src/holdem`: Texas Hold'em rules, win-rate estimates, bots and coach, with no UI dependency
 - `src/ui`, `src/App.tsx`, `src/Root.tsx`: the interface, built with React and `@ui-sdk/react`
-- `.agents/skills`: Guandan rules, play skills and UI conventions written for coding agents
+- `.agents/skills`: Guandan and Texas Hold'em rules, play skills and UI conventions written for coding agents
 
 ## Versions
 
