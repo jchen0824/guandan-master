@@ -254,6 +254,17 @@ test("a small blind shorter than 10 puts only what it has into the pot", async (
   await expectLayoutToHold(page, "after a hand with a short small blind")
 })
 
+test("a big blind too short to match the small blind leaves nothing to decide, and the board is dealt out", async ({ page }) => {
+  await openHoldem(page)
+  // Heads-up: the player has the button and posts 10; 甲 has only 5 for the big blind.
+  await page.evaluate((key) => localStorage.setItem(key, JSON.stringify({ version: 1, savedAt: "", handNumber: 12, button: 5, stacks: [11995, 5, 0, 0, 0, 0] })), TABLE_KEY)
+  await page.reload()
+  await expect(page.getByRole("button", { name: /^(下一手|再开一桌)$/ })).toBeVisible()
+  await expect(page.getByRole("button", { name: "弃牌" })).toHaveCount(0)
+  await expect(page.getByRole("list", { name: /^公共牌：/ }).getByRole("listitem")).toHaveCount(5)
+  await expectLayoutToHold(page, "after a hand dealt out with no decision")
+})
+
 test("a player who loses every chip is out, and 再开一桌 starts a new table", async ({ page }) => {
   await openHoldem(page)
   // All-in with seven-two; 甲 calls with aces, and the board gives the player nothing.

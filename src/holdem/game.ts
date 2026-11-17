@@ -135,7 +135,7 @@ function deal(stacks: number[], button: number, handNumber: number, rng: () => n
     log.push({ seat, street: "preflop", kind: "blind", amount: posted, to: posted, allIn: seats[seat].allIn, small: seat === smallBlind })
   }
   const pending = clockwise(after(bigBlind)).filter((seat) => canAct(seats[seat]))
-  return {
+  const dealt: HoldemState = {
     seats,
     button,
     street: "preflop",
@@ -153,6 +153,11 @@ function deal(stacks: number[], button: number, handNumber: number, rng: () => n
     actedAt: nobodyYet(),
     lastRaise: BIG_BLIND,
   }
+  // Nobody has a decision when at most one seat can bet and it has already put in as much as anyone else, as when
+  // a big blind short of the small blind is all-in heads-up. The board is dealt out, as after an all-in call.
+  const able = pending.map((seat) => seats[seat])
+  const covered = able.length === 0 || (able.length === 1 && seats.every((seat) => seat.folded || seat.bet <= able[0].bet))
+  return covered ? nextStreet({ ...dealt, pending: [], toAct: null }) : dealt
 }
 
 /** Six seats with full stacks, the button on a seat picked by `rng`, and the first hand dealt. */

@@ -31,7 +31,7 @@ No-limit Texas Hold'em for six seats. Where this repo makes a choice that other 
 ## The end of a hand
 
 - **Everyone else folds.** The last player in takes the whole pot at once, their own uncalled bet included. No cards are shown.
-- **Nobody left to bet.** When at most one player still has chips to bet (the rest are all-in or folded), the remaining board cards are dealt with no more betting, then the showdown.
+- **Nobody left to bet.** When at most one player still has chips to bet (the rest are all-in or folded), the remaining board cards are dealt with no more betting, then the showdown. That can happen as soon as the blinds are posted: heads-up, when the big blind is all-in for less than the small blind, the hand is dealt out with no decision (`deal`).
 - **Showdown.** After the river betting, every player still in shows their cards; nobody mucks. Each player's hand is the best five of their two cards and the five on the board, and a player may use any number of their own cards, including none.
 
 ## Pots

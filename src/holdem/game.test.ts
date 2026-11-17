@@ -219,6 +219,24 @@ describe("players who run out of chips", () => {
     expect(folded.seats.reduce((sum, seat) => sum + seat.stack, 0)).toBe(before)
   })
 
+  it("deals the board out when the only seat that can bet already covers everyone, as against a short big blind", () => {
+    // Heads-up, the button posts 10 and the big blind has only 5: there is nothing left to decide.
+    const short = table([11995, 5, 0, 0, 0, 0], 5)
+    expect(short.button).toBe(HERO)
+    expect(short.toAct).toBeNull()
+    expect(short.board).toHaveLength(5)
+    expect(short.result).not.toBeNull()
+    expect(short.seats.reduce((sum, seat) => sum + seat.stack, 0)).toBe(12000)
+    // The 5 the button put in that nobody could match comes back to it, win or lose.
+    expect(short.seats[HERO].stack).toBeGreaterThanOrEqual(11990)
+    // A short small blind instead: the big blind has nothing to decide either.
+    expect(table([5, 11995, 0, 0, 0, 0], 5).result).not.toBeNull()
+    // Two all-in from the blinds and a third who has put nothing in: the third still decides.
+    const three = table([2000, 5, 15, 0, 0, 0], 5)
+    expect(three.toAct).toBe(HERO)
+    expect(legalActions(three).callAmount).toBe(BIG_BLIND)
+  })
+
   it("ends the table for the player when they lose their last chip, or when nobody else has any", () => {
     // Heads-up, the player all-in with seven-two against aces.
     const lost = checkDown(act(rig(table([100, 0, 0, 0, 0, 11900]), { 0: "7C 2D", 5: "AH AS" }, "KD 9S 4H 3C JD"), 5, raise(200)))
