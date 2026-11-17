@@ -159,13 +159,21 @@ describe("the coach", () => {
 
   it("shows its working after the flop: the hand, the outs, the opponents and the 2-and-4 rule", () => {
     const advice = advise(facingBet("AH JH", "KS 9H 4H", 40), seeded(5))
-    expect(advice.explain.map((line) => line.key)).toEqual(["hand", "outs", "opponents", "estimate"])
+    expect(advice.explain.map((line) => line.key)).toEqual(["hand", "outs", "opponents", "estimate", "rule"])
     expect(advice.explain.map((line) => line.text)).toEqual([
       "只有 A 高，还没成牌",
       "来一张红桃就成同花（还剩 9 张）；来一张 A 就成顶对（还剩 3 张）",
       "甲下注了，下注的人通常至少有一对；你现在多半落后",
       `还有转牌和河牌两张，二四法则：12 张有效牌 × 4 ≈ 48%（电脑模拟约 ${Math.round(advice.have * 100)}%）`,
+      `有效牌就是“能帮你的牌”。你看不到的牌有 47 张，每发一张，某一张牌出现的机会约 2%。还要发转牌和河牌两张，每张有效牌约 2% + 2% = 4%，所以 12 × 4 ≈ 48%。`,
     ])
+  })
+
+  it("explains the 2-and-4 rule as times 2 when only the river is to come", () => {
+    const advice = advise(facingBet("8D 7D", "AS KD 2D QC", 40, undefined, "turn"), seeded(5))
+    expect(advice.explain.find((line) => line.key === "rule")?.text).toBe(
+      `有效牌就是“能帮你的牌”。你看不到的牌有 46 张，每发一张，某一张牌出现的机会约 2%。只剩河牌一张，每张有效牌约 2%，所以 9 × 2 ≈ 18%。`,
+    )
   })
 
   it("says why the simulation and the 2-and-4 rule differ, when they are far apart", () => {

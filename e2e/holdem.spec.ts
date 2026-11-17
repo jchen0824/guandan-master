@@ -213,6 +213,32 @@ test("the coach's working after the flop fits, and a narrow screen opens all of 
   }
 })
 
+test("the 2-and-4 rule is explained with the hand's own numbers, and in 规则", async ({ page }) => {
+  await openHoldem(page)
+  // A player asked what "3 张有效牌 × 4" meant on this flop: the three other aces make top pair.
+  await dealHoldemExactly(page, { holes: { 0: "AH 9H", 1: "JC TC" }, board: "KC QS 3H 7D 2S" })
+  await callDownTo(page, 3)
+  const working = page.getByRole("complementary", { name: "教练" }).locator('[data-slot="he-explain"]')
+  await expect(working).toContainText("来一张 A 就成顶对（还剩 3 张）")
+  await expect(working).toContainText("你看不到的牌有 47 张，每发一张，某一张牌出现的机会约 2%。还要发转牌和河牌两张，每张有效牌约 2% + 2% = 4%，所以 3 × 4 ≈ 12%。")
+  // Where the coach is a bar, the explanation is in the dialog; on a wide screen it is in the panel.
+  const open = page.getByRole("button", { name: "怎么算的" })
+  if (await open.isVisible()) {
+    await open.click()
+    const dialog = page.getByRole("dialog", { name: "教练是怎么算的" })
+    await expect(dialog.getByText("二四法则", { exact: true })).toBeVisible()
+    await expectLayoutToHold(page, "with the 2-and-4 rule in the working")
+    await dialog.getByRole("button", { name: "知道了" }).click()
+  } else {
+    await expect(working.getByText("二四法则", { exact: true })).toBeVisible()
+  }
+  await page.getByRole("button", { name: "规则", exact: true }).click()
+  const rules = page.getByRole("dialog", { name: "德州扑克怎么打" })
+  await expect(rules.getByRole("heading", { name: "自己估胜率" })).toBeVisible()
+  await expect(rules.getByText(/二四法则/)).toBeVisible()
+  await expectLayoutToHold(page, "with the rules open")
+})
+
 // Hands that the coach's working once got wrong, each dealt exactly and called down by the player. The working is
 // read from the page as it is, whether a row is shown in the bar or only in the 怎么算的 dialog.
 test.describe("the coach's working on hands it once got wrong", () => {
