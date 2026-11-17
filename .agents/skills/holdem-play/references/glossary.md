@@ -56,7 +56,7 @@ The Chinese the player reads, what it means, and where it comes from. Use these 
 | Chinese | Meaning |
 | --- | --- |
 | 胜率 | win rate: the chance to win, from `shareOfPot` |
-| 跟注要有的胜率 | the win rate a call needs: the price, `potOdds().need` |
+| 跟注要有的胜率 | the win rate a call needs: the price, `potOdds().need`; in 规则, 跟注的钱 ÷ 跟注后你能赢的全部筹码 |
 | 底池赔率 | pot odds (home page skill tag) |
 | 起手牌 | starting hand |
 | 顶尖的起手牌 / 一手好牌 / 能玩的牌 / 比较弱的牌 | starting-hand tiers 3 to 0 |
@@ -64,7 +64,8 @@ The Chinese the player reads, what it means, and where it comes from. Use these 
 | 听同花 / 两头听顺子 / 听卡顺 | flush draw / open-ended straight draw / gutshot |
 | 还有 N 张牌能帮你 | N outs |
 | 有效牌 | outs, in the coach's working (能帮你的牌, N 张有效牌) |
-| 二四法则 | the 2-and-4 rule: outs × 4 on the flop, × 2 on the turn |
+| 二四法则 | the 2-and-4 rule: outs × 4 on the flop, × 2 on the turn; a line of the coach's working and an item in 规则 |
+| 自己估胜率 | the section of the 规则 dialog that defines 有效牌, 二四法则 and 跟注要有的胜率 |
 | 电脑模拟 | the simulated win rate, beside the 2-and-4 estimate |
 | 顶对 / 中对 / 底对 / 超对 | top pair / middle pair / bottom pair / overpair |
 | 踢脚 | kicker; 踢脚不错 is Q or better |

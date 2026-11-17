@@ -281,6 +281,14 @@ describe("the Texas Hold'em table", () => {
   it("explains the rules in a dialog", () => {
     render(<Holdem onHome={() => {}} />)
     fireEvent.click(screen.getByRole("button", { name: "规则" }))
-    expect(screen.getByRole("dialog", { name: "德州扑克怎么打" })).toBeTruthy()
+    const dialog = within(screen.getByRole("dialog", { name: "德州扑克怎么打" }))
+    // How to estimate a win rate at the table, in words a beginner can use: outs, the 2-and-4 rule, the price.
+    const estimate = within(dialog.getByRole("list", { name: "自己估胜率" }))
+    expect(estimate.getByText("二四法则")).toBeTruthy()
+    expect(estimate.getByText(/每张有效牌约 4%，所以中的机会约等于有效牌数 × 4/)).toBeTruthy()
+    expect(estimate.getAllByRole("listitem")).toHaveLength(3)
+    // The price counts only the chips the player can win, as potOdds() does: not side-pot chips beyond their stack.
+    expect(estimate.getByText(/跟注的钱 ÷ 跟注后你能赢的全部筹码/)).toBeTruthy()
+    expect(estimate.queryByText(/底池里的全部筹码/)).toBeNull()
   })
 })
