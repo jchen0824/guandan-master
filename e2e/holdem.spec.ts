@@ -236,6 +236,8 @@ test("the 2-and-4 rule is explained with the hand's own numbers, and in 规则",
   const rules = page.getByRole("dialog", { name: "德州扑克怎么打" })
   await expect(rules.getByRole("heading", { name: "自己估胜率" })).toBeVisible()
   await expect(rules.getByText(/二四法则/)).toBeVisible()
+  await expect(rules.getByText(/跟注的钱 ÷ 跟注后你能赢的全部筹码/)).toBeVisible()
+  await expect(rules.getByText(/底池里的全部筹码/)).toHaveCount(0)
   await expectLayoutToHold(page, "with the rules open")
 })
 

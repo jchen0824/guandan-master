@@ -287,5 +287,8 @@ describe("the Texas Hold'em table", () => {
     expect(estimate.getByText("二四法则")).toBeTruthy()
     expect(estimate.getByText(/每张有效牌约 4%，所以中的机会约等于有效牌数 × 4/)).toBeTruthy()
     expect(estimate.getAllByRole("listitem")).toHaveLength(3)
+    // The price counts only the chips the player can win, as potOdds() does: not side-pot chips beyond their stack.
+    expect(estimate.getByText(/跟注的钱 ÷ 跟注后你能赢的全部筹码/)).toBeTruthy()
+    expect(estimate.queryByText(/底池里的全部筹码/)).toBeNull()
   })
 })

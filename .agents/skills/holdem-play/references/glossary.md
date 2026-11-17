@@ -56,7 +56,7 @@ The Chinese the player reads, what it means, and where it comes from. Use these 
 | Chinese | Meaning |
 | --- | --- |
 | 胜率 | win rate: the chance to win, from `shareOfPot` |
-| 跟注要有的胜率 | the win rate a call needs: the price, `potOdds().need` |
+| 跟注要有的胜率 | the win rate a call needs: the price, `potOdds().need`; in 规则, 跟注的钱 ÷ 跟注后你能赢的全部筹码 |
 | 底池赔率 | pot odds (home page skill tag) |
 | 起手牌 | starting hand |
 | 顶尖的起手牌 / 一手好牌 / 能玩的牌 / 比较弱的牌 | starting-hand tiers 3 to 0 |
