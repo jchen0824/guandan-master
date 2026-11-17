@@ -36,7 +36,6 @@ function hasUnfinishedMatch(): boolean {
 function Home({ onPick }: { onPick: (game: GameChoice) => void }) {
   const save = savedTable()
   const progress = holdemProgress(save)
-  // The table the player will walk into: the saved one, or a new one of the size last picked.
   const seats = save?.stacks.length ?? savedSize()
   return (
     <main data-slot="home">

@@ -18,7 +18,7 @@ export function startingTier(hole: Card[]): number {
   return 0
 }
 
-/** Positive seats play more hands and bluff more; negative ones wait for better cards. By seat, for the largest table. */
+/** Positive seats play more hands and bluff more; negative ones wait for better cards. */
 const LOOSENESS = [0, 0, 1, 0, -1, 1, 0, -1, 1]
 
 /** Rounds to a multiple of 10 chips and keeps the raise inside what the rules allow. */

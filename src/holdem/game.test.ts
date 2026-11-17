@@ -250,7 +250,6 @@ describe("players who run out of chips", () => {
   })
 
   it("names the seats by how many players are still in, at every table size", () => {
-    // The first n seats are in and the button starts on seat 0.
     const names = (playing: number) => {
       const state = table([...Array.from({ length: playing }, () => 2000), ...Array.from({ length: 9 - playing }, () => 0)], playing - 1)
       expect(state.button).toBe(0)

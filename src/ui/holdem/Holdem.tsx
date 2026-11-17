@@ -390,14 +390,13 @@ const SIZE_NOTES: Record<TableSize, string> = {
 }
 
 function Settings({ skill, onSkill, size, onRestart }: { skill: BotSkill; onSkill: (skill: BotSkill) => void; size: TableSize; onRestart: (size: TableSize) => void }) {
-  // The other size the player has picked, and whether they have asked to start over at this one. Closing the dialog drops both.
-  const [next, setNext] = useState<TableSize | null>(null)
+  const [pickedSize, setPickedSize] = useState<TableSize | null>(null)
   const [confirming, setConfirming] = useState(false)
   return (
     <Dialog
       onOpenChange={(open) => {
         if (open) return
-        setNext(null)
+        setPickedSize(null)
         setConfirming(false)
       }}
     >
@@ -420,11 +419,11 @@ function Settings({ skill, onSkill, size, onRestart }: { skill: BotSkill; onSkil
         <Field>
           <FieldLabel>牌桌人数</FieldLabel>
           <SegmentedControl
-            value={String(next ?? size)}
+            value={String(pickedSize ?? size)}
             onValueChange={(picked) => {
               const chosen = TABLE_SIZES.find((option) => String(option) === picked)
               if (!chosen) return
-              setNext(chosen === size ? null : chosen)
+              setPickedSize(chosen === size ? null : chosen)
               setConfirming(false)
             }}
           >
@@ -434,14 +433,14 @@ function Settings({ skill, onSkill, size, onRestart }: { skill: BotSkill; onSkil
               </SegmentedControlItem>
             ))}
           </SegmentedControl>
-          <FieldDescription>{SIZE_NOTES[next ?? size]}</FieldDescription>
+          <FieldDescription>{SIZE_NOTES[pickedSize ?? size]}</FieldDescription>
         </Field>
         <Field>
           <FieldLabel>存档</FieldLabel>
           <FieldDescription>每打完一手，全桌的筹码都会保存在这个浏览器里，下次打开从下一手接着打。没打完的一手不保存。</FieldDescription>
-          {next !== null ? (
-            <DialogClose data-variant="danger" action={() => onRestart(next)}>
-              确认：换成 {next} 人桌，所有人回到 2,000 筹码，从第 1 手开始
+          {pickedSize !== null ? (
+            <DialogClose data-variant="danger" action={() => onRestart(pickedSize)}>
+              确认：换成 {pickedSize} 人桌，所有人回到 2,000 筹码，从第 1 手开始
             </DialogClose>
           ) : confirming ? (
             <DialogClose data-variant="danger" action={() => onRestart(size)}>
@@ -459,7 +458,6 @@ function Settings({ skill, onSkill, size, onRestart }: { skill: BotSkill; onSkil
   )
 }
 
-/** The Texas Hold'em table: six or nine seats, the board, the coach, and the player's cards and buttons. */
 function Holdem({ onHome }: { onHome: () => void }) {
   const { game, size, advice, decisions, notice, skill, setSkill, choose, deal, restart } = useHoldem()
   const [coachOn, setCoachOn] = useSaved("guandan.holdem.coach", true)

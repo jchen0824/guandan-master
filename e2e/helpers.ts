@@ -12,10 +12,7 @@ interface GameScreen {
   dialog: boolean
 }
 
-/**
- * Exact cards for a Texas Hold'em hand: hole cards by seat (0 is the player) such as "AH TD", and the board.
- * `seats` is the size of the table on screen unless given.
- */
+/** Exact cards for a Texas Hold'em hand: hole cards by seat (0 is the player) such as "AH TD", and the board. */
 export interface HoldemDeal {
   button?: number
   seats?: 6 | 9
@@ -86,7 +83,7 @@ export async function openHome(page: Page, options: { seed?: number; save?: stri
   await expect(page.getByRole("heading", { name: "今天练哪一桌？" })).toBeVisible()
 }
 
-/** Opens the Texas Hold'em table with a fixed deal and a clock the test controls. `seats` picks the table size, as 设置 does. */
+/** Opens the Texas Hold'em table with a fixed deal and a clock the test controls. */
 export async function openHoldem(page: Page, options: { seed?: number; seats?: 6 | 9 } = {}) {
   await open(page, { ...options, game: "holdem" })
   await expect(page.getByRole("list", { name: /^你的手牌/ })).toBeVisible()
