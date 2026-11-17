@@ -136,7 +136,6 @@ test("three hands played by the coach's advice keep every label clear of the oth
   }
 })
 
-// Eight opponents have their own positions in every layout, so a nine-seat table is checked like a six-seat one.
 test.describe("a nine-seat table", () => {
   test("a fresh deal fits the screen with eight opponents", async ({ page }) => {
     await openHoldem(page, { seats: 9 })
@@ -190,7 +189,6 @@ test.describe("a nine-seat table", () => {
     await dealHoldemExactly(page, { holes: { 0: "KH KD", 8: "AS AC" }, board: "2C 7S 9D 4H 3S" })
     await expect(page.getByRole("list", { name: /^你的手牌：/ })).toHaveAttribute("aria-label", /红桃K/)
     await expect(page.getByRole("list", { name: /^你的手牌：/ })).toHaveAttribute("aria-label", /方块K/)
-    // Checking or calling every time keeps the player in until the showdown.
     for (let step = 0; step < 200 && !(await screen(page)).over; step++) {
       if ((await screen(page)).myTurn) await page.getByRole("button", { name: /^(过牌|跟注)/ }).click()
       else await waitForNextMove(page)
