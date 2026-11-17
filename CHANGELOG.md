@@ -2,6 +2,20 @@
 
 What changed in each release of 掼蛋教练. The newest release is first. Versions follow [Semantic Versioning](https://semver.org/): the middle number rises for a new feature, the last for a fix. How to cut a release is in [CONTRIBUTING.md](CONTRIBUTING.md#releases).
 
+## [0.4.0] - 2026-11-17
+
+The Hold'em coach shows how to work out a win rate yourself, and players who run out of chips are out.
+
+### Added
+
+- After the flop, the Hold'em coach shows its working the way you could do it at the table: what your hand is against the board (顶对 K，踢脚 Q; 只有 A 高; a pair that is only on the board counts for nothing), which cards would help and how many are left (来一张红桃就成同花（还剩 9 张）), what the betting says about the opponents, and an estimate from the 2-and-4 rule (二四法则) next to the computer's simulated win rate. When the two differ by more than 8 points, a line says why. For a made hand it names the flushes and straights the board offers.
+- On phones and narrower screens, the coach bar keeps the estimate and the decision, and 怎么算的 opens the full working.
+- The working explains the 2-and-4 rule with the hand's own numbers (3 张有效牌 × 4 ≈ 12%), and 规则 has a new section, 自己估胜率, on outs, the 2-and-4 rule and the win rate a call needs.
+
+### Changed
+
+- A Hold'em player who runs out of chips is out (出局), as in a real game, instead of getting 2,000 again. The table plays on with fewer players, heads-up included. It ends when you are out (你出局了) or the last one left (全桌冠军), and 再开一桌 starts a new one. The home page says how many are left at your table.
+
 ## [0.3.0] - 2026-11-17
 
 Texas Hold'em remembers your table.
