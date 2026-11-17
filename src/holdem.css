@@ -502,6 +502,57 @@
   --by: -44px;
 }
 
+/* A nine-seat table: eight opponents clockwise from the player's left. The hand-rank list and the coach's panel leave
+   no room for eight full-size labels, so a nine-seat table keeps the smaller labels at every width (below). */
+[data-seats="9"] [data-seat="1"] {
+  --x: 180;
+  --y: 440;
+  --bx: 100px;
+  --by: 0px;
+}
+[data-seats="9"] [data-seat="2"] {
+  --x: 355;
+  --y: 350;
+  --bx: 0px;
+  --by: 36px;
+}
+[data-seats="9"] [data-seat="3"] {
+  --x: 396;
+  --y: 250;
+  --bx: 0px;
+  --by: 36px;
+}
+[data-seats="9"] [data-seat="4"] {
+  --x: 530;
+  --y: 180;
+  --bx: 0px;
+  --by: -40px;
+}
+[data-seats="9"] [data-seat="5"] {
+  --x: 750;
+  --y: 180;
+  --bx: 0px;
+  --by: -40px;
+}
+[data-seats="9"] [data-seat="6"] {
+  --x: 884;
+  --y: 250;
+  --bx: 0px;
+  --by: 36px;
+}
+[data-seats="9"] [data-seat="7"] {
+  --x: 925;
+  --y: 350;
+  --bx: 0px;
+  --by: 36px;
+}
+[data-seats="9"] [data-seat="8"] {
+  --x: 1100;
+  --y: 440;
+  --bx: -100px;
+  --by: 0px;
+}
+
 [data-slot="he-chip"],
 [data-slot="he-me"] {
   position: relative;
@@ -1246,6 +1297,45 @@
   }
 }
 
+/* A nine-seat table has the smaller labels above at every size. */
+[data-seats="9"] [data-slot="he-table"] {
+  --chip-w: 122px;
+}
+[data-seats="9"] [data-slot="he-chip"] {
+  height: 42px;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 0 6px;
+  padding: 0 8px 0 5px;
+  border-radius: 21px;
+}
+[data-seats="9"] [data-slot="he-chip"] [data-slot="he-avatar"] {
+  width: 28px;
+  height: 28px;
+  font-size: 13px;
+}
+[data-seats="9"] [data-slot="he-chip"] [data-slot="he-who"],
+[data-seats="9"] [data-slot="he-chip"] [data-slot="he-who"] span {
+  color: var(--cream);
+  font-size: 12px;
+}
+[data-seats="9"] [data-slot="he-chip"] [data-slot="he-long"],
+[data-seats="9"] [data-slot="he-chip"] [data-slot="he-who"] b {
+  display: none;
+}
+[data-seats="9"] [data-slot="he-chip"] [data-slot="he-short"] {
+  display: inline;
+}
+[data-seats="9"] [data-slot="he-shown"] {
+  --cw: 30px;
+  left: calc(var(--chip-w) / -2 + 4px);
+}
+[data-seats="9"] [data-slot="he-seat"][data-shown] [data-slot="he-chip"] {
+  grid-template-columns: 48px minmax(0, 1fr);
+}
+[data-seats="9"] [data-slot="he-seat"][data-shown] [data-slot="he-who"] b {
+  display: inline;
+}
+
 /* ---- Phone upright: a tall table as wide as the screen. The player's two cards and label lie over its
    near edge, and the buttons run across the bottom. ---- */
 @media (max-width: 620px) {
@@ -1327,6 +1417,62 @@
     --y: 326;
     --bx: 30px;
     --by: -36px;
+  }
+  /* Nine seats: three down each side and two at the far end. A smaller board and the pot under it leave room for the
+     bets of the two seats nearest the player. */
+  [data-seats="9"] [data-slot="he-table"] {
+    --pot-y: 300;
+  }
+  [data-seats="9"] [data-slot="he-board"] {
+    --cw: calc(42 * var(--v));
+  }
+  [data-seats="9"] [data-seat="1"] {
+    --x: 55;
+    --y: 326;
+    --bx: 0px;
+    --by: -34px;
+  }
+  [data-seats="9"] [data-seat="2"] {
+    --x: 55;
+    --y: 167;
+    --bx: 91px;
+    --by: 0px;
+  }
+  [data-seats="9"] [data-seat="3"] {
+    --x: 55;
+    --y: 112;
+    --bx: 91px;
+    --by: 0px;
+  }
+  [data-seats="9"] [data-seat="4"] {
+    --x: 140;
+    --y: 28;
+    --bx: 0px;
+    --by: 34px;
+  }
+  [data-seats="9"] [data-seat="5"] {
+    --x: 253;
+    --y: 28;
+    --bx: 0px;
+    --by: 34px;
+  }
+  [data-seats="9"] [data-seat="6"] {
+    --x: 338;
+    --y: 112;
+    --bx: -91px;
+    --by: 0px;
+  }
+  [data-seats="9"] [data-seat="7"] {
+    --x: 338;
+    --y: 167;
+    --bx: -91px;
+    --by: 0px;
+  }
+  [data-seats="9"] [data-seat="8"] {
+    --x: 338;
+    --y: 326;
+    --bx: 0px;
+    --by: -34px;
   }
   [data-slot="he-board"] {
     --cw: calc(49 * var(--v));
@@ -1450,6 +1596,34 @@
   }
 }
 
+/* ---- A nine-seat table on a phone, either way up: labels without the initial, the name in the text instead, so
+   eight of them fit round the table. ---- */
+@media (max-width: 620px), (max-height: 480px) {
+  [data-seats="9"] [data-slot="he-table"] {
+    --chip-w: 100px;
+  }
+  [data-seats="9"] [data-slot="he-chip"] {
+    grid-template-columns: 0 minmax(0, 1fr);
+    gap: 0;
+    height: 36px;
+    padding: 0 8px;
+  }
+  /* The dealer badge sits where the initial was, so the text moves over for it, except while cards are shown there. */
+  [data-seats="9"] [data-slot="he-seat"]:not([data-shown]) [data-slot="he-chip"]:has(> [data-slot="he-dealer"]) {
+    padding-left: 20px;
+  }
+  [data-seats="9"] [data-slot="he-chip"] [data-slot="he-avatar"] {
+    visibility: hidden;
+  }
+  [data-seats="9"] [data-slot="he-chip"] [data-slot="he-who"] b {
+    display: inline;
+  }
+  /* Shown cards take the left of the label; the name and the hand still fit beside them, the position does not. */
+  [data-seats="9"] [data-shown] [data-slot="he-who"] span {
+    display: none;
+  }
+}
+
 /* ---- Phone on its side: the table fills the screen. The coach is a box at the bottom left with the
    player's label as its last line, the two cards lie on the table's near edge, the buttons are a column. ---- */
 @media (max-height: 480px) and (min-width: 621px) {
@@ -1504,6 +1678,55 @@
     --y: 106;
     --bx: 36px;
     --by: -36px;
+  }
+  /* Nine seats: six along the far side, clear of the buttons, and one each side of the board. */
+  [data-seats="9"] [data-seat="1"] {
+    --x: 140;
+    --y: 106;
+    --bx: -92px;
+    --by: 0px;
+  }
+  [data-seats="9"] [data-seat="2"] {
+    --x: 66;
+    --y: 20;
+    --bx: 0px;
+    --by: 36px;
+  }
+  [data-seats="9"] [data-seat="3"] {
+    --x: 184;
+    --y: 20;
+    --bx: 0px;
+    --by: 36px;
+  }
+  [data-seats="9"] [data-seat="4"] {
+    --x: 303;
+    --y: 20;
+    --bx: 0px;
+    --by: 36px;
+  }
+  [data-seats="9"] [data-seat="5"] {
+    --x: 421;
+    --y: 20;
+    --bx: 0px;
+    --by: 36px;
+  }
+  [data-seats="9"] [data-seat="6"] {
+    --x: 540;
+    --y: 20;
+    --bx: 0px;
+    --by: 36px;
+  }
+  [data-seats="9"] [data-seat="7"] {
+    --x: 658;
+    --y: 20;
+    --bx: 0px;
+    --by: 36px;
+  }
+  [data-seats="9"] [data-seat="8"] {
+    --x: 622;
+    --y: 106;
+    --bx: 0px;
+    --by: 36px;
   }
   [data-slot="he-board"] {
     --cw: calc(42 * var(--v));
