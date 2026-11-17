@@ -13,7 +13,7 @@ import type { BotSkill } from "./bot"
 import { BIG_BLIND, act, newTable, nextHand } from "./game"
 import type { HoldemState } from "./game"
 import { potOdds, shareOfPot } from "./odds"
-import { seeded } from "./testing"
+import { refilled, seeded } from "./testing"
 
 const SEEDS = Array.from({ length: 16 }, (_, index) => index + 1)
 const HANDS = 200
@@ -31,7 +31,7 @@ function play(strong: BotSkill, weak: BotSkill, seed: number, even: boolean): nu
     state.seats.forEach((seat, index) => {
       if (theirs(index)) net += (state.result?.winnings[index] ?? 0) - seat.total
     })
-    state = nextHand(state, seeded(seed * 10007 + hand + 1))
+    state = nextHand(refilled(state), seeded(seed * 10007 + hand + 1))
   }
   return net
 }
@@ -55,7 +55,7 @@ function spotsFacingABet(): { state: HoldemState; seat: number; share: number; n
       if (state.street !== "preflop" && state.currentBet > state.seats[seat].bet && hand % 2 === 0) spots.push({ state, seat })
       state = act(state, seat, botAction(state, seat, rng, BOT_SKILLS[hand % 3]))
     }
-    state = nextHand(state, rng)
+    state = nextHand(refilled(state), rng)
   }
   return spots.map((spot) => ({ state: spot.state, seat: spot.seat, share: shareOfPot(spot.state, spot.seat, seeded(99), 1500), need: potOdds(spot.state, spot.seat).need }))
 }

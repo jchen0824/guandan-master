@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { SEATS, SEAT_NAMES, act, legalActions, newTable } from "../../holdem/game"
+import { SEATS, SEAT_NAMES, act, legalActions, newTable, resumeTable } from "../../holdem/game"
 import type { HoldemState } from "../../holdem/game"
 import { rig, seeded, stacked } from "../../holdem/testing"
 import { biggestWinner, resultLine } from "./summary"
@@ -12,6 +12,31 @@ function finish(state: HoldemState): HoldemState {
   while (now.toAct !== null) now = act(now, now.toAct, legalActions(now).canCheck ? { kind: "check" } : { kind: "fold" })
   return now
 }
+
+/** Calls or checks until the hand is over. */
+function callDown(state: HoldemState): HoldemState {
+  let now = state
+  while (now.toAct !== null) now = act(now, now.toAct, legalActions(now).canCheck ? { kind: "check" } : { kind: "call" })
+  return now
+}
+
+const table = (stacks: number[]) => resumeTable({ version: 1, savedAt: "", handNumber: 1, button: 0, stacks }, seeded(1))
+
+describe("the end of a table", () => {
+  it("names who lost their last chips, and says when that ends the table for the player", () => {
+    // Three left: 甲 goes all-in with seven-two against the player's aces and is out. The table goes on.
+    const three = rig(table([2000, 100, 0, 0, 0, 2000]), { 0: "AH AS", 1: "7C 2D", 5: "QC JC" }, "KD 9S 4H 3C 8D")
+    let state = three
+    while (state.toAct !== null) state = act(state, state.toAct, state.toAct === 1 ? { kind: "raise", to: 100 } : state.toAct === 5 ? { kind: "fold" } : legalActions(state).canCheck ? { kind: "check" } : { kind: "call" })
+    expect(resultLine(state)).toEqual({ title: "一对", line: "你用一对 A，赢得 210。甲输光了筹码，出局" })
+
+    const lost = callDown(act(rig(table([100, 0, 0, 0, 0, 11900]), { 0: "7C 2D", 5: "AH AS" }, "KD 9S 4H 3C JD"), 5, { kind: "raise", to: 200 }))
+    expect(resultLine(lost)?.title).toBe("你出局了")
+
+    const won = callDown(act(rig(table([11900, 0, 0, 0, 0, 100]), { 0: "AH AS", 5: "7C 2D" }, "KD 9S 4H 3C JD"), 5, { kind: "raise", to: 100 }))
+    expect(resultLine(won)).toEqual({ title: "全桌冠军", line: "你用一对 A，赢得 200。戊输光了筹码，出局" })
+  })
+})
 
 describe("the result of a hand", () => {
   it("names every player who won chips when a short stack takes the main pot and another the side pot", () => {

@@ -1,6 +1,6 @@
 import { Button } from "@ui-sdk/react/button"
 import { chips, newDeck } from "../holdem/cards"
-import { HERO, parseTableSave, rebuy } from "../holdem/game"
+import { HERO, parseTableSave, stacksOver } from "../holdem/game"
 import { REPO_URL } from "./buildInfo"
 import { TABLE_KEY } from "./holdem/useHoldem"
 import { PlayingCard } from "./holdem/PlayingCard"
@@ -20,7 +20,10 @@ const FLOP = [find(13, "S"), find(9, "H"), find(4, "H")]
 function holdemProgress(): string | null {
   try {
     const save = parseTableSave(localStorage.getItem(TABLE_KEY))
-    return save ? `上次打到第 ${save.handNumber} 手，你有 ${chips(rebuy(save.stacks)[HERO])} 筹码，进去接着打` : null
+    // A table that has ended starts afresh, so there is nothing to carry on from.
+    if (!save || stacksOver(save.stacks)) return null
+    const left = save.stacks.filter((stack) => stack > 0).length
+    return `上次打到第 ${save.handNumber} 手，你有 ${chips(save.stacks[HERO])} 筹码${left < 6 ? `，桌上还剩 ${left} 人` : ""}，进去接着打`
   } catch {
     return null
   }

@@ -1,6 +1,6 @@
 import { cardName, chips } from "./cards"
 import { startingTier } from "./bot"
-import { BIG_BLIND, HERO, SEAT_NAMES, SEATS, describeAction, lastWhere, legalActions, positionName } from "./game"
+import { BIG_BLIND, HERO, SEAT_NAMES, describeAction, lastWhere, legalActions, position, positionName } from "./game"
 import type { Action, HoldemState } from "./game"
 import { evaluate } from "./hands"
 import type { HandCategory } from "./hands"
@@ -60,9 +60,9 @@ function beforeTheFlop(state: HoldemState): Pick<Advice, "action" | "reason"> {
   const hole = state.seats[HERO].hole
   const legal = legalActions(state)
   const tier = startingTier(hole)
-  const fromButton = (HERO - state.button + SEATS) % SEATS
-  const late = fromButton === 0 || fromButton === 5
-  const blind = fromButton === 1 || fromButton === 2
+  const where = position(state, HERO)
+  const late = where === "button" || where === "late"
+  const blind = where === "smallBlind" || where === "bigBlind"
   const cards = `${cardName(hole[0])}、${cardName(hole[1])}是${TIER_WORDS[tier]}`
   const seat = `你在${positionName(state, HERO)}${late ? "，后面行动，能先看别人怎么做" : blind ? "，已经放了盲注" : "，后面还有好几个人没行动"}`
   const stay: Action = legal.canCheck ? { kind: "check" } : { kind: "fold" }

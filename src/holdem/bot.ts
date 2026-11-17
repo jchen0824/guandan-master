@@ -1,6 +1,6 @@
 import { ACE } from "./cards"
 import type { Card } from "./cards"
-import { BIG_BLIND, SEATS, legalActions } from "./game"
+import { BIG_BLIND, legalActions, position } from "./game"
 import type { Action, HoldemState } from "./game"
 import { potOdds, shareOfPot } from "./odds"
 
@@ -94,9 +94,9 @@ export function botAction(state: HoldemState, seat: number, rng: () => number, s
 
   if (state.street === "preflop") {
     const tier = startingTier(me.hole)
-    const fromButton = (seat - state.button + SEATS) % SEATS
-    const late = fromButton === 0 || fromButton === 5
-    const blind = fromButton === 1 || fromButton === 2
+    const where = position(state, seat)
+    const late = where === "button" || where === "late"
+    const blind = where === "smallBlind" || where === "bigBlind"
     if (skill === "novice") return noviceBeforeTheFlop(state, tier, rng)
     if (skill === "advanced") return advancedBeforeTheFlop(state, tier, late, blind, rng)
     const raised = state.currentBet > BIG_BLIND

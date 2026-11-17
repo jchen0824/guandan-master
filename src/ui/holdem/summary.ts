@@ -1,5 +1,5 @@
 import { chips } from "../../holdem/cards"
-import { HERO, SEAT_NAMES } from "../../holdem/game"
+import { HERO, SEAT_NAMES, knockedOut, tableOver } from "../../holdem/game"
 import type { HoldemState } from "../../holdem/game"
 import { categoryName, describeHand } from "../../holdem/hands"
 
@@ -19,6 +19,17 @@ export function biggestWinner(game: HoldemState): number | null {
  * went to more than one player (a split pot, or side pots won by different players), every one of them is named.
  */
 export function resultLine(game: HoldemState): { title: string; line: string } | null {
+  const hand = handLine(game)
+  if (!hand) return null
+  // Who lost their last chips, and, when that ends the table for the player, the end in the title.
+  const out = knockedOut(game).filter((seat) => seat !== HERO)
+  const line = out.length > 0 ? `${hand.line}。${out.map((seat) => SEAT_NAMES[seat]).join("、")}输光了筹码，出局` : hand.line
+  const ending = tableOver(game)
+  const title = ending === "lost" ? "你出局了" : ending === "won" ? "全桌冠军" : hand.title
+  return { title, line }
+}
+
+function handLine(game: HoldemState): { title: string; line: string } | null {
   const seat = biggestWinner(game)
   const result = game.result
   if (!result || seat === null) return null

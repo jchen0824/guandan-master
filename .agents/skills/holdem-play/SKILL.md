@@ -32,7 +32,7 @@ Two things beginners get wrong, and the coach is built around them:
 - **Deterministic.** Every function that needs chance takes an `rng`; tests pass `seeded(n)`. `Math.random()` is banned in `src/holdem` (`npm run check:conventions`).
 - **The coach tells the truth.** Its `reason` is shown to the player, so it must describe the rule that actually decided the advice, with numbers that match. When the win rate only just covers the price, it says so (刚好够); it never says "not enough" about a call that pays.
 - **The levels stay in order.** 新手 < 普通 < 进阶 in strength. `npm run test:levels` (in CI) fails when a level stops beating the one below, at the table or in how often it calls or folds wrongly. Do not loosen its thresholds to make a change pass.
-- **House choices are deliberate.** Practice chips only, and a player below one big blind gets a full 2,000 again next hand. No turn timer. Every hand still in at the showdown is turned over; nobody mucks.
+- **House choices are deliberate.** Practice chips only. A player with no chips is out, as in a real game, and the table ends when the player is out or the last one left; 再开一桌 starts a new one. No turn timer. Every hand still in at the showdown is turned over; nobody mucks.
 
 ## Checklist for a rule, coach or computer player change
 
