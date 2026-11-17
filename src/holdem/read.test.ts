@@ -54,6 +54,17 @@ describe("reading a hand the way a player does", () => {
     expect(countOuts(cards("5H 2D"), cards("5S 6D 7C 8H"))).toEqual({ count: 5, text: "来一张 2 就成两对（还剩 3 张）；来一张 5 就成三条（还剩 2 张）" })
   })
 
+  it("reads a river where neither of the player's cards plays as the board's hand", () => {
+    const read = readHand(cards("3H 2D"), cards("AS KC QD JH 9S"))
+    expect(read).toMatchObject({ strength: Strength.Nothing, boardOnly: true })
+    expect(read.text).toMatch(/：这手牌全在公共牌上，大家都有$/)
+    expect(read.text).not.toMatch(/3 高/)
+    // One card that beats the board's last one does play.
+    const ten = readHand(cards("TH 2D"), cards("AS KC QD 7H 4S"))
+    expect(ten.text).toBe("只有 10 高，还没成牌")
+    expect(ten.boardOnly).toBeUndefined()
+  })
+
   it("lets the fifth card decide when four of a kind is on the board", () => {
     // Kings with an ace: nobody can beat it.
     expect(readHand(cards("AH 2D"), cards("KS KC KD KH 3S"))).toMatchObject({ strength: Strength.Strong, nuts: true, text: "四条 K 在公共牌上，你的 A 是最大的第五张，没人能赢你" })

@@ -32,6 +32,8 @@ export interface HandRead {
   makes: string
   /** Nobody can beat it; at worst it splits. Only for four of a kind on the board with the best fifth card. */
   nuts?: boolean
+  /** The five cards on the board are the player's best hand: they can at best split. */
+  boardOnly?: boolean
 }
 
 const ranksDown = (cards: Card[]) => [...new Set(cards.map((card) => card.rank))].sort((a, b) => b - a)
@@ -66,13 +68,11 @@ export function readHand(hole: Card[], board: Card[]): HandRead {
   // changing anything, so there the player's cards count only when they beat the board.
   const usesHole = value.cards.some((card) => hole.includes(card)) && (board.length < 5 || value.score > evaluate(board).score)
   const name = categoryName(value.category)
-  if (value.category === "highCard") {
-    return { text: `只有 ${rankLabel(Math.max(...hole.map((card) => card.rank)))} 高，还没成牌`, strength: Strength.Nothing, makes: "高牌" }
-  }
+  if (!usesHole) return { text: `${describeHand(value)}：这手牌全在公共牌上，大家都有`, strength: Strength.Nothing, makes: name, boardOnly: true }
   const high = rankLabel(Math.max(...hole.map((card) => card.rank)))
+  if (value.category === "highCard") return { text: `只有 ${high} 高，还没成牌`, strength: Strength.Nothing, makes: "高牌" }
   // A hand only counts as the player's when one of their own cards is part of it, not only a kicker.
   const onBoard = { text: `只有 ${high} 高：公共牌上的${name}大家都有`, strength: Strength.Nothing, makes: "高牌" }
-  if (!usesHole) return { text: `${describeHand(value)}：这手牌全在公共牌上，大家都有`, strength: Strength.Nothing, makes: name }
   const holds = (rank: number) => hole.some((card) => card.rank === rank)
   if (value.category === "pair") return readPair(hole, board, value.cards[0].rank)
   if (value.category === "twoPair") {

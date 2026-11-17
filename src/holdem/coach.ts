@@ -121,9 +121,8 @@ function explain(state: HoldemState, have: number): Advice["explain"] {
   }
   if (outs.count === 0) {
     // With nothing to draw, say what the hand beats at the showdown as it is. There is no rule-of-thumb number.
-    const boardOnly = read.strength === Strength.Nothing && read.makes !== "高牌"
     const wins =
-      boardOnly ? "这手牌大家都有，最多和别人平分"
+      read.boardOnly ? "这手牌大家都有，最多和别人平分"
       : read.strength === Strength.WeakPair ? "你的对子能赢更小的对子，也能赢诈唬"
       : bettorsAgainst(state, HERO) > 0 ? "下注的人在诈唬时你才赢"
       : "只有对手也没成牌时你才赢"
