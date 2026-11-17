@@ -5,6 +5,11 @@ import { seeded } from "../../holdem/testing"
 import { Holdem } from "./Holdem"
 
 const button = (name: string | RegExp) => screen.queryByRole("button", { name })
+/** A button in the row of actions (弃牌, 跟注, the raise), not a size button that can have the same words. */
+const action = (name: string | RegExp) => {
+  const row = document.querySelector<HTMLElement>('[data-slot="he-buttons"]')
+  return row ? within(row).queryByRole("button", { name }) : null
+}
 const coach = () => screen.getByLabelText("教练")
 const shownCards = () => document.querySelectorAll('[data-slot="he-shown"] [data-slot="playing-card"]')
 
@@ -18,12 +23,12 @@ function waitForButtons() {
 }
 
 /** The button for each kind of advice. A raise button starts at the coach's amount, so pressing it follows the advice. */
-const FOR_ADVICE: Record<string, RegExp> = { fold: /^弃牌$/, check: /^过牌$/, call: /^跟注/, raise: /^(下注|加注到) / }
+const FOR_ADVICE: Record<string, RegExp> = { fold: /^弃牌$/, check: /^过牌$/, call: /^跟注/, raise: /^(下注|加注到|全下) / }
 
 /** Does what the coach's advice says. */
 function followAdvice() {
   const kind = coach().getAttribute("data-advice") ?? ""
-  const pick = button(FOR_ADVICE[kind] ?? /^$/)
+  const pick = action(FOR_ADVICE[kind] ?? /^$/)
   if (!pick) throw new Error(`no button for the advice "${kind}"`)
   fireEvent.click(pick)
 }
@@ -89,7 +94,7 @@ describe("the Texas Hold'em table", () => {
       fireEvent.click(button(/^(弃牌|下一手)$/) as HTMLElement)
     }
     expect(coach().getAttribute("data-advice")).toBe("raise")
-    expect(button(/^(下注|加注到) [\d,]+$/)).toBeTruthy()
+    expect(action(/^(下注|加注到|全下) [\d,]+$/)).toBeTruthy()
   })
 
   it("turns the coach off and on from the top bar, and remembers the choice", () => {
@@ -138,8 +143,17 @@ describe("the Texas Hold'em table", () => {
       fireEvent.change(slider, { target: { value: end } })
       const amount = sizes.getByRole("button", { name: new RegExp(`^${preset}`) }).querySelector("b")?.textContent ?? ""
       expect(slider.getAttribute("aria-valuetext")).toBe(amount)
-      expect(screen.getByRole("button", { name: new RegExp(`^(下注|加注到) ${amount}$`) })).toBeTruthy()
+      // At the far end the raise button says 全下; at the near end 下注 or 加注到.
+      const label = preset === "全下" ? "全下" : "(下注|加注到)"
+      expect(action(new RegExp(`^${label} ${amount}$`))).toBeTruthy()
     }
+  })
+
+  it("shows how much the player has put into the hand once they have", () => {
+    render(<Holdem onHome={() => {}} />)
+    waitForButtons()
+    fireEvent.click(button(/^(过牌|跟注)/) as HTMLElement)
+    expect(document.querySelector('[data-slot="he-in"]')?.textContent).toMatch(/^本手已下 [\d,]+$/)
   })
 
   it("raises to the size the player picked", () => {
@@ -150,7 +164,7 @@ describe("the Texas Hold'em table", () => {
     fireEvent.click(pot)
     expect(pot.getAttribute("aria-pressed")).toBe("true")
     const amount = pot.querySelector("b")?.textContent ?? ""
-    const raise = screen.getByRole("button", { name: new RegExp(`^(下注|加注到) ${amount}$`) })
+    const raise = action(new RegExp(`^(下注|加注到|全下) ${amount}$`)) as HTMLElement
     fireEvent.click(raise)
     expect(screen.getByText(/^筹码 /, { selector: '[data-slot="he-me"] *' }).textContent).not.toBe("筹码 2,000")
   })

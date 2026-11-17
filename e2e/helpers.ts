@@ -122,8 +122,8 @@ export async function followAdvice(page: Page) {
   const before = await page.evaluate(() => window.guandanQa.signature())
   // The coach's advice is in the panel's data-advice. A raise button starts at the coach's amount.
   const advice = await page.getByRole("complementary", { name: "教练" }).getAttribute("data-advice")
-  const name = advice === "fold" ? /^弃牌$/ : advice === "check" || advice === "call" ? /^(过牌|跟注)/ : /^(下注|加注到) /
-  await page.getByRole("button", { name }).click()
+  if (advice === "raise") await page.locator('[data-slot="he-buttons"] [data-variant="raise"]').click()
+  else await page.getByRole("button", { name: advice === "fold" ? /^弃牌$/ : /^(过牌|跟注)/ }).click()
   await expect.poll(() => page.evaluate(() => window.guandanQa.signature())).not.toBe(before)
 }
 
