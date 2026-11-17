@@ -112,10 +112,14 @@ function explain(state: HoldemState, have: number): Advice["explain"] {
   const lines: Advice["explain"] = [{ key: "hand", label: "你的牌", text: read.text }]
   if (outs.text) lines.push({ key: "outs", label: "能帮你的牌", text: outs.text })
   else if (!river && read.strength < Strength.Strong) lines.push({ key: "outs", label: "能帮你的牌", text: "没有一张牌能明显帮到你" })
-  lines.push({ key: "opponents", label: "对手", text: readOpponents(state, read.strength) })
+  lines.push({ key: "opponents", label: "对手", text: readOpponents(state, read) })
   const simulated = `电脑模拟约 ${percent(have)}`
   if (read.strength >= Strength.TopPair) {
-    const ahead = read.nuts ? "没人能赢你，最多和别人平分，不用数有效牌" : "你多半已经领先，不用数有效牌，要担心的是比你大的牌"
+    // A made hand is not always ahead: against a bet, or many players, the simulation can say otherwise.
+    const ahead =
+      read.nuts ? "没人能赢你，最多和别人平分，不用数有效牌"
+      : have >= 0.5 ? "你多半已经领先，不用数有效牌，要担心的是比你大的牌"
+      : "你的牌不错，但未必领先，要担心的是比你大的牌"
     lines.push({ key: "estimate", label: "估算", text: `${ahead}（${simulated}）` })
     return lines
   }

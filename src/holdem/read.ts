@@ -6,6 +6,7 @@ import type { Card } from "./cards"
 import { HERO, SEAT_NAMES } from "./game"
 import type { HoldemState } from "./game"
 import { categoryName, describeHand, evaluate } from "./hands"
+import type { HandValue } from "./hands"
 import { bettorsAgainst, unseenCards } from "./odds"
 
 /** How strong a hand usually is after the flop, as a player would group it. */
@@ -39,7 +40,7 @@ export interface HandRead {
 const ranksDown = (cards: Card[]) => [...new Set(cards.map((card) => card.rank))].sort((a, b) => b - a)
 
 /** The pair a hand uses, and whether it comes from the player's own cards, for a one-pair hand. */
-function readPair(hole: Card[], board: Card[], rank: number): HandRead {
+function readPair(hole: Card[], board: Card[], rank: number, value: HandValue): HandRead {
   const boardRanks = ranksDown(board)
   const label = rankLabel(rank)
   const pocket = hole[0].rank === rank && hole[1].rank === rank
@@ -52,10 +53,16 @@ function readPair(hole: Card[], board: Card[], rank: number): HandRead {
     const high = Math.max(...hole.map((card) => card.rank))
     return { text: `只有 ${rankLabel(high)} 高：这对 ${label} 在公共牌上，大家都有`, strength: Strength.Nothing, makes: "高牌" }
   }
-  const kicker = hole.find((card) => card !== mine)?.rank ?? 0
   if (rank === boardRanks[0]) {
-    const strong = kicker >= 12
-    return { text: `顶对 ${label}，踢脚 ${rankLabel(kicker)}${strong ? "，踢脚不错" : "，踢脚偏小"}`, strength: Strength.TopPair, makes: "顶对" }
+    // The kicker is the player's other card only when it is one of the best five; otherwise the board's cards are
+    // everyone's kickers, and only a better kicker in someone's hand beats them.
+    const other = hole.find((card) => card !== mine) as Card
+    if (!value.cards.includes(other)) {
+      const single = value.cards.filter((card) => value.cards.filter((c) => c.rank === card.rank).length === 1)
+      return { text: `顶对 ${label}，另一张 ${rankLabel(other.rank)} 用不上：踢脚是公共牌上的 ${single.map((card) => rankLabel(card.rank)).join("、")}`, strength: Strength.TopPair, makes: "顶对" }
+    }
+    const strong = other.rank >= 12
+    return { text: `顶对 ${label}，踢脚 ${rankLabel(other.rank)}${strong ? "，踢脚不错" : "，踢脚偏小"}`, strength: Strength.TopPair, makes: "顶对" }
   }
   const bottom = rank === boardRanks[boardRanks.length - 1]
   return { text: `${bottom ? "底对" : "中对"} ${label}：公共牌上有比它大的牌`, strength: Strength.WeakPair, makes: bottom ? "底对" : "中对" }
@@ -74,13 +81,13 @@ export function readHand(hole: Card[], board: Card[]): HandRead {
   // A hand only counts as the player's when one of their own cards is part of it, not only a kicker.
   const onBoard = { text: `只有 ${high} 高：公共牌上的${name}大家都有`, strength: Strength.Nothing, makes: "高牌" }
   const holds = (rank: number) => hole.some((card) => card.rank === rank)
-  if (value.category === "pair") return readPair(hole, board, value.cards[0].rank)
+  if (value.category === "pair") return readPair(hole, board, value.cards[0].rank, value)
   if (value.category === "twoPair") {
     // A pair on the board is everyone's, so the hand is only as good as the player's own pair.
     const pairs = [value.cards[0].rank, value.cards[2].rank]
     const own = pairs.filter((rank) => hole.some((card) => card.rank === rank))
     if (own.length === 0) return onBoard
-    if (own.length === 1) return readPair(hole, board, own[0])
+    if (own.length === 1) return readPair(hole, board, own[0], value)
     return { text: `两对 ${rankLabel(pairs[0])} 和 ${rankLabel(pairs[1])}，两对都用上了你的牌`, strength: Strength.TwoPair, makes: "两对" }
   }
   if (value.category === "quads" && !holds(value.cards[0].rank)) {
@@ -152,7 +159,8 @@ export function ruleOfThumb(outs: number, board: Card[]): { times: number; perce
 }
 
 /** What the betting says about the opponents, for the player to act. */
-export function readOpponents(state: HoldemState, strength: Strength): string {
+export function readOpponents(state: HoldemState, read: HandRead): string {
+  const { strength } = read
   const bettors = bettorsAgainst(state, HERO)
   const left = state.seats.filter((seat, index) => index !== HERO && !seat.folded).length
   if (bettors > 0) {
@@ -160,7 +168,10 @@ export function readOpponents(state: HoldemState, strength: Strength): string {
       .filter((entry) => entry.street === state.street && entry.seat !== HERO && (entry.kind === "bet" || entry.kind === "raise") && !state.seats[entry.seat].folded)
       .map((entry) => SEAT_NAMES[entry.seat])
     const names = [...new Set(who)].join("、")
-    const where = strength <= Strength.WeakPair ? "你现在多半落后" : strength === Strength.TopPair ? "顶对常常领先，但会输给两对、三条" : strength === Strength.Overpair ? "超对多半领先，但会输给两对、三条" : "你的牌通常比他强"
+    // A hand all on the board is the bettor's too, so they win only with cards that beat it.
+    const where =
+      read.boardOnly ? "这手牌你和他都有，他的牌要比公共牌大才能赢你"
+      : strength <= Strength.WeakPair ? "你现在多半落后" : strength === Strength.TopPair ? "顶对常常领先，但会输给两对、三条" : strength === Strength.Overpair ? "超对多半领先，但会输给两对、三条" : "你的牌通常比他强"
     return `${names}下注了，下注的人通常至少有一对；${where}`
   }
   const many = left >= 3 ? "，人越多，越可能有人牌比你好" : ""

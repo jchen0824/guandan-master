@@ -54,6 +54,15 @@ describe("reading a hand the way a player does", () => {
     expect(countOuts(cards("5H 2D"), cards("5S 6D 7C 8H"))).toEqual({ count: 5, text: "来一张 2 就成两对（还剩 3 张）；来一张 5 就成三条（还剩 2 张）" })
   })
 
+  it("names the player's kicker only when it is one of the best five cards", () => {
+    // K K Q J 9: the 2 does not play, so the board's cards are the kickers.
+    expect(readHand(cards("KS 2D"), cards("KH QC JS 9D 8C")).text).toBe("顶对 K，另一张 2 用不上：踢脚是公共牌上的 Q、J、9")
+    expect(readHand(cards("KS 2D"), cards("KH QC JS 9D")).text).toBe("顶对 K，另一张 2 用不上：踢脚是公共牌上的 Q、J、9")
+    // On the flop every card plays, and on a later street a high kicker still does.
+    expect(readHand(cards("KS 2D"), cards("KH QC JS")).text).toBe("顶对 K，踢脚 2，踢脚偏小")
+    expect(readHand(cards("KS AD"), cards("KH QC JS 9D 8C")).text).toBe("顶对 K，踢脚 A，踢脚不错")
+  })
+
   it("reads a river where neither of the player's cards plays as the board's hand", () => {
     const read = readHand(cards("3H 2D"), cards("AS KC QD JH 9S"))
     expect(read).toMatchObject({ strength: Strength.Nothing, boardOnly: true })

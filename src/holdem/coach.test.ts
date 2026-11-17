@@ -189,6 +189,22 @@ describe("the coach", () => {
     expect(last(advice.explain).text).toMatch(/^牌已经发完，比的是现在谁大：你的对子能赢更小的对子，也能赢诈唬（电脑模拟约 \d+%）$/)
   })
 
+  it("does not call a made hand ahead when the simulation says it is behind", () => {
+    // Top pair with a kicker that does not play, against a river bet: below even.
+    const behind = advise(facingBet("KS 2D", "KH QC JS TD 3C", 300, undefined, "river"), seeded(5))
+    expect(behind.have).toBeLessThan(0.5)
+    expect(last(behind.explain).text).toMatch(/^你的牌不错，但未必领先，要担心的是比你大的牌（电脑模拟约 \d+%）$/)
+    // A set on a dry flop is well ahead.
+    const ahead = advise(facingBet("9C 9D", "9S 5H 2C", 40), seeded(5))
+    expect(ahead.have).toBeGreaterThanOrEqual(0.5)
+    expect(last(ahead.explain).text).toMatch(/^你多半已经领先/)
+  })
+
+  it("does not call a hand all on the board behind a bettor, who has it too", () => {
+    const advice = advise(facingBet("AS 4D", "AH KC QS JD TC", 300, undefined, "river"), seeded(5))
+    expect(advice.explain.find((line) => line.key === "opponents")?.text).toBe("甲下注了，下注的人通常至少有一对；这手牌你和他都有，他的牌要比公共牌大才能赢你")
+  })
+
   it("on a river where the board plays, says the player can at best split", () => {
     const advice = advise(facingBet("3H 2D", "AS QD JH 9S 7C", 40, undefined, "river"), seeded(5))
     expect(advice.explain[0].text).toMatch(/：这手牌全在公共牌上，大家都有$/)
