@@ -1,7 +1,7 @@
 // How a player reads a hand at the table, without a computer: what they hold against the board, which cards
 // would help, what the betting says about the opponents, and a win rate from the 2-and-4 rule. The coach
 // shows this so the player learns to work the number out, not only to read it.
-import { rankLabel, suitName } from "./cards"
+import { ACE, rankLabel, suitName } from "./cards"
 import type { Card } from "./cards"
 import { HERO, SEAT_NAMES } from "./game"
 import type { HoldemState } from "./game"
@@ -30,6 +30,8 @@ export interface HandRead {
   strength: Strength
   /** The short name of what the hand is, used to say what an out makes it: 顶对, 两对, 同花. */
   makes: string
+  /** Nobody can beat it; at worst it splits. Only for four of a kind on the board with the best fifth card. */
+  nuts?: boolean
 }
 
 const ranksDown = (cards: Card[]) => [...new Set(cards.map((card) => card.rank))].sort((a, b) => b - a)
@@ -81,7 +83,16 @@ export function readHand(hole: Card[], board: Card[]): HandRead {
     if (own.length === 1) return readPair(hole, board, own[0])
     return { text: `两对 ${rankLabel(pairs[0])} 和 ${rankLabel(pairs[1])}，两对都用上了你的牌`, strength: Strength.TwoPair, makes: "两对" }
   }
-  if ((value.category === "trips" || value.category === "quads") && !holds(value.cards[0].rank)) return onBoard
+  if (value.category === "quads" && !holds(value.cards[0].rank)) {
+    // Four of a kind on the board is everyone's, so the fifth card decides, and here it is the player's.
+    const quad = rankLabel(value.cards[0].rank)
+    const kicker = value.cards[4].rank
+    if (kicker === (value.cards[0].rank === ACE ? ACE - 1 : ACE)) {
+      return { text: `四条 ${quad} 在公共牌上，你的 ${rankLabel(kicker)} 是最大的第五张，没人能赢你`, strength: Strength.Strong, makes: "四条", nuts: true }
+    }
+    return { text: `只有 ${rankLabel(kicker)} 高：公共牌上的四条大家都有，比的是第五张`, strength: Strength.Nothing, makes: "高牌" }
+  }
+  if (value.category === "trips" && !holds(value.cards[0].rank)) return onBoard
   if (value.category === "trips") {
     const pocket = hole[0].rank === hole[1].rank
     return { text: pocket ? `暗三条 ${rankLabel(value.cards[0].rank)}：口袋对子中了第三张，很强` : `三条 ${rankLabel(value.cards[0].rank)}`, strength: Strength.Trips, makes: "三条" }

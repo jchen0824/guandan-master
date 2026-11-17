@@ -54,6 +54,17 @@ describe("reading a hand the way a player does", () => {
     expect(countOuts(cards("5H 2D"), cards("5S 6D 7C 8H"))).toEqual({ count: 5, text: "来一张 2 就成两对（还剩 3 张）；来一张 5 就成三条（还剩 2 张）" })
   })
 
+  it("lets the fifth card decide when four of a kind is on the board", () => {
+    // Kings with an ace: nobody can beat it.
+    expect(readHand(cards("AH 2D"), cards("KS KC KD KH 3S"))).toMatchObject({ strength: Strength.Strong, nuts: true, text: "四条 K 在公共牌上，你的 A 是最大的第五张，没人能赢你" })
+    // A queen beats the board's 3 but loses to anyone with an ace or a king.
+    expect(readHand(cards("QH 2D"), cards("KS KC KD KH 3S"))).toMatchObject({ strength: Strength.Nothing, text: "只有 Q 高：公共牌上的四条大家都有，比的是第五张" })
+    // Aces on the board: a king is the best fifth card.
+    expect(readHand(cards("KH 2D"), cards("AS AC AD AH 3S")).nuts).toBe(true)
+    // When the board's own fifth card is higher, the player's cards play no part.
+    expect(readHand(cards("4H 2D"), cards("KS KC KD KH 9S")).text).toBe("四条 K：这手牌全在公共牌上，大家都有")
+  })
+
   it("names the ranks of outs that are neither one rank nor one suit", () => {
     expect(countOuts(cards("7D 6C"), cards("9S 8H 2C"))).toEqual({ count: 8, text: "来一张 10 或 5 就成顺子（还剩 8 张）" })
     // The two hearts among the straight cards make a flush, so they are counted there.

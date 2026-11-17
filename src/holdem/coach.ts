@@ -115,7 +115,8 @@ function explain(state: HoldemState, have: number): Advice["explain"] {
   lines.push({ key: "opponents", label: "对手", text: readOpponents(state, read.strength) })
   const simulated = `电脑模拟约 ${percent(have)}`
   if (read.strength >= Strength.TopPair) {
-    lines.push({ key: "estimate", label: "估算", text: `你多半已经领先，不用数有效牌，要担心的是比你大的牌（${simulated}）` })
+    const ahead = read.nuts ? "没人能赢你，最多和别人平分，不用数有效牌" : "你多半已经领先，不用数有效牌，要担心的是比你大的牌"
+    lines.push({ key: "estimate", label: "估算", text: `${ahead}（${simulated}）` })
     return lines
   }
   if (outs.count === 0) {
