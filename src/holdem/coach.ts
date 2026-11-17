@@ -28,7 +28,7 @@ export interface Advice {
    * The coach's working after the flop, so the player can learn to do it without a computer: 你的牌, 能帮你的牌,
    * 对手 and 估算 (the 2-and-4 rule, with the simulated win rate beside it). Empty before the flop.
    */
-  explain: { key: "hand" | "outs" | "opponents" | "estimate" | "gap"; label: string; text: string }[]
+  explain: { key: "hand" | "outs" | "opponents" | "estimate" | "rule" | "gap"; label: string; text: string }[]
 }
 
 const percent = (value: number) => `${Math.round(value * 100)}%`
@@ -141,6 +141,10 @@ function explain(state: HoldemState, have: number): Advice["explain"] {
   const { times, percent: rough } = ruleOfThumb(outs.count, state.board)
   const left = times === 4 ? "还有转牌和河牌两张" : "只剩河牌一张"
   lines.push({ key: "estimate", label: "估算", text: `${left}，二四法则：${outs.count} 张有效牌 × ${times} ≈ ${rough}%（${simulated}）` })
+  // Why times 4 or times 2, with this hand's numbers, so the player can redo it at the next table.
+  const unseen = 52 - 2 - state.board.length
+  const each = times === 4 ? "还要发转牌和河牌两张，每张有效牌约 2% + 2% = 4%" : "只剩河牌一张，每张有效牌约 2%"
+  lines.push({ key: "rule", label: "二四法则", text: `有效牌就是“能帮你的牌”。你看不到的牌有 ${unseen} 张，每发一张，某一张牌出现的机会约 2%。${each}，所以 ${outs.count} × ${times} ≈ ${rough}%。` })
   // The rule counts only cards that make a solid hand; the simulation also counts the times the opponents have less.
   const gap = Math.round(have * 100) - rough
   if (gap > 8) lines.push({ key: "gap", label: "为什么不同", text: "电脑模拟更高：它也算上了对手牌更差、或者只是在诈唬的时候，这时你不中牌也能赢" })

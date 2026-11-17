@@ -1114,6 +1114,11 @@
   line-height: 1.7;
 }
 
+[data-slot="rules-heading"] {
+  margin: 4px 0 0;
+  font-size: 16px;
+}
+
 /* ---- Anything narrower than a laptop, and a phone on its side: the coach is a bar across the top of the
    table, with the table under it. The hand-rank panel and the full review move into dialogs. ---- */
 @media (max-width: 1239px), (max-height: 480px) {
