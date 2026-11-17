@@ -1297,7 +1297,7 @@
   }
 }
 
-/* A nine-seat table has the smaller labels above at every size. */
+/* A nine-seat table has the smaller labels above at every size. These copy that block: change the two together. */
 [data-seats="9"] [data-slot="he-table"] {
   --chip-w: 122px;
 }
