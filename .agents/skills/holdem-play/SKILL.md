@@ -13,7 +13,7 @@ Six seats: the player and five computer players (甲 乙 丙 丁 戊), no-limit,
 
 Two things beginners get wrong, and the coach is built around them:
 
-1. **The price of a call.** A call is worth it when your chance of winning is larger than your share of the pot after you call. The coach always shows both numbers.
+1. **The price of a call.** A call is worth it when your chance of winning is larger than the part of the final pot your call pays for: calling 20 to make a pot of 100 needs a 20% chance (`potOdds().need = call / potAfterCall`). The coach always shows both numbers.
 2. **Position.** Acting after the others is an advantage, so the same two cards are worth playing from the button and not from the first seat to act.
 
 ## Read next, by task
