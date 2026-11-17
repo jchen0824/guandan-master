@@ -19,5 +19,8 @@ export default defineConfig({
     include: ['src/**/*.test.{ts,tsx}'],
     setupFiles: ['./src/test/setup.ts'],
     css: false,
+    // Tests that play whole hands take about a second here, but five or more on a two-core CI runner
+    // while the Texas Hold'em simulations run beside them. Five seconds, the default, was not enough.
+    testTimeout: 20_000,
   },
 })
