@@ -193,7 +193,13 @@ describe("the coach", () => {
     // Top pair with a kicker that does not play, against a river bet: below even.
     const behind = advise(facingBet("KS 2D", "KH QC JS TD 3C", 300, undefined, "river"), seeded(5))
     expect(behind.have).toBeLessThan(0.5)
-    expect(last(behind.explain).text).toMatch(/^你的牌不错，但未必领先，要担心的是比你大的牌（电脑模拟约 \d+%）$/)
+    expect(behind.have).toBeGreaterThanOrEqual(0.35)
+    expect(last(behind.explain).text).toMatch(/^你的牌未必领先：对手有一张 A 或 9 就是顺子（电脑模拟约 \d+%）$/)
+    // Top pair on four spades and four to a straight: far behind, and the board says why.
+    const far = advise(facingBet("AH 2D", "AS KS QS JS 3D", 300, undefined, "river"), seeded(5))
+    expect(far.have).toBeLessThan(0.35)
+    expect(last(far.explain).text).toMatch(/^你的牌多半已经落后：对手有一张黑桃就是同花，有一张 10 就是顺子（电脑模拟约 \d+%）$/)
+    expect(far.explain.find((line) => line.key === "opponents")?.text).toBe("甲下注了，下注的人通常至少有一对；顶对常常领先，但会输给两对、三条、同花、顺子")
     // A set on a dry flop is well ahead.
     const ahead = advise(facingBet("9C 9D", "9S 5H 2C", 40), seeded(5))
     expect(ahead.have).toBeGreaterThanOrEqual(0.5)

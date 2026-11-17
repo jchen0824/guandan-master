@@ -266,8 +266,25 @@ test.describe("the coach's working on hands it once got wrong", () => {
     await expect(working(page)).toContainText("顶对 K，另一张 2 用不上：踢脚是公共牌上的 Q、J、9")
     await expect(working(page)).not.toContainText("踢脚 2")
     // Against the river bet this deal brings, the simulation puts the hand behind, so the coach must not say ahead.
-    await expect(working(page)).toContainText("你的牌不错，但未必领先")
+    await expect(working(page)).toContainText("对手有一张 10 就是顺子")
     await expect(working(page)).not.toContainText("你多半已经领先")
+  })
+
+  test("top pair on a board of four spades is not called ahead, and the board says why", async ({ page }) => {
+    await openHoldem(page)
+    await dealHoldemExactly(page, { holes: { 0: "AH 2D", 1: "9S 8D" }, board: "AS KS QS JS 3D" })
+    await callDownTo(page, 5)
+    await expect(working(page)).toContainText("对手有一张黑桃就是同花，有一张 10 就是顺子")
+    await expect(working(page)).toContainText("顶对常常领先，但会输给两对、三条、同花、顺子")
+    await expect(working(page)).not.toContainText("你多半已经领先")
+  })
+
+  test("a high-card hand is named by its top card, not the player's highest card", async ({ page }) => {
+    await openHoldem(page)
+    await dealHoldemExactly(page, { holes: { 0: "TH 2D", 1: "JH JC" }, board: "AS KC QD 7H 4S" })
+    await callDownTo(page, 5)
+    await expect(working(page)).toContainText("只有 A 高，还没成牌：A 在公共牌上，你的 10 当踢脚")
+    await expect(working(page)).not.toContainText("只有 10 高")
   })
 
   test("a river where only the board plays is the board's hand, not the player's low card", async ({ page }) => {

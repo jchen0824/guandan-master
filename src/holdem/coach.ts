@@ -5,7 +5,7 @@ import type { Action, HoldemState } from "./game"
 import { evaluate } from "./hands"
 import type { HandCategory } from "./hands"
 import { bettorsAgainst, draws, potOdds, shareOfPot } from "./odds"
-import { Strength, countOuts, readHand, readOpponents, ruleOfThumb } from "./read"
+import { Strength, boardDangers, countOuts, readHand, readOpponents, ruleOfThumb } from "./read"
 
 export interface Advice {
   action: Action
@@ -115,11 +115,16 @@ function explain(state: HoldemState, have: number): Advice["explain"] {
   lines.push({ key: "opponents", label: "对手", text: readOpponents(state, read) })
   const simulated = `电脑模拟约 ${percent(have)}`
   if (read.strength >= Strength.TopPair) {
-    // A made hand is not always ahead: against a bet, or many players, the simulation can say otherwise.
+    // A made hand is not always ahead. Say what on the board beats it, so the player learns to look: when ahead,
+    // only what one card makes; when behind, everything, or failing that the bet or the number of players.
+    const dangers = boardDangers(hole, state.board)
+    const near = dangers.filter((danger) => danger.oneCard).map((danger) => danger.text)
+    const all = dangers.map((danger) => danger.text)
+    const why = all.length > 0 ? `对手${all.join("，")}` : bettorsAgainst(state, HERO) > 0 ? "下注的人常常有更大的牌" : "对手多，总有人的牌可能更大"
     const ahead =
       read.nuts ? "没人能赢你，最多和别人平分，不用数有效牌"
-      : have >= 0.5 ? "你多半已经领先，不用数有效牌，要担心的是比你大的牌"
-      : "你的牌不错，但未必领先，要担心的是比你大的牌"
+      : have >= 0.5 ? `你多半已经领先，不用数有效牌，${near.length > 0 ? `但要小心：对手${near.join("，")}` : "要担心的是比你大的牌"}`
+      : `你的牌${have < 0.35 ? "多半已经落后" : "未必领先"}：${why}`
     lines.push({ key: "estimate", label: "估算", text: `${ahead}（${simulated}）` })
     return lines
   }

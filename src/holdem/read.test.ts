@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest"
 import { newDeck, shuffle } from "./cards"
 import { evaluate } from "./hands"
 import { unseenCards } from "./odds"
-import { Strength, countOuts, readHand, ruleOfThumb } from "./read"
+import { Strength, boardDangers, countOuts, readHand, ruleOfThumb } from "./read"
 import { cards, seeded } from "./testing"
 
 describe("reading a hand the way a player does", () => {
@@ -35,7 +35,7 @@ describe("reading a hand the way a player does", () => {
   })
 
   it("does not credit the player with what is only on the board", () => {
-    expect(readHand(cards("5S 6D"), cards("KH KC 2D"))).toMatchObject({ text: "只有 6 高：这对 K 在公共牌上，大家都有", strength: Strength.Nothing })
+    expect(readHand(cards("5S 6D"), cards("KH KC 2D"))).toMatchObject({ text: "一对 K 在公共牌上，大家都有，你的 6、5 当踢脚", strength: Strength.Nothing })
     // Two pair with one pair on the board is only the player's own pair.
     expect(readHand(cards("7S 3D"), cards("KH KC 7D")).text).toBe("底对 7：公共牌上有比它大的牌")
   })
@@ -43,8 +43,8 @@ describe("reading a hand the way a player does", () => {
   it("does not count a card that only improves the board as an out", () => {
     // A 2 makes two pair and a 6 makes three of a kind, but both are on the board for everyone. Only a 4 helps.
     expect(countOuts(cards("5D 3S"), cards("6H 6C 2C"))).toEqual({ count: 4, text: "来一张 4 就成顺子（还剩 4 张）" })
-    expect(readHand(cards("5D 3S"), cards("6H 6C 2C 2D")).text).toBe("只有 5 高：公共牌上的两对大家都有")
-    expect(readHand(cards("5D 3S"), cards("6H 6C 6D 2C")).text).toBe("只有 5 高：公共牌上的三条大家都有")
+    expect(readHand(cards("5D 3S"), cards("6H 6C 2C 2D")).text).toBe("公共牌上的两对大家都有，你的 5 当踢脚")
+    expect(readHand(cards("5D 3S"), cards("6H 6C 6D 2C")).text).toBe("公共牌上的三条大家都有，你的 5、3 当踢脚")
   })
 
   it("does not credit the player with a straight that is all on the board", () => {
@@ -52,6 +52,23 @@ describe("reading a hand the way a player does", () => {
     expect(readHand(cards("5H 2D"), cards("5S 6D 7C 8H 9S"))).toMatchObject({ text: "顺子 到 9：这手牌全在公共牌上，大家都有", strength: Strength.Nothing })
     // So on the turn a 4 or a 9 is not an out: it gives everyone the same straight.
     expect(countOuts(cards("5H 2D"), cards("5S 6D 7C 8H"))).toEqual({ count: 5, text: "来一张 2 就成两对（还剩 3 张）；来一张 5 就成三条（还剩 2 张）" })
+  })
+
+  it("names a high-card hand by its top card, and the player's cards as kickers when the top card is the board's", () => {
+    expect(readHand(cards("AH JH"), cards("8D QS 2H")).text).toBe("只有 A 高，还没成牌")
+    expect(readHand(cards("TH 2D"), cards("AS KC QD 7H 4S")).text).toBe("只有 A 高，还没成牌：A 在公共牌上，你的 10 当踢脚")
+  })
+
+  it("says which flushes and straights on the board beat a made hand", () => {
+    expect(boardDangers(cards("AH 2D"), cards("AS KS QS JS 3D"))).toEqual([
+      { text: "有一张黑桃就是同花", oneCard: true, makes: "同花" },
+      { text: "有一张 10 就是顺子", oneCard: true, makes: "顺子" },
+    ])
+    expect(boardDangers(cards("KS QD"), cards("KH 7H 2H"))).toEqual([{ text: "有两张红桃就是同花", oneCard: false, makes: "同花" }])
+    expect(boardDangers(cards("KS QD"), cards("KH JC 9D"))).toEqual([{ text: "有两张合适的牌就是顺子", oneCard: false, makes: "顺子" }])
+    // An ace plays low too, and a hand that already beats a flush or straight has nothing to fear from it.
+    expect(boardDangers(cards("KS KD"), cards("AH 2C 3D 4S"))).toEqual([{ text: "有一张 5 就是顺子", oneCard: true, makes: "顺子" }])
+    expect(boardDangers(cards("AH 5H"), cards("KH 9H 2H"))).toEqual([])
   })
 
   it("names the player's kicker only when it is one of the best five cards", () => {
@@ -70,7 +87,7 @@ describe("reading a hand the way a player does", () => {
     expect(read.text).not.toMatch(/3 高/)
     // One card that beats the board's last one does play.
     const ten = readHand(cards("TH 2D"), cards("AS KC QD 7H 4S"))
-    expect(ten.text).toBe("只有 10 高，还没成牌")
+    expect(ten.text).toBe("只有 A 高，还没成牌：A 在公共牌上，你的 10 当踢脚")
     expect(ten.boardOnly).toBeUndefined()
   })
 
@@ -78,7 +95,7 @@ describe("reading a hand the way a player does", () => {
     // Kings with an ace: nobody can beat it.
     expect(readHand(cards("AH 2D"), cards("KS KC KD KH 3S"))).toMatchObject({ strength: Strength.Strong, nuts: true, text: "四条 K 在公共牌上，你的 A 是最大的第五张，没人能赢你" })
     // A queen beats the board's 3 but loses to anyone with an ace or a king.
-    expect(readHand(cards("QH 2D"), cards("KS KC KD KH 3S"))).toMatchObject({ strength: Strength.Nothing, text: "只有 Q 高：公共牌上的四条大家都有，比的是第五张" })
+    expect(readHand(cards("QH 2D"), cards("KS KC KD KH 3S"))).toMatchObject({ strength: Strength.Nothing, text: "公共牌上的四条大家都有，比的是第五张：你的 Q" })
     // Aces on the board: a king is the best fifth card.
     expect(readHand(cards("KH 2D"), cards("AS AC AD AH 3S")).nuts).toBe(true)
     // When the board's own fifth card is higher, the player's cards play no part.
