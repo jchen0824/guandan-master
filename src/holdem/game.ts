@@ -3,10 +3,12 @@ import type { Card } from "./cards"
 import { evaluate } from "./hands"
 import type { HandValue } from "./hands"
 
-export const SEATS = 6
+export type TableSize = 6 | 9
+/** The tables a player can pick in 设置. A first visit gets 6. */
+export const TABLE_SIZES: readonly TableSize[] = [6, 9]
 export const HERO = 0
-/** Seats act clockwise in this order. */
-export const SEAT_NAMES = ["你", "甲", "乙", "丙", "丁", "戊"]
+/** Seats act clockwise in this order. A smaller table uses the first of them. */
+export const SEAT_NAMES = ["你", "甲", "乙", "丙", "丁", "戊", "己", "庚", "辛"]
 export const SMALL_BLIND = 10
 export const BIG_BLIND = 20
 export const STARTING_STACK = 2000
@@ -85,13 +87,13 @@ export interface HoldemState {
   lastRaise: number
 }
 
-const after = (seat: number) => (seat + 1) % SEATS
+const after = (seat: number, size: number) => (seat + 1) % size
 const canAct = (seat: Seat) => !seat.folded && !seat.allIn
-const nobodyYet = (): (number | null)[] => Array.from({ length: SEATS }, () => null)
+const nobodyYet = (size: number): (number | null)[] => Array.from({ length: size }, () => null)
 
-/** Seat numbers clockwise, starting at `from`. */
-function clockwise(from: number): number[] {
-  return Array.from({ length: SEATS }, (_, i) => (from + i) % SEATS)
+/** Seat numbers clockwise round a table of `size` seats, starting at `from`. */
+function clockwise(from: number, size: number): number[] {
+  return Array.from({ length: size }, (_, i) => (from + i) % size)
 }
 
 function put(seat: Seat, amount: number): Seat {
@@ -109,7 +111,7 @@ function nothingToDecide(seats: readonly Seat[]): boolean {
 
 /** The first seat clockwise after `from` that still has chips. */
 function nextIn(stacks: readonly number[], from: number): number {
-  return clockwise(after(from)).find((seat) => stacks[seat] > 0) ?? from
+  return clockwise(after(from, stacks.length), stacks.length).find((seat) => stacks[seat] > 0) ?? from
 }
 
 function paid(seat: Seat, won: number): Seat {
@@ -125,13 +127,14 @@ function deal(stacks: number[], button: number, handNumber: number, rng: () => n
   const deck = shuffle(newDeck(), rng)
   // A seat with no chips is out: no cards, no blinds, no turn. The button is always on a seat still in.
   const seats: Seat[] = stacks.map((stack) => ({ stack, hole: [], folded: stack === 0, out: stack === 0, allIn: false, bet: 0, total: 0 }))
-  const playing = clockwise(button).filter((seat) => !seats[seat].out)
+  const size = stacks.length
+  const playing = clockwise(button, size).filter((seat) => !seats[seat].out)
   // Heads-up, the button posts the small blind and acts first before the flop.
   const smallBlind = playing.length === 2 ? playing[0] : playing[1]
   const bigBlind = playing.length === 2 ? playing[1] : playing[2]
   let next = 0
   for (let round = 0; round < 2; round++) {
-    for (const seat of clockwise(smallBlind).filter((other) => !seats[other].out)) seats[seat] = { ...seats[seat], hole: [...seats[seat].hole, deck[next++]] }
+    for (const seat of clockwise(smallBlind, size).filter((other) => !seats[other].out)) seats[seat] = { ...seats[seat], hole: [...seats[seat].hole, deck[next++]] }
   }
   const log: LogEntry[] = []
   for (const [seat, amount] of [
@@ -143,7 +146,7 @@ function deal(stacks: number[], button: number, handNumber: number, rng: () => n
     seats[seat] = put(seats[seat], posted)
     log.push({ seat, street: "preflop", kind: "blind", amount: posted, to: posted, allIn: seats[seat].allIn, small: seat === smallBlind })
   }
-  const pending = clockwise(after(bigBlind)).filter((seat) => canAct(seats[seat]))
+  const pending = clockwise(after(bigBlind, size), size).filter((seat) => canAct(seats[seat]))
   const dealt: HoldemState = {
     seats,
     button,
@@ -159,20 +162,28 @@ function deal(stacks: number[], button: number, handNumber: number, rng: () => n
     log,
     result: null,
     pending,
-    actedAt: nobodyYet(),
+    actedAt: nobodyYet(size),
     lastRaise: BIG_BLIND,
   }
   return nothingToDecide(seats) ? nextStreet({ ...dealt, pending: [], toAct: null }) : dealt
 }
 
-/** Six seats with full stacks, the button on a seat picked by `rng`, and the first hand dealt. */
-export function newTable(rng: () => number): HoldemState {
+/**
+ * A table of `size` seats with full stacks, the button on a seat picked by `rng`, and the first hand dealt. The button
+ * is drawn before the deck is shuffled: `dealHoldem` in e2e/page-tools.js depends on that order.
+ */
+export function newTable(rng: () => number, size: TableSize = 6): HoldemState {
   return deal(
-    Array.from({ length: SEATS }, () => STARTING_STACK),
-    Math.floor(rng() * SEATS),
+    Array.from({ length: size }, () => STARTING_STACK),
+    Math.floor(rng() * size),
     1,
     rng,
   )
+}
+
+/** How many seats the table has. Every table comes from `newTable` or a parsed save, so it is one of `TABLE_SIZES`. */
+export function tableSize(state: HoldemState): TableSize {
+  return state.seats.length as TableSize
 }
 
 /**
@@ -231,9 +242,9 @@ export function parseTableSave(text: string | null): TableSave | null {
       data.handNumber >= 1 &&
       Number.isInteger(data.button) &&
       data.button >= 0 &&
-      data.button < SEATS &&
       Array.isArray(data.stacks) &&
-      data.stacks.length === SEATS &&
+      data.button < data.stacks.length &&
+      TABLE_SIZES.some((size) => size === data.stacks.length) &&
       data.stacks.every((stack: unknown) => Number.isInteger(stack) && (stack as number) >= 0)
     return valid ? { version: 1, savedAt: data.savedAt, handNumber: data.handNumber, button: data.button, stacks: data.stacks } : null
   } catch {
@@ -286,7 +297,8 @@ function settle(state: HoldemState, showdown: boolean): HoldemState {
   const values = new Map(alive.map((seat) => [seat, evaluate([...state.seats[seat].hole, ...state.board])]))
   const open = showdown ? buildPots(state.seats) : [{ amount: state.pot, eligible: alive }]
   const winnings = state.seats.map(() => 0)
-  const fromButton = clockwise(after(state.button))
+  const size = state.seats.length
+  const fromButton = clockwise(after(state.button, size), size)
   const pots: Pot[] = open.map((pot) => {
     const best = Math.max(...pot.eligible.map((seat) => values.get(seat)?.score ?? 0))
     const winners = fromButton.filter((seat) => pot.eligible.includes(seat) && (!showdown || values.get(seat)?.score === best))
@@ -317,7 +329,8 @@ function nextStreet(state: HoldemState): HoldemState {
   const street = NEXT[state.street]
   const count = street === "flop" ? 3 : 1
   const seats = state.seats.map(newStreet)
-  const able = clockwise(after(state.button)).filter((seat) => canAct(seats[seat]))
+  const size = seats.length
+  const able = clockwise(after(state.button, size), size).filter((seat) => canAct(seats[seat]))
   const pending = able.length > 1 ? able : []
   const dealt: HoldemState = {
     ...state,
@@ -329,7 +342,7 @@ function nextStreet(state: HoldemState): HoldemState {
     lastRaise: BIG_BLIND,
     minRaiseTo: BIG_BLIND,
     pending,
-    actedAt: nobodyYet(),
+    actedAt: nobodyYet(size),
     toAct: pending[0] ?? null,
   }
   return pending.length > 0 ? dealt : nextStreet(dealt)
@@ -368,7 +381,7 @@ export function act(state: HoldemState, seat: number, action: Action): HoldemSta
     // An all-in for less than a full raise does not change the size of a raise. See `actedAt`.
     lastRaise = Math.max(lastRaise, to - currentBet)
     currentBet = to
-    pending = clockwise(after(seat)).filter((other) => other !== seat && canAct(seats[other]))
+    pending = clockwise(after(seat, seats.length), seats.length).filter((other) => other !== seat && canAct(seats[other]))
   }
 
   const now = seats[seat]
@@ -391,29 +404,55 @@ export function act(state: HoldemState, seat: number, action: Action): HoldemSta
   return nextStreet({ ...next, pending: [] })
 }
 
-export type Position = "button" | "smallBlind" | "bigBlind" | "early" | "middle" | "late" | "out"
+type Position = "button" | "smallBlind" | "bigBlind" | "utg" | "utg1" | "utg2" | "middle" | "hijack" | "cutoff"
 
-/**
- * Where a seat sits this hand, counted from the button among the seats still in. With six that is 庄位, 小盲,
- * 大盲, 枪口, 中位, 关位; with five there is no 中位, and with four only 枪口, which acts first before the flop. Heads-up
- * the button is also the small blind.
- */
-export function position(state: HoldemState, seat: number): Position {
-  if (state.seats[seat].out) return "out"
-  const playing = clockwise(state.button).filter((other) => !state.seats[other].out)
-  const at = playing.indexOf(seat)
-  if (at === 0) return "button"
-  if (playing.length === 2) return "bigBlind"
-  if (at === 1) return "smallBlind"
-  if (at === 2) return "bigBlind"
-  if (at === 3) return "early"
-  return at === playing.length - 1 ? "late" : "middle"
+/** Which part of the table a seat acts from, for strategy. `out` is a seat with no chips. */
+export type PositionGroup = "early" | "middle" | "late" | "blinds" | "out"
+
+const POSITIONS: Record<Position, { name: string; group: Exclude<PositionGroup, "out"> }> = {
+  button: { name: "庄位", group: "late" },
+  smallBlind: { name: "小盲", group: "blinds" },
+  bigBlind: { name: "大盲", group: "blinds" },
+  utg: { name: "枪口", group: "early" },
+  utg1: { name: "枪口+1", group: "early" },
+  utg2: { name: "枪口+2", group: "early" },
+  middle: { name: "中位", group: "middle" },
+  hijack: { name: "劫位", group: "middle" },
+  cutoff: { name: "关位", group: "late" },
 }
 
-const POSITION_NAMES: Record<Position, string> = { button: "庄位", smallBlind: "小盲", bigBlind: "大盲", early: "枪口", middle: "中位", late: "关位", out: "出局" }
+/**
+ * Positions clockwise from the button, indexed by how many players are still in. The table fills from both ends, the
+ * way players name seats: 关位 is always the seat before the button. Heads-up the button also posts the small blind.
+ */
+const ORDER: readonly (readonly Position[])[] = [
+  [],
+  [],
+  ["button", "bigBlind"],
+  ["button", "smallBlind", "bigBlind"],
+  ["button", "smallBlind", "bigBlind", "utg"],
+  ["button", "smallBlind", "bigBlind", "utg", "cutoff"],
+  ["button", "smallBlind", "bigBlind", "utg", "middle", "cutoff"],
+  ["button", "smallBlind", "bigBlind", "utg", "middle", "hijack", "cutoff"],
+  ["button", "smallBlind", "bigBlind", "utg", "utg1", "middle", "hijack", "cutoff"],
+  ["button", "smallBlind", "bigBlind", "utg", "utg1", "utg2", "middle", "hijack", "cutoff"],
+]
+
+/** Null for a seat that is out. Otherwise its place among the seats still in, counted from the button. */
+function position(state: HoldemState, seat: number): Position | null {
+  if (state.seats[seat].out) return null
+  const playing = clockwise(state.button, state.seats.length).filter((other) => !state.seats[other].out)
+  return ORDER[playing.length]?.[playing.indexOf(seat)] ?? null
+}
 
 export function positionName(state: HoldemState, seat: number): string {
-  return POSITION_NAMES[position(state, seat)]
+  const where = position(state, seat)
+  return where ? POSITIONS[where].name : "出局"
+}
+
+export function positionGroup(state: HoldemState, seat: number): PositionGroup {
+  const where = position(state, seat)
+  return where ? POSITIONS[where].group : "out"
 }
 
 /** The newest item that passes the test. `findLast` is missing from older phone browsers. */

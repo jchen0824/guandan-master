@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest"
-import { SEATS, SEAT_NAMES, act, legalActions, newTable, resumeTable } from "../../holdem/game"
+import { SEAT_NAMES, act, legalActions, newTable, resumeTable } from "../../holdem/game"
 import type { HoldemState } from "../../holdem/game"
 import { rig, seeded, stacked } from "../../holdem/testing"
 import { biggestWinner, resultLine } from "./summary"
 
-const from = (state: HoldemState, offset: number) => (state.button + offset) % SEATS
+const from = (state: HoldemState, offset: number) => (state.button + offset) % state.seats.length
 
 /** Everyone still to act folds or checks until the hand is over. */
 function finish(state: HoldemState): HoldemState {

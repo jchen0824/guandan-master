@@ -1,6 +1,6 @@
 import { ACE } from "./cards"
 import type { Card } from "./cards"
-import { BIG_BLIND, legalActions, position } from "./game"
+import { BIG_BLIND, legalActions, positionGroup } from "./game"
 import type { Action, HoldemState } from "./game"
 import { potOdds, shareOfPot } from "./odds"
 
@@ -18,8 +18,8 @@ export function startingTier(hole: Card[]): number {
   return 0
 }
 
-/** Positive seats play more hands and bluff more; negative ones wait for better cards. */
-const LOOSENESS = [0, 0, 1, 0, -1, 1]
+/** Positive seats play more hands and bluff more; negative ones wait for better cards. By seat, for the largest table. */
+const LOOSENESS = [0, 0, 1, 0, -1, 1, 0, -1, 1]
 
 /** Rounds to a multiple of 10 chips and keeps the raise inside what the rules allow. */
 function sized(state: HoldemState, to: number): Action {
@@ -94,9 +94,9 @@ export function botAction(state: HoldemState, seat: number, rng: () => number, s
 
   if (state.street === "preflop") {
     const tier = startingTier(me.hole)
-    const where = position(state, seat)
-    const late = where === "button" || where === "late"
-    const blind = where === "smallBlind" || where === "bigBlind"
+    const group = positionGroup(state, seat)
+    const late = group === "late"
+    const blind = group === "blinds"
     if (skill === "novice") return noviceBeforeTheFlop(state, tier, rng)
     if (skill === "advanced") return advancedBeforeTheFlop(state, tier, late, blind, rng)
     const raised = state.currentBet > BIG_BLIND

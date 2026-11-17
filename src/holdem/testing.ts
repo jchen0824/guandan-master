@@ -1,7 +1,7 @@
 // Helpers for the Hold'em tests: a seeded random source, cards from short names, and a table with chosen cards.
 import { newDeck } from "./cards"
 import type { Card, Suit } from "./cards"
-import { BIG_BLIND, SEATS, STARTING_STACK } from "./game"
+import { BIG_BLIND, STARTING_STACK } from "./game"
 import type { HoldemState } from "./game"
 
 export function seeded(seed: number) {
@@ -33,8 +33,8 @@ export function rig(state: HoldemState, holes: Record<number, string>, board: st
 }
 
 /**
- * The ended hand with every seat below one big blind given a full stack again, so a long simulation keeps six
- * players. The game itself puts a player with no chips out.
+ * The ended hand with every seat below one big blind given a full stack again, so a long simulation keeps every seat
+ * playing. The game itself puts a player with no chips out.
  */
 export function refilled(state: HoldemState): HoldemState {
   return { ...state, seats: state.seats.map((seat) => (seat.stack < BIG_BLIND ? { ...seat, stack: STARTING_STACK } : seat)) }
@@ -45,4 +45,5 @@ export function stacked(state: HoldemState, stacks: Record<number, number>): Hol
   return { ...state, seats: state.seats.map((seat, index) => (stacks[index] === undefined ? seat : { ...seat, stack: stacks[index] - seat.total })) }
 }
 
-export const allSeats = Array.from({ length: SEATS }, (_, seat) => seat)
+/** Every seat number at this table, 0 first. */
+export const seatsOf = (state: HoldemState): number[] => state.seats.map((_, seat) => seat)

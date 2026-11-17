@@ -1,15 +1,15 @@
 import { describe, expect, it } from "vitest"
 import { BOT_SKILLS, botAction } from "./bot"
 import type { BotSkill } from "./bot"
-import { BIG_BLIND, HERO, SEATS, STARTING_STACK, act, describeAction, knockedOut, legalActions, newTable, nextHand, parseTableSave, positionName, resumeTable, stacksOver, tableOver, toTableSave } from "./game"
+import { BIG_BLIND, HERO, SEAT_NAMES, STARTING_STACK, TABLE_SIZES, act, describeAction, knockedOut, legalActions, newTable, nextHand, parseTableSave, positionGroup, positionName, resumeTable, stacksOver, tableOver, toTableSave } from "./game"
 import type { Action, HoldemState } from "./game"
-import { allSeats, refilled, rig, seeded, stacked } from "./testing"
+import { refilled, rig, seatsOf, seeded, stacked } from "./testing"
 
 const FOLD: Action = { kind: "fold" }
 const CALL: Action = { kind: "call" }
 const CHECK: Action = { kind: "check" }
 const raise = (to: number): Action => ({ kind: "raise", to })
-const from = (state: HoldemState, offset: number) => (state.button + offset) % SEATS
+const from = (state: HoldemState, offset: number) => (state.button + offset) % state.seats.length
 const chipsInPlay = (state: HoldemState) => state.seats.reduce((sum, seat) => sum + seat.stack, 0) + (state.result ? 0 : state.pot)
 
 /** Everyone still to act folds, until it is `seat`'s turn or the hand ends. */
@@ -36,7 +36,7 @@ describe("dealing and the betting rounds", () => {
     expect(state.deck).toHaveLength(40)
     const dealt = state.seats.flatMap((seat) => seat.hole.map((card) => card.id))
     expect(new Set(dealt).size).toBe(12)
-    expect(allSeats.map((seat) => positionName(state, from(state, seat)))).toEqual(["庄位", "小盲", "大盲", "枪口", "中位", "关位"])
+    expect(seatsOf(state).map((seat) => positionName(state, from(state, seat)))).toEqual(["庄位", "小盲", "大盲", "枪口", "中位", "关位"])
   })
 
   it("gives the big blind the last word before the flop, then starts the flop left of the button", () => {
@@ -66,7 +66,7 @@ describe("dealing and the betting rounds", () => {
   it("does not let an all-in smaller than a raise reopen the betting", () => {
     const dealt = newTable(seeded(1))
     const opener = dealt.toAct as number
-    const short = (opener + 1) % SEATS
+    const short = (opener + 1) % dealt.seats.length
     let state = act(stacked(dealt, { [short]: 130 }), opener, raise(100))
     state = act(state, short, raise(130))
     state = foldTo(state, opener)
@@ -76,7 +76,7 @@ describe("dealing and the betting rounds", () => {
   it("reopens the betting when all-ins too small to be a raise add up to one", () => {
     const dealt = newTable(seeded(1))
     const opener = dealt.toAct as number
-    const [first, second, caller] = [1, 2, 3].map((step) => (opener + step) % SEATS)
+    const [first, second, caller] = [1, 2, 3].map((step) => (opener + step) % dealt.seats.length)
     let state = act(stacked(dealt, { [first]: 140, [second]: 180 }), opener, raise(100))
     state = act(state, first, raise(140))
     state = act(state, second, raise(180))
@@ -97,6 +97,64 @@ describe("dealing and the betting rounds", () => {
     expect(state.result?.winnings[bigBlind]).toBe(30)
     expect(state.seats[bigBlind].stack).toBe(STARTING_STACK + 10)
   })
+})
+
+describe("a nine-seat table", () => {
+  it("posts the blinds left of the button, deals eighteen cards and starts left of the big blind", () => {
+    const state = newTable(seeded(1), 9)
+    expect(state.seats).toHaveLength(9)
+    expect(state.pot).toBe(30)
+    expect(state.seats[from(state, 1)].bet).toBe(10)
+    expect(state.seats[from(state, 2)].bet).toBe(BIG_BLIND)
+    expect(state.toAct).toBe(from(state, 3))
+    expect(state.deck).toHaveLength(34)
+    const dealt = state.seats.flatMap((seat) => seat.hole.map((card) => card.id))
+    expect(dealt).toHaveLength(18)
+    expect(new Set(dealt).size).toBe(18)
+  })
+
+  it("names every seat from the button round the whole table", () => {
+    const state = newTable(seeded(1), 9)
+    expect(seatsOf(state).map((seat) => positionName(state, from(state, seat)))).toEqual(["庄位", "小盲", "大盲", "枪口", "枪口+1", "枪口+2", "中位", "劫位", "关位"])
+  })
+
+  it("has a name for every seat of the largest table", () => {
+    expect(SEAT_NAMES).toHaveLength(Math.max(...TABLE_SIZES))
+    expect(new Set(SEAT_NAMES).size).toBe(SEAT_NAMES.length)
+  })
+
+  it("plays on as seats go out, down to heads-up, and ends the table when one is left", () => {
+    const rng = seeded(5)
+    let state = table([300, 300, 300, 300, 300, 300, 300, 300, 300], 0, rng)
+    const outs: number[] = []
+    for (let hand = 0; state.seats.filter((seat) => seat.stack > 0).length > 1; hand++) {
+      expect(hand).toBeLessThan(4000)
+      while (state.toAct !== null) {
+        expect(state.seats[state.toAct].out).toBe(false)
+        state = act(state, state.toAct, botAction(state, state.toAct, rng, "novice"))
+      }
+      expect(state.seats.reduce((sum, seat) => sum + seat.stack, 0)).toBe(2700)
+      outs.push(...knockedOut(state))
+      if (state.seats.filter((seat) => seat.stack > 0).length > 1) state = nextHand(state, rng)
+    }
+    expect(new Set(outs).size).toBe(8)
+    expect(tableOver(state)).not.toBeNull()
+    expect(() => nextHand(state, seeded(1))).toThrow("这一桌已经结束。")
+  }, 60_000)
+
+  it.each(BOT_SKILLS)("keeps every chip accounted for through a hundred hands of %s computer players", (skill) => {
+    const rng = seeded(7)
+    let state = newTable(rng, 9)
+    for (let hand = 0; hand < 100; hand++) {
+      const before = chipsInPlay(state)
+      for (let step = 0; state.toAct !== null; step++) {
+        expect(step).toBeLessThan(300)
+        state = act(state, state.toAct, botAction(state, state.toAct, rng, skill))
+        expect(chipsInPlay(state)).toBe(before)
+      }
+      state = nextHand(refilled(state), rng)
+    }
+  }, 30_000)
 })
 
 describe("paying the pots", () => {
@@ -185,10 +243,36 @@ describe("players who run out of chips", () => {
 
   it("counts positions among the seats still in", () => {
     const five = table([2000, 2000, 0, 2000, 2000, 2000], 5)
-    expect(allSeats.map((seat) => positionName(five, seat))).toEqual(["庄位", "小盲", "出局", "大盲", "枪口", "关位"])
+    expect(seatsOf(five).map((seat) => positionName(five, seat))).toEqual(["庄位", "小盲", "出局", "大盲", "枪口", "关位"])
     const four = table([2000, 0, 2000, 0, 2000, 2000], 0)
     // With four, the seat after the big blind acts first before the flop, so it is 枪口, not a late seat.
-    expect(allSeats.map((seat) => positionName(four, seat))).toEqual(["枪口", "出局", "庄位", "出局", "小盲", "大盲"])
+    expect(seatsOf(four).map((seat) => positionName(four, seat))).toEqual(["枪口", "出局", "庄位", "出局", "小盲", "大盲"])
+  })
+
+  it("names the seats by how many players are still in, at every table size", () => {
+    // The first n seats are in and the button starts on seat 0.
+    const names = (playing: number) => {
+      const state = table([...Array.from({ length: playing }, () => 2000), ...Array.from({ length: 9 - playing }, () => 0)], playing - 1)
+      expect(state.button).toBe(0)
+      return seatsOf(state).slice(0, playing).map((seat) => positionName(state, seat))
+    }
+    expect(names(2)).toEqual(["庄位", "大盲"])
+    expect(names(3)).toEqual(["庄位", "小盲", "大盲"])
+    expect(names(4)).toEqual(["庄位", "小盲", "大盲", "枪口"])
+    expect(names(5)).toEqual(["庄位", "小盲", "大盲", "枪口", "关位"])
+    expect(names(6)).toEqual(["庄位", "小盲", "大盲", "枪口", "中位", "关位"])
+    expect(names(7)).toEqual(["庄位", "小盲", "大盲", "枪口", "中位", "劫位", "关位"])
+    expect(names(8)).toEqual(["庄位", "小盲", "大盲", "枪口", "枪口+1", "中位", "劫位", "关位"])
+    expect(names(9)).toEqual(["庄位", "小盲", "大盲", "枪口", "枪口+1", "枪口+2", "中位", "劫位", "关位"])
+  })
+
+  it("groups the seats for strategy, with 劫位 in the middle and a seat that is out in none", () => {
+    const nine = table(Array.from({ length: 9 }, () => 2000), 8)
+    expect(seatsOf(nine).map((seat) => positionGroup(nine, seat))).toEqual(["late", "blinds", "blinds", "early", "early", "early", "middle", "middle", "late"])
+    const six = table([2000, 2000, 2000, 2000, 2000, 2000], 5)
+    expect(seatsOf(six).map((seat) => positionGroup(six, seat))).toEqual(["late", "blinds", "blinds", "early", "middle", "late"])
+    const out = table([2000, 0, 2000, 2000], 0)
+    expect(positionGroup(out, 1)).toBe("out")
   })
 
   it("heads-up, has the button post the small blind and act first before the flop, last after it", () => {
@@ -295,7 +379,7 @@ describe("keeping the table between visits", () => {
     const next = nextHand(ended, seeded(9))
     expect(resumed).toEqual(next)
     expect(resumed.handNumber).toBe(2)
-    expect(resumed.button).toBe((ended.button + 1) % SEATS)
+    expect(resumed.button).toBe((ended.button + 1) % ended.seats.length)
   })
 
   it("ignores anything in storage that is not a save this version wrote", () => {
@@ -303,6 +387,17 @@ describe("keeping the table between visits", () => {
     expect(parseTableSave(JSON.stringify(good))).toEqual(good)
     for (const bad of [null, "", "not json", "{}", JSON.stringify({ ...good, version: 2 }), JSON.stringify({ ...good, stacks: [2000] }), JSON.stringify({ ...good, button: 6 }), JSON.stringify({ ...good, stacks: [-1, 2000, 2000, 2000, 2000, 2000] }), JSON.stringify({ ...good, handNumber: 0 })]) {
       expect(parseTableSave(bad)).toBeNull()
+    }
+  })
+
+  it("takes the table size from the stacks, for six or nine seats and for a save from before nine-seat tables", () => {
+    const six = { version: 1, savedAt: "", handNumber: 3, button: 5, stacks: [2000, 2000, 2000, 2000, 2000, 2000] }
+    const nine = { version: 1 as const, savedAt: "", handNumber: 3, button: 8, stacks: [2000, 0, 2000, 2000, 0, 2000, 2000, 2000, 2000] }
+    expect(parseTableSave(JSON.stringify(nine))).toEqual(nine)
+    expect(parseTableSave('{"version":1,"savedAt":"2026-11-01T00:00:00.000Z","handNumber":12,"button":4,"stacks":[2100,1900,2000,2400,1600,2000]}')).toMatchObject({ handNumber: 12, button: 4 })
+    expect(resumeTable(nine, seeded(1)).seats).toHaveLength(9)
+    for (const bad of [{ ...six, stacks: [...six.stacks, 2000] }, { ...nine, button: 9 }, { ...six, button: 6 }, { ...nine, stacks: nine.stacks.slice(0, 8) }]) {
+      expect(parseTableSave(JSON.stringify(bad))).toBeNull()
     }
   })
 
