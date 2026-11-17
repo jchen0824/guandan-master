@@ -12,7 +12,7 @@ Follow these steps in order. Each one has a check that fails when it is skipped.
 
 1. **Branch from `main`.** Name it `<type>/<short-name>`, for example `fix/bomb-timing`. Direct pushes to `main` are blocked.
 2. **Read the skill for the area you touch** (see [Skills](#skills)). Do this before you read or write code.
-3. **Make the change, with a test.** A rule or bot change needs a test in `src/engine/engine.test.ts`; a screen change needs one in `src/App.test.tsx`, and one in `e2e/game.spec.ts` when it changes what a player can see or reach. For Texas Hold'em the same three are the test beside the file in `src/holdem`, `src/ui/holdem/Holdem.test.tsx` and `e2e/holdem.spec.ts`; the home page has `src/Root.test.tsx`.
+3. **Make the change, with a test.** A rule or bot change needs a test in `src/engine/engine.test.ts`; a screen change needs one in `src/App.test.tsx`, and one in `e2e/game.spec.ts` when it changes what a player can see or reach. For Texas Hold'em the same three are the test beside the file in `src/holdem`, `src/ui/holdem/Holdem.test.tsx` and `e2e/holdem.spec.ts`; the home page has `src/Root.test.tsx`. A bug fix, including one for a review finding, needs both a unit test and a browser test that fail without the fix, so the bug cannot come back unseen; for a Hold'em hand, deal its exact cards with `dealHoldemExactly` in `e2e/helpers.ts`.
 4. **Run `npm run check`**, and `npm run test:e2e` after a screen change. Together they are the gate CI runs. Fix every failure; do not weaken a check to get past it.
 5. **Commit with a Conventional Commit message**, as [CONTRIBUTING.md](CONTRIBUTING.md) describes.
 6. **Open a pull request** and fill in the template. The title must also be a Conventional Commit, because it becomes the commit on `main`.

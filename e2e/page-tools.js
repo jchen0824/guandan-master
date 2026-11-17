@@ -1,7 +1,7 @@
 // Tools for checking the game in a real browser.
 // Playwright injects this file before the app starts (see e2e/helpers.ts). An agent with a browser tool can
 // evaluate the same file in the page by hand (see .agents/skills/browser-qa). One copy keeps the two in step.
-// It only reads the page: nothing here changes the game except `seed`, which fixes the deal.
+// It only reads the page: nothing here changes the game except `seed` and `dealHoldem`, which fix the deal.
 ;(() => {
   const SLACK = 1.5
   const MIN_TABLE_HEIGHT = 60
@@ -10,6 +10,38 @@
   function seed(value) {
     let current = value
     Math.random = () => {
+      current = (current * 1664525 + 1013904223) % 4294967296
+      return current / 4294967296
+    }
+  }
+
+  /**
+   * Texas Hold'em: makes the next new table (设置 → 重新开始) deal exactly these cards, as `rig()` does in a unit
+   * test. `holes` maps a seat (0 is the player) to two cards such as "AH TD"; `board` is the five board cards in
+   * the order they come. Seats not named get cards nobody asked for. Every random number after the deal comes
+   * from `seed`, so the hand plays out the same way each time. Call it right before confirming 重新开始.
+   */
+  function dealHoldem({ button = 0, holes, board, seed: after = 5 }) {
+    const id = (name) => "SHCD".indexOf(name[1]) * 13 + ("23456789TJQKA".indexOf(name[0]))
+    const want = Array.from({ length: 17 }, () => null)
+    for (const [seat, names] of Object.entries(holes)) {
+      // Hole cards go round twice, clockwise from the small blind, then the board comes off the top.
+      const from = (Number(seat) - button - 1 + 12) % 6
+      names.split(" ").forEach((name, round) => (want[round * 6 + from] = id(name)))
+    }
+    board.split(" ").forEach((name, i) => (want[12 + i] = id(name)))
+    const named = new Set(want.filter((card) => card !== null))
+    // Run the game's shuffle backwards: at each step pick the swap that leaves the wanted card in place.
+    const deck = Array.from({ length: 52 }, (_, card) => card)
+    const draws = [(button + 0.5) / 6]
+    for (let i = 51; i > 0; i--) {
+      const j = i < 17 && want[i] !== null ? deck.indexOf(want[i]) : deck.findIndex((card, at) => at <= i && !named.has(card))
+      draws.push((j + 0.5) / (i + 1))
+      ;[deck[i], deck[j]] = [deck[j], deck[i]]
+    }
+    let current = after
+    Math.random = () => {
+      if (draws.length > 0) return draws.shift()
       current = (current * 1664525 + 1013904223) % 4294967296
       return current / 4294967296
     }
@@ -205,5 +237,5 @@
     return [...new Set(problems)]
   }
 
-  window.guandanQa = { seed, state, signature, layoutProblems, button }
+  window.guandanQa = { seed, dealHoldem, state, signature, layoutProblems, button }
 })()

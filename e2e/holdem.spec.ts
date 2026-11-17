@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test"
-import { expectLayoutToHold, openGame, openHoldem, openHome, playHoldemHand, screen, waitForNextMove } from "./helpers"
+import type { Page } from "@playwright/test"
+import { callDownTo, dealHoldemExactly, expectLayoutToHold, openGame, openHoldem, openHome, playHoldemHand, screen, waitForNextMove } from "./helpers"
 
 // The rules of Texas Hold'em are tested in src/holdem. These tests ask what game.spec.ts asks of 掼蛋:
 // on a real browser at this screen size, can a player see and reach everything, from the home page on?
@@ -210,6 +211,52 @@ test("the coach's working after the flop fits, and a narrow screen opens all of 
   } else {
     await expect(working.getByText("对手", { exact: true })).toBeVisible()
   }
+})
+
+// Hands that the coach's working once got wrong, each dealt exactly and called down by the player. The working is
+// read from the page as it is, whether a row is shown in the bar or only in the 怎么算的 dialog.
+test.describe("the coach's working on hands it once got wrong", () => {
+  // The words do not depend on the browser or the screen size, so one project is enough.
+  test.skip(({ browserName, isMobile }) => browserName !== "chromium" || isMobile, "checked on desktop Chromium only")
+  const working = (page: Page) => page.getByRole("complementary", { name: "教练" }).locator('[data-slot="he-explain"]')
+
+  test("a straight that is all on the board is not the player's, and its cards are not outs", async ({ page }) => {
+    await openHoldem(page)
+    await dealHoldemExactly(page, { holes: { 0: "5H 2D", 1: "AH AC" }, board: "5S 6D 7C 8H 9S" })
+    await expect(page.getByRole("list", { name: "你的手牌：红桃5、方块2" })).toBeVisible()
+    await callDownTo(page, 4)
+    await expect(working(page)).toContainText("来一张 2 就成两对（还剩 3 张）；来一张 5 就成三条（还剩 2 张）")
+    await expect(working(page)).not.toContainText("顺子")
+    await callDownTo(page, 5)
+    await expect(working(page)).toContainText("顺子 到 9：这手牌全在公共牌上，大家都有")
+    await expect(working(page)).toContainText("这手牌大家都有，最多和别人平分")
+  })
+
+  test("on the river a pair counts no outs and is not told it wins only against a bluff", async ({ page }) => {
+    await openHoldem(page)
+    await dealHoldemExactly(page, { holes: { 0: "9H 9D", 1: "KH KC" }, board: "AS 8C 3D 2S 4H" })
+    await callDownTo(page, 5)
+    await expect(working(page)).toContainText("牌已经发完，比的是现在谁大：你的对子能赢更小的对子，也能赢诈唬")
+    await expect(working(page)).not.toContainText("能帮你的牌")
+    await expect(working(page)).not.toContainText("诈唬时你才赢")
+  })
+
+  test("with four of a kind on the board, the best fifth card cannot lose", async ({ page }) => {
+    await openHoldem(page)
+    await dealHoldemExactly(page, { holes: { 0: "AH 2D", 1: "QH QC" }, board: "KS KC KD KH 3S" })
+    await callDownTo(page, 5)
+    await expect(working(page)).toContainText("四条 K 在公共牌上，你的 A 是最大的第五张，没人能赢你")
+    await expect(working(page)).toContainText("没人能赢你，最多和别人平分")
+  })
+
+  test("a river where only the board plays is the board's hand, not the player's low card", async ({ page }) => {
+    await openHoldem(page)
+    await dealHoldemExactly(page, { holes: { 0: "3H 2D", 1: "KH KC" }, board: "AS QD JH 9S 7C" })
+    await callDownTo(page, 5)
+    await expect(working(page)).toContainText("这手牌全在公共牌上，大家都有")
+    await expect(working(page)).toContainText("这手牌大家都有，最多和别人平分")
+    await expect(working(page)).not.toContainText("只有 3 高")
+  })
 })
 
 test("with the coach off, a hand still fits and the table news stays in one line", async ({ page }) => {
