@@ -120,16 +120,16 @@ export function countOuts(hole: Card[], board: Card[]): Outs {
   const parts = [...groups.entries()]
     .sort((a, b) => b[1].length - a[1].length)
     .map(([makes, cards]) => {
-      // Name the cards the way a player would: one rank (3 张 A), one suit (9 张红桃), or a few ranks (8 张 10 或 5).
+      // One card has to come, so say which, then how many of them are unseen: "4 张 4" read as four 4s on the board.
       const ranks = ranksDown(cards)
       const which =
         ranks.length === 1 ? ` ${rankLabel(ranks[0])} `
         : cards.every((card) => card.suit === cards[0].suit) ? suitName(cards[0].suit)
         : ranks.length <= 3 ? ` ${ranks.map(rankLabel).join(" 或 ")} `
-        : ""
-      return `${cards.length} 张${which}能成${makes}`
+        : null
+      return which === null ? `另有 ${cards.length} 张牌能成${makes}` : `来一张${which}就成${makes}（还剩 ${cards.length} 张）`
     })
-  return { count, text: parts.join("，") }
+  return { count, text: parts.join("；") }
 }
 
 /** The 2-and-4 rule: outs times 4 with two cards to come, times 2 with one. */

@@ -161,7 +161,7 @@ describe("the coach", () => {
     expect(advice.explain.map((line) => line.key)).toEqual(["hand", "outs", "opponents", "estimate"])
     expect(advice.explain.map((line) => line.text)).toEqual([
       "只有 A 高，还没成牌",
-      "9 张红桃能成同花，3 张 A 能成顶对",
+      "来一张红桃就成同花（还剩 9 张）；来一张 A 就成顶对（还剩 3 张）",
       "甲下注了，下注的人通常至少有一对；你现在多半落后",
       `还有转牌和河牌两张，二四法则：12 张有效牌 × 4 ≈ 48%（电脑模拟约 ${Math.round(advice.have * 100)}%）`,
     ])

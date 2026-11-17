@@ -11,19 +11,19 @@ describe("reading a hand the way a player does", () => {
     const board = cards("8D QS 2H")
     expect(readHand(hole, board)).toMatchObject({ text: "只有 A 高，还没成牌", strength: Strength.Nothing })
     // A jack only makes the second pair, which is not a card a player should count on.
-    expect(countOuts(hole, board)).toEqual({ count: 3, text: "3 张 A 能成顶对" })
+    expect(countOuts(hole, board)).toEqual({ count: 3, text: "来一张 A 就成顶对（还剩 3 张）" })
     expect(ruleOfThumb(3, board)).toEqual({ times: 4, percent: 12 })
   })
 
   it("counts a flush draw and the overcard together", () => {
     const outs = countOuts(cards("AH JH"), cards("KH 9H 4S"))
-    expect(outs).toEqual({ count: 12, text: "9 张红桃能成同花，3 张 A 能成顶对" })
+    expect(outs).toEqual({ count: 12, text: "来一张红桃就成同花（还剩 9 张）；来一张 A 就成顶对（还剩 3 张）" })
     expect(ruleOfThumb(outs.count, cards("KH 9H 4S 2C"))).toEqual({ times: 2, percent: 24 })
   })
 
   it("names top pair with its kicker, and the cards that make two pair or trips", () => {
     expect(readHand(cards("KS QD"), cards("KH 7C 2D"))).toMatchObject({ text: "顶对 K，踢脚 Q，踢脚不错", strength: Strength.TopPair })
-    expect(countOuts(cards("KS QD"), cards("KH 7C 2D"))).toEqual({ count: 5, text: "3 张 Q 能成两对，2 张 K 能成三条" })
+    expect(countOuts(cards("KS QD"), cards("KH 7C 2D"))).toEqual({ count: 5, text: "来一张 Q 就成两对（还剩 3 张）；来一张 K 就成三条（还剩 2 张）" })
     expect(readHand(cards("KS 4D"), cards("KH 7C 2D")).text).toBe("顶对 K，踢脚 4，踢脚偏小")
   })
 
@@ -42,15 +42,15 @@ describe("reading a hand the way a player does", () => {
 
   it("does not count a card that only improves the board as an out", () => {
     // A 2 makes two pair and a 6 makes three of a kind, but both are on the board for everyone. Only a 4 helps.
-    expect(countOuts(cards("5D 3S"), cards("6H 6C 2C"))).toEqual({ count: 4, text: "4 张 4 能成顺子" })
+    expect(countOuts(cards("5D 3S"), cards("6H 6C 2C"))).toEqual({ count: 4, text: "来一张 4 就成顺子（还剩 4 张）" })
     expect(readHand(cards("5D 3S"), cards("6H 6C 2C 2D")).text).toBe("只有 5 高：公共牌上的两对大家都有")
     expect(readHand(cards("5D 3S"), cards("6H 6C 6D 2C")).text).toBe("只有 5 高：公共牌上的三条大家都有")
   })
 
   it("names the ranks of outs that are neither one rank nor one suit", () => {
-    expect(countOuts(cards("7D 6C"), cards("9S 8H 2C"))).toEqual({ count: 8, text: "8 张 10 或 5 能成顺子" })
+    expect(countOuts(cards("7D 6C"), cards("9S 8H 2C"))).toEqual({ count: 8, text: "来一张 10 或 5 就成顺子（还剩 8 张）" })
     // The two hearts among the straight cards make a flush, so they are counted there.
-    expect(countOuts(cards("QH JH"), cards("TH 9S 2H")).text).toBe("9 张红桃能成同花，6 张 K 或 8 能成顺子，6 张 Q 或 J 能成顶对")
+    expect(countOuts(cards("QH JH"), cards("TH 9S 2H")).text).toBe("来一张红桃就成同花（还剩 9 张）；来一张 K 或 8 就成顺子（还剩 6 张）；来一张 Q 或 J 就成顶对（还剩 6 张）")
   })
 
   it("names sets, trips and made hands as strong, with no outs to count", () => {
