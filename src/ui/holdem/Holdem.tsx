@@ -6,7 +6,7 @@ import { useState } from "react"
 import type { BotSkill } from "../../holdem/bot"
 import { cardName, chips } from "../../holdem/cards"
 import type { Advice } from "../../holdem/coach"
-import { HERO, SEAT_NAMES, describeAction, lastWhere, legalActions, positionName } from "../../holdem/game"
+import { HERO, SEAT_NAMES, describeAction, lastWhere, legalActions, positionName, tableOver } from "../../holdem/game"
 import type { Action, HoldemState, Street } from "../../holdem/game"
 import { CATEGORIES, categoryName, describeHand, evaluate } from "../../holdem/hands"
 import type { HandCategory } from "../../holdem/hands"
@@ -32,7 +32,8 @@ const percent = (value: number) => `${Math.round(value * 100)}%`
 
 /** What a seat's label says under its name: its last move on this street and the chips it has left. Small screens drop the second half. */
 function SeatNote({ game, seat }: { game: HoldemState; seat: number }) {
-  const { folded, allIn, stack } = game.seats[seat]
+  const { folded, allIn, stack, out } = game.seats[seat]
+  if (out) return <span data-slot="he-note">没有筹码了</span>
   const shown = game.result?.shown.find((entry) => entry.seat === seat)
   const last = lastWhere(game.log, (entry) => entry.seat === seat && entry.street === game.street)
   if (shown) {
@@ -75,6 +76,7 @@ function Seat({ game, seat, mark }: { game: HoldemState; seat: number; mark: Mar
       data-slot="he-seat"
       data-seat={seat}
       data-folded={state.folded ? "" : undefined}
+      data-out={state.out ? "" : undefined}
       data-active={game.toAct === seat ? "" : undefined}
       data-shown={shown ? "" : undefined}
       aria-label={`${SEAT_NAMES[seat]}，${positionName(game, seat)}`}
@@ -350,7 +352,7 @@ function Rules() {
           <li>加注至少要和上一次加的一样多。筹码不够时可以全下。</li>
           <li>只剩一个人没弃牌，他直接赢下底池；否则河牌之后摊牌比大小。</li>
           <li>牌型从大到小：同花顺、四条、葫芦、同花、顺子、三条、两对、一对、高牌。</li>
-          <li>这里只用练习筹码。输光了下一手会补满。</li>
+          <li>这里只用练习筹码。输光筹码就出局，和真的比赛一样：你出局了，或者别人都出局了，这一桌就结束，可以再开一桌。</li>
         </ul>
         <h3 data-slot="rules-heading">自己估胜率</h3>
         <ul data-slot="rules-list" aria-label="自己估胜率">
@@ -427,6 +429,7 @@ function Holdem({ onHome }: { onHome: () => void }) {
   const [coachOn, setCoachOn] = useSaved("guandan.holdem.coach", true)
   const hero = game.seats[HERO]
   const over = game.result !== null
+  const ending = tableOver(game)
   const result = resultLine(game)
   const best = biggestWinner(game)
   const marked = best === null ? null : game.result?.shown.find((entry) => entry.seat === best)?.value.cards.map((card) => card.id)
@@ -476,7 +479,7 @@ function Holdem({ onHome }: { onHome: () => void }) {
             ))}
           </ul>
           {result ? (
-            <p data-slot="he-banner" role="status">
+            <p data-slot="he-banner" role="status" data-end={ending ? "" : undefined}>
               <b>{result.title}</b>
               <span>{result.line}</span>
             </p>
@@ -519,9 +522,15 @@ function Holdem({ onHome }: { onHome: () => void }) {
           <div data-slot="he-actions">
             <div data-slot="he-buttons">
               {coachOn ? <ReviewDialog decisions={decisions} /> : null}
-              <Button data-variant="raise" onClick={deal}>
-                下一手
-              </Button>
+              {ending ? (
+                <Button data-variant="raise" onClick={restart}>
+                  再开一桌
+                </Button>
+              ) : (
+                <Button data-variant="raise" onClick={deal}>
+                  下一手
+                </Button>
+              )}
             </div>
           </div>
         ) : advice ? (

@@ -20,6 +20,8 @@ export interface Seat {
   stack: number
   hole: Card[]
   folded: boolean
+  /** Out of the table: it had no chips when the hand was dealt, so it has no cards and never acts. Also `folded`. */
+  out: boolean
   allIn: boolean
   /** Chips put in on this street. */
   bet: number
@@ -36,6 +38,8 @@ export interface LogEntry {
   /** The seat's bet on this street after it. */
   to: number
   allIn: boolean
+  /** For a blind: true for the small one, which a short stack may post for less than 10. */
+  small?: boolean
 }
 
 export interface Pot {
@@ -94,6 +98,20 @@ function put(seat: Seat, amount: number): Seat {
   return { ...seat, stack: seat.stack - amount, bet: seat.bet + amount, total: seat.total + amount, allIn: seat.stack === amount }
 }
 
+/**
+ * Nobody has a decision left when at most one seat can bet and it has already put in as much as any other seat still
+ * in, as when a big blind short of the small blind is all-in. The board is then dealt out, as after an all-in call.
+ */
+function nothingToDecide(seats: readonly Seat[]): boolean {
+  const able = seats.filter(canAct)
+  return able.length === 0 || (able.length === 1 && seats.every((seat) => seat.folded || seat.bet <= able[0].bet))
+}
+
+/** The first seat clockwise after `from` that still has chips. */
+function nextIn(stacks: readonly number[], from: number): number {
+  return clockwise(after(from)).find((seat) => stacks[seat] > 0) ?? from
+}
+
 function paid(seat: Seat, won: number): Seat {
   return { ...seat, stack: seat.stack + won }
 }
@@ -103,24 +121,30 @@ function newStreet(seat: Seat): Seat {
 }
 
 function deal(stacks: number[], button: number, handNumber: number, rng: () => number): HoldemState {
+  if (stacks.filter((stack) => stack > 0).length < 2) throw new Error("这一桌已经结束。")
   const deck = shuffle(newDeck(), rng)
-  const smallBlind = after(button)
-  const bigBlind = after(smallBlind)
-  const seats: Seat[] = stacks.map((stack) => ({ stack, hole: [], folded: false, allIn: false, bet: 0, total: 0 }))
+  // A seat with no chips is out: no cards, no blinds, no turn. The button is always on a seat still in.
+  const seats: Seat[] = stacks.map((stack) => ({ stack, hole: [], folded: stack === 0, out: stack === 0, allIn: false, bet: 0, total: 0 }))
+  const playing = clockwise(button).filter((seat) => !seats[seat].out)
+  // Heads-up, the button posts the small blind and acts first before the flop.
+  const smallBlind = playing.length === 2 ? playing[0] : playing[1]
+  const bigBlind = playing.length === 2 ? playing[1] : playing[2]
   let next = 0
   for (let round = 0; round < 2; round++) {
-    for (const seat of clockwise(smallBlind)) seats[seat] = { ...seats[seat], hole: [...seats[seat].hole, deck[next++]] }
+    for (const seat of clockwise(smallBlind).filter((other) => !seats[other].out)) seats[seat] = { ...seats[seat], hole: [...seats[seat].hole, deck[next++]] }
   }
   const log: LogEntry[] = []
   for (const [seat, amount] of [
     [smallBlind, SMALL_BLIND],
     [bigBlind, BIG_BLIND],
   ]) {
-    seats[seat] = put(seats[seat], amount)
-    log.push({ seat, street: "preflop", kind: "blind", amount, to: amount, allIn: seats[seat].allIn })
+    // A stack shorter than its blind posts what it has and is all-in.
+    const posted = Math.min(amount, seats[seat].stack)
+    seats[seat] = put(seats[seat], posted)
+    log.push({ seat, street: "preflop", kind: "blind", amount: posted, to: posted, allIn: seats[seat].allIn, small: seat === smallBlind })
   }
   const pending = clockwise(after(bigBlind)).filter((seat) => canAct(seats[seat]))
-  return {
+  const dealt: HoldemState = {
     seats,
     button,
     street: "preflop",
@@ -129,7 +153,8 @@ function deal(stacks: number[], button: number, handNumber: number, rng: () => n
     toAct: pending[0],
     currentBet: BIG_BLIND,
     minRaiseTo: BIG_BLIND * 2,
-    pot: SMALL_BLIND + BIG_BLIND,
+    // What was posted, which is less than 30 when a blind was short.
+    pot: log.reduce((sum, entry) => sum + entry.amount, 0),
     handNumber,
     log,
     result: null,
@@ -137,6 +162,7 @@ function deal(stacks: number[], button: number, handNumber: number, rng: () => n
     actedAt: nobodyYet(),
     lastRaise: BIG_BLIND,
   }
+  return nothingToDecide(seats) ? nextStreet({ ...dealt, pending: [], toAct: null }) : dealt
 }
 
 /** Six seats with full stacks, the button on a seat picked by `rng`, and the first hand dealt. */
@@ -149,19 +175,30 @@ export function newTable(rng: () => number): HoldemState {
   )
 }
 
-/** Moves the button on, gives a seat that cannot post the big blind a full stack again, and deals. */
-/** The stacks a new hand starts with: anyone below one big blind gets a full stack again. */
-export function rebuy(stacks: readonly number[]): number[] {
-  return stacks.map((stack) => (stack < BIG_BLIND ? STARTING_STACK : stack))
+/**
+ * Moves the button to the next seat still in and deals. A seat that lost all its chips is out, as in a real game.
+ * Throws when fewer than two seats have chips: check `tableOver` first.
+ */
+export function nextHand(state: HoldemState, rng: () => number): HoldemState {
+  const stacks = state.seats.map((seat) => seat.stack)
+  return deal(stacks, nextIn(stacks, state.button), state.handNumber + 1, rng)
 }
 
-export function nextHand(state: HoldemState, rng: () => number): HoldemState {
-  return deal(
-    rebuy(state.seats.map((seat) => seat.stack)),
-    after(state.button),
-    state.handNumber + 1,
-    rng,
-  )
+/** How the table ended for the player: out of chips, or the only one left with any. Null while it goes on. */
+export function stacksOver(stacks: readonly number[]): "lost" | "won" | null {
+  if (stacks[HERO] === 0) return "lost"
+  if (stacks.every((stack, seat) => seat === HERO || stack === 0)) return "won"
+  return null
+}
+
+/** `stacksOver` for a hand that has ended. Null while a hand is being played. */
+export function tableOver(state: HoldemState): "lost" | "won" | null {
+  return state.result ? stacksOver(state.seats.map((seat) => seat.stack)) : null
+}
+
+/** The seats that lost their last chips in this hand, once it has ended. */
+export function knockedOut(state: HoldemState): number[] {
+  return state.result ? state.seats.flatMap((seat, index) => (!seat.out && seat.stack === 0 ? [index] : [])) : []
 }
 
 /**
@@ -206,7 +243,7 @@ export function parseTableSave(text: string | null): TableSave | null {
 
 /** The next hand after a saved one, as `nextHand` would have dealt it. */
 export function resumeTable(save: TableSave, rng: () => number): HoldemState {
-  return deal(rebuy(save.stacks), after(save.button), save.handNumber + 1, rng)
+  return deal(save.stacks, nextIn(save.stacks, save.button), save.handNumber + 1, rng)
 }
 
 /** What the seat to act may do. The raise fields are null when it cannot raise. */
@@ -350,15 +387,33 @@ export function act(state: HoldemState, seat: number, action: Action): HoldemSta
     log: [...state.log, { ...entry, kind, amount: added, to: now.bet, allIn: now.allIn && added > 0 }],
   }
   if (seats.filter((other) => !other.folded).length === 1) return settle(next, false)
-  if (pending.length > 0) return { ...next, toAct: pending[0] }
-  return nextStreet(next)
+  if (pending.length > 0 && !nothingToDecide(seats)) return { ...next, toAct: pending[0] }
+  return nextStreet({ ...next, pending: [] })
 }
 
-const POSITIONS = ["庄位", "小盲", "大盲", "枪口", "中位", "关位"]
+export type Position = "button" | "smallBlind" | "bigBlind" | "early" | "middle" | "late" | "out"
 
-/** Six-handed positions, counted from the button. */
+/**
+ * Where a seat sits this hand, counted from the button among the seats still in. With six that is 庄位, 小盲,
+ * 大盲, 枪口, 中位, 关位; with five there is no 中位, and with four only 枪口, which acts first before the flop. Heads-up
+ * the button is also the small blind.
+ */
+export function position(state: HoldemState, seat: number): Position {
+  if (state.seats[seat].out) return "out"
+  const playing = clockwise(state.button).filter((other) => !state.seats[other].out)
+  const at = playing.indexOf(seat)
+  if (at === 0) return "button"
+  if (playing.length === 2) return "bigBlind"
+  if (at === 1) return "smallBlind"
+  if (at === 2) return "bigBlind"
+  if (at === 3) return "early"
+  return at === playing.length - 1 ? "late" : "middle"
+}
+
+const POSITION_NAMES: Record<Position, string> = { button: "庄位", smallBlind: "小盲", bigBlind: "大盲", early: "枪口", middle: "中位", late: "关位", out: "出局" }
+
 export function positionName(state: HoldemState, seat: number): string {
-  return POSITIONS[(seat - state.button + SEATS) % SEATS]
+  return POSITION_NAMES[position(state, seat)]
 }
 
 /** The newest item that passes the test. `findLast` is missing from older phone browsers. */
@@ -368,7 +423,7 @@ export function lastWhere<T>(items: readonly T[], test: (item: T) => boolean): T
 }
 
 export function describeAction(entry: LogEntry): string {
-  if (entry.kind === "blind") return `${entry.amount === SMALL_BLIND ? "小盲" : "大盲"} ${entry.amount}`
+  if (entry.kind === "blind") return `${entry.small ? "小盲" : "大盲"} ${entry.amount}`
   if (entry.kind === "fold") return "弃牌"
   if (entry.kind === "check") return "过牌"
   if (entry.allIn) return `全下 ${chips(entry.to)}`

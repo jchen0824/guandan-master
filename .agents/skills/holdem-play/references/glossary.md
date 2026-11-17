@@ -16,6 +16,10 @@ The Chinese the player reads, what it means, and where it comes from. Use these 
 | 公共牌 | the board | table (accessible name) |
 | 手牌 | a player's own two cards | table (accessible name) |
 | 庄 | the dealer button badge | seat labels |
+| 出局 / 没有筹码了 | a seat that is out of chips, and its label | seat labels, position |
+| 你出局了 / 全桌冠军 | the end of a table: the player is out, or the last one left | the banner |
+| 甲输光了筹码，出局 | a seat that lost its last chips in this hand | the result line |
+| 再开一桌 | the button that starts a new table once one has ended | instead of 下一手 |
 
 ## Positions (`positionName`)
 

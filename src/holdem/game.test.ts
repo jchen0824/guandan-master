@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest"
 import { BOT_SKILLS, botAction } from "./bot"
 import type { BotSkill } from "./bot"
-import { BIG_BLIND, SEATS, STARTING_STACK, act, describeAction, legalActions, newTable, nextHand, parseTableSave, positionName, resumeTable, toTableSave } from "./game"
+import { BIG_BLIND, HERO, SEATS, STARTING_STACK, act, describeAction, knockedOut, legalActions, newTable, nextHand, parseTableSave, positionName, resumeTable, stacksOver, tableOver, toTableSave } from "./game"
 import type { Action, HoldemState } from "./game"
-import { allSeats, rig, seeded, stacked } from "./testing"
+import { allSeats, refilled, rig, seeded, stacked } from "./testing"
 
 const FOLD: Action = { kind: "fold" }
 const CALL: Action = { kind: "call" }
@@ -132,15 +132,11 @@ describe("paying the pots", () => {
 })
 
 describe("from one hand to the next", () => {
-  it("moves the button on and gives a player with no chips a full stack", () => {
+  it("moves the button on to the next seat, and deals the next hand", () => {
     const dealt = newTable(seeded(1))
-    const over = foldTo(dealt, from(dealt, 2))
-    const broke = from(dealt, 4)
-    const emptied = { ...over, seats: over.seats.with(broke, { ...over.seats[broke], stack: 0 }) }
-    const next = nextHand(emptied, seeded(2))
+    const next = nextHand(foldTo(dealt, from(dealt, 2)), seeded(2))
     expect(next.button).toBe(from(dealt, 1))
     expect(next.handNumber).toBe(2)
-    expect(next.seats[broke].stack + next.seats[broke].total).toBe(STARTING_STACK)
     expect(next.result).toBeNull()
   })
 
@@ -165,10 +161,123 @@ describe("from one hand to the next", () => {
       }
       expect(state.result?.winnings.reduce((sum, won) => sum + won, 0)).toBe(state.pot)
       if (state.street === "showdown") showdowns++
-      state = nextHand(state, rng)
+      state = nextHand(refilled(state), rng)
     }
     expect(showdowns).toBeGreaterThan(30)
     // Novices reach a showdown in almost every hand, which takes several seconds on a slow CI runner.
+  }, 30_000)
+})
+
+/** A table resumed from these stacks, as a save would bring it back: the button goes to the next seat still in. */
+const table = (stacks: number[], button = 0, rng = seeded(1)) => resumeTable({ version: 1, savedAt: "", handNumber: 1, button, stacks }, rng)
+
+describe("players who run out of chips", () => {
+  it("puts a player with no chips out: no cards, no blinds and no turn, and the button skips them", () => {
+    // Seat 1 is out, so the button moves from seat 0 past it to seat 2.
+    const state = table([2000, 0, 2000, 2000, 2000, 2000])
+    expect(state.button).toBe(2)
+    expect(state.seats[1]).toMatchObject({ out: true, folded: true, hole: [], stack: 0, total: 0 })
+    expect(positionName(state, 1)).toBe("出局")
+    const played = checkDown(state)
+    expect(played.log.some((entry) => entry.seat === 1)).toBe(false)
+    expect(played.seats.filter((seat) => !seat.out).every((seat) => seat.hole.length === 2)).toBe(true)
+  })
+
+  it("counts positions among the seats still in", () => {
+    const five = table([2000, 2000, 0, 2000, 2000, 2000], 5)
+    expect(allSeats.map((seat) => positionName(five, seat))).toEqual(["庄位", "小盲", "出局", "大盲", "枪口", "关位"])
+    const four = table([2000, 0, 2000, 0, 2000, 2000], 0)
+    // With four, the seat after the big blind acts first before the flop, so it is 枪口, not a late seat.
+    expect(allSeats.map((seat) => positionName(four, seat))).toEqual(["枪口", "出局", "庄位", "出局", "小盲", "大盲"])
+  })
+
+  it("heads-up, has the button post the small blind and act first before the flop, last after it", () => {
+    const state = table([1000, 0, 0, 0, 0, 11000])
+    expect(state.button).toBe(5)
+    expect(state.seats[5].bet).toBe(10)
+    expect(state.seats[HERO].bet).toBe(BIG_BLIND)
+    expect(state.toAct).toBe(5)
+    expect([positionName(state, 5), positionName(state, HERO)]).toEqual(["庄位", "大盲"])
+    const flop = act(act(state, 5, CALL), HERO, CHECK)
+    expect(flop.street).toBe("flop")
+    expect(flop.toAct).toBe(HERO)
+  })
+
+  it("has a stack shorter than its blind post what it has, all-in", () => {
+    const state = table([2000, 2000, 5, 2000, 2000, 2000])
+    expect(state.button).toBe(1)
+    expect(state.seats[2]).toMatchObject({ bet: 5, stack: 0, allIn: true })
+    expect(state.log[0]).toMatchObject({ seat: 2, kind: "blind", amount: 5, allIn: true })
+    expect(state.currentBet).toBe(BIG_BLIND)
+    // The pot holds what was posted, so when everyone folds the big blind wins 25 and no chip is made up.
+    expect(state.pot).toBe(25)
+    const before = state.seats.reduce((sum, seat) => sum + seat.stack + seat.total, 0)
+    // Once the others fold, the big blind already covers the small blind, so it has no decision and the cards
+    // decide: the small blind can win only its 5 and 5 of the big blind's.
+    const folded = foldTo(state, -1)
+    expect(folded.street).toBe("showdown")
+    expect(folded.result?.winnings[2]).toBeLessThanOrEqual(10)
+    expect(state.log.slice(0, 2).map(describeAction)).toEqual(["小盲 5", "大盲 20"])
+    expect(folded.seats.reduce((sum, seat) => sum + seat.stack, 0)).toBe(before)
+  })
+
+  it("deals the board out when the only seat that can bet already covers everyone, as against a short big blind", () => {
+    // Heads-up, the button posts 10 and the big blind has only 5: there is nothing left to decide.
+    const short = table([11995, 5, 0, 0, 0, 0], 5)
+    expect(short.button).toBe(HERO)
+    expect(short.toAct).toBeNull()
+    expect(short.board).toHaveLength(5)
+    expect(short.result).not.toBeNull()
+    expect(short.seats.reduce((sum, seat) => sum + seat.stack, 0)).toBe(12000)
+    // The 5 the button put in that nobody could match comes back to it, win or lose.
+    expect(short.seats[HERO].stack).toBeGreaterThanOrEqual(11990)
+    // A short small blind instead: the big blind has nothing to decide either.
+    expect(table([5, 11995, 0, 0, 0, 0], 5).result).not.toBeNull()
+    // Three left: the small blind posts 10 against a big blind all-in for 5. Once the button folds, the small blind
+    // already covers the big blind, so the board is dealt out instead of asking it for 10 more.
+    const three = table([2000, 2000, 5, 0, 0, 0], 5)
+    expect([three.button, three.toAct]).toEqual([HERO, HERO])
+    const folded = act(three, HERO, FOLD)
+    expect(folded.toAct).toBeNull()
+    expect(folded.street).toBe("showdown")
+    expect(folded.seats.reduce((sum, seat) => sum + seat.stack, 0)).toBe(4005)
+    // Two all-in from the blinds and a third who has put nothing in: the third still decides.
+    const third = table([2000, 5, 15, 0, 0, 0], 5)
+    expect(third.toAct).toBe(HERO)
+    expect(legalActions(third).callAmount).toBe(BIG_BLIND)
+  })
+
+  it("ends the table for the player when they lose their last chip, or when nobody else has any", () => {
+    // Heads-up, the player all-in with seven-two against aces.
+    const lost = checkDown(act(rig(table([100, 0, 0, 0, 0, 11900]), { 0: "7C 2D", 5: "AH AS" }, "KD 9S 4H 3C JD"), 5, raise(200)))
+    expect(lost.seats[HERO].stack).toBe(0)
+    expect(knockedOut(lost)).toEqual([HERO])
+    expect(tableOver(lost)).toBe("lost")
+
+    const won = checkDown(act(rig(table([11900, 0, 0, 0, 0, 100]), { 0: "AH AS", 5: "7C 2D" }, "KD 9S 4H 3C JD"), 5, raise(100)))
+    expect(knockedOut(won)).toEqual([5])
+    expect(tableOver(won)).toBe("won")
+    expect(() => nextHand(won, seeded(1))).toThrow("这一桌已经结束。")
+
+    expect(stacksOver([2000, 0, 0, 0, 0, 10000])).toBeNull()
+    expect(tableOver(table([2000, 0, 0, 0, 0, 10000]))).toBeNull()
+  })
+
+  it("plays on with fewer players until one is left, keeping every chip", () => {
+    const rng = seeded(5)
+    let state = table([300, 300, 300, 300, 300, 300], 0, rng)
+    const outs: number[] = []
+    for (let hand = 0; state.seats.filter((seat) => seat.stack > 0).length > 1; hand++) {
+      expect(hand).toBeLessThan(2000)
+      while (state.toAct !== null) {
+        expect(state.seats[state.toAct].out).toBe(false)
+        state = act(state, state.toAct, botAction(state, state.toAct, rng, "novice"))
+      }
+      expect(state.seats.reduce((sum, seat) => sum + seat.stack, 0)).toBe(1800)
+      outs.push(...knockedOut(state))
+      if (state.seats.filter((seat) => seat.stack > 0).length > 1) state = nextHand(state, rng)
+    }
+    expect(new Set(outs).size).toBe(5)
   }, 30_000)
 })
 
@@ -189,18 +298,19 @@ describe("keeping the table between visits", () => {
     expect(resumed.button).toBe((ended.button + 1) % SEATS)
   })
 
-  it("gives a seat below one big blind a full stack when it resumes", () => {
-    const resumed = resumeTable({ version: 1, savedAt: "", handNumber: 7, button: 0, stacks: [5, 3990, 2000, 2000, 2000, 2005] }, seeded(1))
-    expect(resumed.seats.map((seat) => seat.stack + seat.total)).toEqual([STARTING_STACK, 3990, 2000, 2000, 2000, 2005])
-    expect(resumed.handNumber).toBe(8)
-  })
-
   it("ignores anything in storage that is not a save this version wrote", () => {
     const good = { version: 1, savedAt: "", handNumber: 3, button: 2, stacks: [2000, 2000, 2000, 2000, 2000, 2000] }
     expect(parseTableSave(JSON.stringify(good))).toEqual(good)
     for (const bad of [null, "", "not json", "{}", JSON.stringify({ ...good, version: 2 }), JSON.stringify({ ...good, stacks: [2000] }), JSON.stringify({ ...good, button: 6 }), JSON.stringify({ ...good, stacks: [-1, 2000, 2000, 2000, 2000, 2000] }), JSON.stringify({ ...good, handNumber: 0 })]) {
       expect(parseTableSave(bad)).toBeNull()
     }
+  })
+
+  it("keeps a player who is out out after a save, and does not resume a table that has ended", () => {
+    const save = { version: 1 as const, savedAt: "", handNumber: 4, button: 0, stacks: [3000, 0, 2500, 2500, 2000, 2000] }
+    expect(parseTableSave(JSON.stringify(save))).toEqual(save)
+    expect(resumeTable(save, seeded(1)).seats[1].out).toBe(true)
+    expect(() => resumeTable({ ...save, stacks: [0, 12000, 0, 0, 0, 0] }, seeded(1))).toThrow("这一桌已经结束。")
   })
 })
 
@@ -222,7 +332,7 @@ describe("how well the computer players play", () => {
         }
         state = act(state, state.toAct, action)
       }
-      state = nextHand(state, rng)
+      state = nextHand(refilled(state), rng)
     }
     return { folds: count.folds / count.before, bets: count.bets / count.after }
   }

@@ -3,7 +3,7 @@ import { BOT_SKILLS, botAction } from "../../holdem/bot"
 import type { BotSkill } from "../../holdem/bot"
 import { advise, gradeChoice } from "../../holdem/coach"
 import type { Advice, Grade } from "../../holdem/coach"
-import { HERO, act, describeAction, newTable, nextHand, parseTableSave, resumeTable, toTableSave } from "../../holdem/game"
+import { HERO, act, describeAction, newTable, nextHand, parseTableSave, resumeTable, stacksOver, tableOver, toTableSave } from "../../holdem/game"
 import type { Action, HoldemState, Street } from "../../holdem/game"
 
 const BOT_DELAY = 800
@@ -41,7 +41,8 @@ const random = () => Math.random()
 function opening(): HoldemState {
   try {
     const save = parseTableSave(localStorage.getItem(TABLE_KEY))
-    if (save) return resumeTable(save, random)
+    // A table that ended, with the player out or the last one left, starts afresh.
+    if (save && !stacksOver(save.stacks)) return resumeTable(save, random)
   } catch {
     return newTable(random)
   }
@@ -100,9 +101,9 @@ export function useHoldem() {
       }
     })
 
-  const deal = () => setView((now) => (now.game.result ? look(nextHand(now.game, random), []) : now))
+  const deal = () => setView((now) => (now.game.result && !tableOver(now.game) ? look(nextHand(now.game, random), []) : now))
 
-  /** Everyone back to 2,000 chips, from hand 1. */
+  /** Everyone back to 2,000 chips, from hand 1: from 设置, or once the table has ended. */
   const restart = () => {
     try {
       localStorage.removeItem(TABLE_KEY)

@@ -62,7 +62,8 @@
   function state() {
     if (holdem()) {
       return {
-        over: button("下一手") !== null,
+        // At the end of a table there is 再开一桌 instead of 下一手.
+        over: button("下一手") !== null || button("再开一桌") !== null,
         myTurn: button("弃牌") !== null,
         mustReturn: false,
         cards: all('[data-slot="he-hole"] [data-slot="playing-card"]').length,

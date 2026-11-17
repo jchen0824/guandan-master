@@ -213,6 +213,122 @@ test("the coach's working after the flop fits, and a narrow screen opens all of 
   }
 })
 
+/** Raises all-in, from the slider or the size buttons, whichever this screen has. */
+async function allIn(page: Page) {
+  const slider = page.getByRole("slider")
+  if (await slider.isVisible()) {
+    await slider.focus()
+    await page.keyboard.press("End")
+  } else {
+    await page.getByRole("group", { name: /多少$/ }).getByRole("button", { name: /^全下/ }).click()
+  }
+  await page.locator('[data-slot="he-buttons"] [data-variant="raise"]').click()
+}
+
+/** Lets the computer players act until the hand is over. */
+async function waitForTheEnd(page: Page) {
+  for (let step = 0; step < 100 && !(await screen(page)).over; step++) await waitForNextMove(page)
+}
+
+const TABLE_KEY = "guandan.holdem.table"
+
+test("a player who is out of chips shows as 出局, and the table plays on without them", async ({ page }) => {
+  await openHoldem(page)
+  await page.evaluate((key) => localStorage.setItem(key, JSON.stringify({ version: 1, savedAt: "", handNumber: 4, button: 0, stacks: [2000, 0, 2000, 0, 2000, 6000] })), TABLE_KEY)
+  await page.reload()
+  await expect(page.getByRole("region", { name: "甲，出局" })).toContainText("没有筹码了")
+  await expect(page.getByRole("region", { name: "丙，出局" })).toContainText("没有筹码了")
+  await expectLayoutToHold(page, "with two seats out")
+  await playHoldemHand(page, (when) => expectLayoutToHold(page, `with two seats out, ${when}`))
+  await expect(page.getByRole("button", { name: "下一手" })).toBeVisible()
+})
+
+test("a small blind shorter than 10 puts only what it has into the pot", async ({ page }) => {
+  await openHoldem(page)
+  // The button moves from the player to 甲, so 乙, with 5 chips, posts the small blind.
+  await page.evaluate((key) => localStorage.setItem(key, JSON.stringify({ version: 1, savedAt: "", handNumber: 8, button: 0, stacks: [2000, 2000, 5, 2000, 2000, 2000] })), TABLE_KEY)
+  await page.reload()
+  await expect(page.locator('[data-slot="he-pot"]')).toHaveText(/底池\s*25$/)
+  await expect(page.getByRole("region", { name: /^乙/ })).toContainText("全下")
+  await playHoldemHand(page)
+  await expectLayoutToHold(page, "after a hand with a short small blind")
+})
+
+test("a big blind too short to match the small blind leaves nothing to decide, and the board is dealt out", async ({ page }) => {
+  await openHoldem(page)
+  // Heads-up: the player has the button and posts 10; 甲 has only 5 for the big blind.
+  await page.evaluate((key) => localStorage.setItem(key, JSON.stringify({ version: 1, savedAt: "", handNumber: 12, button: 5, stacks: [11995, 5, 0, 0, 0, 0] })), TABLE_KEY)
+  await page.reload()
+  await expect(page.getByRole("button", { name: /^(下一手|再开一桌)$/ })).toBeVisible()
+  await expect(page.getByRole("button", { name: "弃牌" })).toHaveCount(0)
+  await expect(page.getByRole("list", { name: /^公共牌：/ }).getByRole("listitem")).toHaveCount(5)
+  await expectLayoutToHold(page, "after a hand dealt out with no decision")
+})
+
+test("folding against a covered short blind deals the board out at once", async ({ page }) => {
+  await openHoldem(page)
+  // Three left, the player on the button: 甲 posts 10, 乙 is all-in for 5. Once the player folds, 甲 already
+  // covers 乙, so there is no decision left for 甲 and the hand ends without waiting for a move.
+  await page.evaluate((key) => localStorage.setItem(key, JSON.stringify({ version: 1, savedAt: "", handNumber: 12, button: 5, stacks: [2000, 2000, 5, 0, 0, 0] })), TABLE_KEY)
+  await page.reload()
+  await page.getByRole("button", { name: "弃牌", exact: true }).click()
+  expect((await screen(page)).over).toBe(true)
+  await expect(page.getByRole("list", { name: /^公共牌：/ }).getByRole("listitem")).toHaveCount(5)
+  await expectLayoutToHold(page, "after a covered short blind is dealt out")
+})
+
+test("heads-up, the coach tells the button it acts first before the flop", async ({ page }) => {
+  await openHoldem(page)
+  await page.evaluate((key) => localStorage.setItem(key, JSON.stringify({ version: 1, savedAt: "", handNumber: 20, button: 5, stacks: [2000, 2000, 0, 0, 0, 0] })), TABLE_KEY)
+  await page.reload()
+  // The coach names the seat with a weak or middling hand; fold the others until such a hand comes on the button.
+  const coach = page.getByRole("complementary", { name: "教练" })
+  let said = ""
+  for (let step = 0; step < 200 && !said; step++) {
+    const now = await screen(page)
+    const preflop = (await page.locator('[data-slot="he-board"] [data-slot="playing-card"]').count()) === 0
+    const text = (await coach.textContent()) ?? ""
+    if (now.myTurn && preflop && text.includes("你在庄位")) said = text
+    else if (now.over) await page.getByRole("button", { name: "下一手" }).click()
+    else if (now.myTurn) await page.getByRole("button", { name: "弃牌", exact: true }).click()
+    else await waitForNextMove(page)
+  }
+  expect(said).toContain("两个人时庄位也是小盲：翻牌前你先行动，翻牌后你最后行动")
+  expect(said).not.toContain("能先看别人怎么做")
+  await expectLayoutToHold(page, "with the heads-up advice showing")
+})
+
+test("a player who loses every chip is out, and 再开一桌 starts a new table", async ({ page }) => {
+  await openHoldem(page)
+  // All-in with seven-two; 甲 calls with aces, and the board gives the player nothing.
+  await dealHoldemExactly(page, { holes: { 0: "7C 2D", 1: "AH AS" }, board: "KD 9S 4H 3C JD" })
+  await callDownTo(page, 0)
+  await allIn(page)
+  await waitForTheEnd(page)
+  await expect(page.locator('[data-slot="he-banner"] b')).toHaveText("你出局了")
+  await expect(page.getByRole("button", { name: "下一手" })).toHaveCount(0)
+  await expectLayoutToHold(page, "when the player is out")
+  await page.getByRole("button", { name: "再开一桌" }).click()
+  await expect(page.locator('[data-slot="he-hand"]')).toContainText("第 1 手")
+  await expect(page.locator('[data-slot="he-seat"][data-out]')).toHaveCount(0)
+})
+
+test("a player left with every chip wins the table", async ({ page }) => {
+  await openHoldem(page)
+  // Heads-up against one big blind, calling every time: 甲 is all-in in every hand and soon out.
+  await page.evaluate((key) => localStorage.setItem(key, JSON.stringify({ version: 1, savedAt: "", handNumber: 30, button: 0, stacks: [11980, 20, 0, 0, 0, 0] })), TABLE_KEY)
+  await page.reload()
+  const again = page.getByRole("button", { name: "再开一桌" })
+  for (let step = 0; step < 400 && !(await again.isVisible()); step++) {
+    const now = await screen(page)
+    if (now.over) await page.getByRole("button", { name: "下一手" }).click()
+    else if (now.myTurn) await page.getByRole("button", { name: /^(过牌|跟注)/ }).click()
+    else await waitForNextMove(page)
+  }
+  await expect(page.locator('[data-slot="he-banner"] b')).toHaveText("全桌冠军")
+  await expectLayoutToHold(page, "when the player has won the table")
+})
+
 test("the 2-and-4 rule is explained with the hand's own numbers, and in 规则", async ({ page }) => {
   await openHoldem(page)
   // A player asked what "3 张有效牌 × 4" meant on this flop: the three other aces make top pair.

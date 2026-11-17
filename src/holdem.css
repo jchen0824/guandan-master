@@ -536,6 +536,11 @@
   opacity: 0.55;
 }
 
+[data-slot="he-seat"][data-out] [data-slot="he-chip"] {
+  opacity: 0.35;
+  border-style: dashed;
+}
+
 [data-slot="he-avatar"] {
   grid-row: 1 / span 2;
   width: 34px;
@@ -1329,6 +1334,10 @@
   }
   [data-slot="he-banner"] b {
     font-size: 28px;
+  }
+  /* 你出局了 and 全桌冠军 are a character longer than any hand's name, which reached the labels of 乙 and 丁. */
+  [data-slot="he-banner"][data-end] b {
+    font-size: 22px;
   }
   /* The two cards fill the gap between the labels of 甲 and 戊, which are a fixed width. */
   [data-slot="he-controls"] {

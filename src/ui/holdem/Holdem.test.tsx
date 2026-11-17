@@ -278,6 +278,41 @@ describe("the Texas Hold'em table", () => {
     expect(localStorage.getItem("guandan.holdem.table")).toBeNull()
   })
 
+  it("shows a player who is out of chips as 出局, without cards, and plays on without them", () => {
+    localStorage.setItem("guandan.holdem.table", JSON.stringify({ version: 1, savedAt: "", handNumber: 4, button: 0, stacks: [2000, 0, 2000, 2000, 2000, 4000] }))
+    render(<Holdem onHome={() => {}} />)
+    const out = screen.getByRole("region", { name: "甲，出局" })
+    expect(out.textContent).toContain("没有筹码了")
+    expect(out.hasAttribute("data-out")).toBe(true)
+    expect(screen.getAllByRole("region", { name: /，/ }).filter((seat) => seat.hasAttribute("data-out"))).toHaveLength(1)
+    playHand()
+    expect(screen.getByRole("region", { name: "甲，出局" })).toBeTruthy()
+  })
+
+  it("ends the table when the player is out, and deals a new one from 再开一桌", () => {
+    // Heads-up with two big blinds against everything else: the blinds alone finish the player off.
+    localStorage.setItem("guandan.holdem.table", JSON.stringify({ version: 1, savedAt: "", handNumber: 9, button: 0, stacks: [40, 0, 0, 0, 0, 11960] }))
+    const first = render(<Holdem onHome={() => {}} />)
+    // Plays by the coach's advice, hand after hand, until the table is over.
+    for (let step = 0; step < 600 && !button("再开一桌"); step++) {
+      act(() => {
+        vi.advanceTimersByTime(1000)
+      })
+      const next = button("下一手")
+      if (next) fireEvent.click(next)
+      else if (button("弃牌")) followAdvice()
+    }
+    expect(button("下一手")).toBeNull()
+    expect(document.querySelector('[data-slot="he-banner"] b')?.textContent).toMatch(/^(你出局了|全桌冠军)$/)
+    // A table that has ended is not resumed: the next visit starts a new one, as 再开一桌 does now.
+    first.unmount()
+    render(<Holdem onHome={() => {}} />)
+    expect(screen.getByText(/第 1 手/)).toBeTruthy()
+    cleanup()
+    render(<Holdem onHome={() => {}} />)
+    expect(screen.queryAllByRole("region", { name: /出局/ })).toHaveLength(0)
+  })
+
   it("explains the rules in a dialog", () => {
     render(<Holdem onHome={() => {}} />)
     fireEvent.click(screen.getByRole("button", { name: "规则" }))

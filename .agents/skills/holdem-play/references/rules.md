@@ -4,17 +4,18 @@ No-limit Texas Hold'em for six seats. Where this repo makes a choice that other 
 
 ## The table
 
-- Six seats, always full: seat 0 is the player (`HERO`), seats 1–5 are 甲 乙 丙 丁 戊 (`SEAT_NAMES`).
+- Six seats: seat 0 is the player (`HERO`), seats 1–5 are 甲 乙 丙 丁 戊 (`SEAT_NAMES`).
 - Everyone starts with 2,000 practice chips (`STARTING_STACK`). Small blind 10, big blind 20 (`SMALL_BLIND`, `BIG_BLIND`). No antes, no rake.
-- **Rebuys.** When a hand starts, any seat with fewer chips than one big blind is given a full 2,000 again (`nextHand`). Nobody is ever out, and blinds are always posted in full.
-- The button moves one seat clockwise each hand. The first button is random (`newTable`).
-- **Between visits.** At the end of every hand the stacks, the button and the hand number are saved (`toTableSave`), and the next visit deals the hand after it (`resumeTable`), rebuys included. No cards are saved, so a hand left halfway is dealt afresh from the stacks it started with, as with a 掼蛋 match. 重新开始 in 设置 puts everyone back to 2,000 at hand 1.
+- **Out of chips, out of the table.** As in a real game, a seat that has no chips when a hand is dealt is out (`Seat.out`, also `folded`): no cards, no blinds, no turn, and its label says 出局. Nobody is given chips again. A stack shorter than its blind posts what it has and is all-in; the bet to match is still a full big blind.
+- **The end of a table** (`tableOver`, `stacksOver`): when the player has no chips left (你出局了), or nobody else has any (全桌冠军). The table then offers 再开一桌 instead of 下一手, and `nextHand` throws. `knockedOut` lists the seats that lost their last chips in a hand; the result line names them (甲输光了筹码，出局).
+- The button moves clockwise to the next seat still in each hand. The first button is random (`newTable`).
+- **Between visits.** At the end of every hand the stacks, the button and the hand number are saved (`toTableSave`), and the next visit deals the hand after it (`resumeTable`); a seat saved with no chips stays out. No cards are saved, so a hand left halfway is dealt afresh from the stacks it started with, as with a 掼蛋 match. A table that had ended is not resumed: the next visit starts a new one. 重新开始 in 设置 puts everyone back to 2,000 at hand 1.
 
 ## Dealing and positions
 
-- The small blind is the seat left of the button, the big blind the next one. Both post before the cards.
-- Two cards each, one at a time, starting from the small blind.
-- Positions are counted from the button (`positionName`): 庄位 (button), 小盲, 大盲, 枪口 (first to act before the flop), 中位, 关位 (just before the button).
+- The small blind is the next seat still in left of the button, the big blind the one after. Both post before the cards. **Heads-up** (two left) the button posts the small blind, acts first before the flop and last after it.
+- Two cards each, one at a time, starting from the small blind, to the seats still in.
+- Positions are counted from the button among the seats still in (`position`, `positionName`): 庄位 (button), 小盲, 大盲, 枪口 (first to act before the flop), 中位, 关位 (just before the button). With five there is no 中位; with four the seat after the big blind is 枪口; heads-up there are only 庄位 and 大盲. A seat that is out is 出局. The coach and the computer players count 庄位 and 关位 as late, the blinds as blinds.
 
 ## Betting
 
@@ -30,7 +31,7 @@ No-limit Texas Hold'em for six seats. Where this repo makes a choice that other 
 ## The end of a hand
 
 - **Everyone else folds.** The last player in takes the whole pot at once, their own uncalled bet included. No cards are shown.
-- **Nobody left to bet.** When at most one player still has chips to bet (the rest are all-in or folded), the remaining board cards are dealt with no more betting, then the showdown.
+- **Nobody left to bet.** When at most one player still has chips to bet (the rest are all-in or folded), the remaining board cards are dealt with no more betting, then the showdown. The same goes when the only player who can still bet has already put in as much as everyone else, which a short blind makes possible: heads-up when the big blind is all-in for less than the small blind, or once the others fold to them. The game checks this after the blinds and after every action (`nothingToDecide`), so nobody is asked to call chips that nobody can match.
 - **Showdown.** After the river betting, every player still in shows their cards; nobody mucks. Each player's hand is the best five of their two cards and the five on the board, and a player may use any number of their own cards, including none.
 
 ## Pots
