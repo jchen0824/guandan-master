@@ -892,6 +892,16 @@
 
 [data-slot="he-me"] {
   width: 250px;
+  height: auto;
+  min-height: 52px;
+  padding-block: 5px;
+}
+
+/* How much the player has put into this hand, under their chips. */
+[data-slot="he-in"] {
+  grid-column: 2;
+  color: var(--cream-soft);
+  font-size: 12px;
 }
 
 [data-slot="he-controls"] > [data-slot="he-bet"] {
@@ -1311,11 +1321,20 @@
   [data-slot="holdem"] [data-slot="he-menu"] [data-variant="coach"] {
     padding: 0 10px;
   }
+  /* Name and chips on one row; what the player has put in this hand on a second, under them. */
   [data-slot="he-me"] {
-    flex-direction: row;
-    gap: 6px;
-    max-width: none;
-    padding: 3px 10px;
+    flex-flow: row wrap;
+    column-gap: 6px;
+    row-gap: 0;
+    max-width: 128px;
+    padding: 3px 8px;
+  }
+  /* The two-line label is taller, so the cards, and the player's bet beside them, move right to stay clear of it. */
+  [data-slot="he-hole"] {
+    left: calc(50% + 10px);
+  }
+  [data-slot="he-controls"] > [data-slot="he-bet"] {
+    left: calc(50% + var(--hole) * 0.91 + 46px);
   }
   [data-slot="he-me"] [data-slot="he-who"] b {
     display: none;
@@ -1334,7 +1353,7 @@
     --sh: 256;
     --coach: 0px;
     --board-y: 72;
-    --pot-x: 264;
+    --pot-x: 302;
     --pot-y: 100;
   }
   [data-slot="he-stage"] {
@@ -1428,6 +1447,23 @@
   }
   [data-slot="he-me"] [data-slot="he-avatar"] {
     display: none;
+  }
+  /* The player's line is the last line of the coach's box; what they have put in wraps onto a second one. */
+  [data-slot="he-me"] {
+    flex-wrap: wrap;
+    row-gap: 0;
+    max-width: calc(min(300px, 36%) - 24px);
+  }
+  [data-slot="holdem"]:has([data-slot="he-in"]) [data-slot="he-coach"] {
+    padding-bottom: 44px;
+  }
+  /* The pot is anchored by its right edge just left of the board, so a bigger pot grows away from the cards. */
+  [data-slot="he-pot"] {
+    padding: 2px 8px;
+    transform: translate(-100%, -50%);
+  }
+  [data-slot="he-pot"] b {
+    font-size: 17px;
   }
   [data-slot="he-me"] [data-slot="he-dealer"] {
     position: static;
