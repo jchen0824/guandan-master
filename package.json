@@ -2,7 +2,7 @@
   "name": "guandan-master",
   "description": "掼蛋教练: a single-player Guandan trainer with rule-based bots and a coach",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.3.0",
   "type": "module",
   "license": "MIT",
   "repository": {
