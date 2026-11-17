@@ -47,6 +47,13 @@ describe("reading a hand the way a player does", () => {
     expect(readHand(cards("5D 3S"), cards("6H 6C 6D 2C")).text).toBe("只有 5 高：公共牌上的三条大家都有")
   })
 
+  it("does not credit the player with a straight that is all on the board", () => {
+    // The player's 5 can stand in for the board's 5 in the board's straight, but it changes nothing.
+    expect(readHand(cards("5H 2D"), cards("5S 6D 7C 8H 9S"))).toMatchObject({ text: "顺子 到 9：这手牌全在公共牌上，大家都有", strength: Strength.Nothing })
+    // So on the turn a 4 or a 9 is not an out: it gives everyone the same straight.
+    expect(countOuts(cards("5H 2D"), cards("5S 6D 7C 8H"))).toEqual({ count: 5, text: "来一张 2 就成两对（还剩 3 张）；来一张 5 就成三条（还剩 2 张）" })
+  })
+
   it("names the ranks of outs that are neither one rank nor one suit", () => {
     expect(countOuts(cards("7D 6C"), cards("9S 8H 2C"))).toEqual({ count: 8, text: "来一张 10 或 5 就成顺子（还剩 8 张）" })
     // The two hearts among the straight cards make a flush, so they are counted there.

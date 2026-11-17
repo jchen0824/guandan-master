@@ -60,7 +60,9 @@ function readPair(hole: Card[], board: Card[], rank: number): HandRead {
 /** What the player holds against the board. Only after the flop. */
 export function readHand(hole: Card[], board: Card[]): HandRead {
   const value = evaluate([...hole, ...board])
-  const usesHole = value.cards.some((card) => hole.includes(card))
+  // A full board is a hand of its own, and a hole card can stand in for a board card of the same rank without
+  // changing anything, so there the player's cards count only when they beat the board.
+  const usesHole = value.cards.some((card) => hole.includes(card)) && (board.length < 5 || value.score > evaluate(board).score)
   const name = categoryName(value.category)
   if (value.category === "highCard") {
     return { text: `只有 ${rankLabel(Math.max(...hole.map((card) => card.rank)))} 高，还没成牌`, strength: Strength.Nothing, makes: "高牌" }

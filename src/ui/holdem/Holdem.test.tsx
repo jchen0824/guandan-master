@@ -226,7 +226,7 @@ describe("the Texas Hold'em table", () => {
     }
     const panel = within(coach())
     expect(panel.getByText("估算")).toBeTruthy()
-    expect(panel.getByText(/二四法则|不用数有效牌|只能靠对手在诈唬/)).toBeTruthy()
+    expect(panel.getByText(/二四法则|不用数有效牌|没有有效牌|牌已经发完/)).toBeTruthy()
     fireEvent.click(screen.getByRole("button", { name: "怎么算的" }))
     const dialog = within(screen.getByRole("dialog", { name: "教练是怎么算的" }))
     for (const label of ["你的牌", "对手", "估算", "你的胜率，大约"]) expect(dialog.getByText(label)).toBeTruthy()

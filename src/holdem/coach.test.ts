@@ -9,8 +9,9 @@ import { cards, rig, seeded, stacked } from "./testing"
 const VILLAIN = 1
 const last = <T>(list: T[]) => list[list.length - 1]
 
-/** A flop where seat 1 raised before it and has now bet `bet`, with the hero left to answer. Everyone else folded. */
-function facingBet(hole: string, board: string, bet: number, villainStack?: number): HoldemState {
+/** A flop (or a later street, after checks) where seat 1 raised before it and has now bet `bet`, with the hero left
+ * to answer. Everyone else folded. */
+function facingBet(hole: string, board: string, bet: number, villainStack?: number, street: HoldemState["street"] = "flop"): HoldemState {
   const table = newTable(seeded(3))
   let state = rig(villainStack === undefined ? table : stacked(table, { [VILLAIN]: villainStack }), { [HERO]: hole, [VILLAIN]: "KD KC" }, board)
   while (state.street === "preflop") {
@@ -22,7 +23,7 @@ function facingBet(hole: string, board: string, bet: number, villainStack?: numb
   }
   while (!(state.toAct === HERO && state.currentBet > 0)) {
     const seat = state.toAct as number
-    state = act(state, seat, seat === VILLAIN ? { kind: "raise", to: bet } : { kind: "check" })
+    state = act(state, seat, seat === VILLAIN && state.street === street ? { kind: "raise", to: bet } : { kind: "check" })
   }
   return state
 }
@@ -178,6 +179,14 @@ describe("the coach", () => {
     const lower = advise(facingBet("QH JH", "TH 9S 2H", 40), seeded(5))
     expect(lower.have).toBeLessThan(0.76)
     expect(last(lower.explain).text).toMatch(/^电脑模拟更低：有效牌多于 8 张时，乘 4 会算多/)
+  })
+
+  it("on the river, counts no outs and says what the hand beats at the showdown", () => {
+    const state = facingBet("9H 9D", "AS 8C 3D 2S 4H", 40, undefined, "river")
+    expect(state.street).toBe("river")
+    const advice = advise(state, seeded(5))
+    expect(advice.explain.map((line) => line.key)).toEqual(["hand", "opponents", "estimate"])
+    expect(last(advice.explain).text).toMatch(/^牌已经发完，比的是现在谁大：你的对子能赢更小的对子，也能赢诈唬（电脑模拟约 \d+%）$/)
   })
 
   it("keeps the working for after the flop, and says a strong hand need not count outs", () => {

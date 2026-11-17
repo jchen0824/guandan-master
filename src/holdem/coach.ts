@@ -4,7 +4,7 @@ import { BIG_BLIND, HERO, SEAT_NAMES, SEATS, describeAction, lastWhere, legalAct
 import type { Action, HoldemState } from "./game"
 import { evaluate } from "./hands"
 import type { HandCategory } from "./hands"
-import { draws, potOdds, shareOfPot } from "./odds"
+import { bettorsAgainst, draws, potOdds, shareOfPot } from "./odds"
 import { Strength, countOuts, readHand, readOpponents, ruleOfThumb } from "./read"
 
 export interface Advice {
@@ -107,22 +107,31 @@ function explain(state: HoldemState, have: number): Advice["explain"] {
   const { hole } = state.seats[HERO]
   const read = readHand(hole, state.board)
   const outs = countOuts(hole, state.board)
+  // On the river no card is left to come, so there are no outs to count.
+  const river = state.board.length === 5
   const lines: Advice["explain"] = [{ key: "hand", label: "你的牌", text: read.text }]
   if (outs.text) lines.push({ key: "outs", label: "能帮你的牌", text: outs.text })
-  else if (read.strength < Strength.Strong) lines.push({ key: "outs", label: "能帮你的牌", text: "没有一张牌能明显帮到你" })
+  else if (!river && read.strength < Strength.Strong) lines.push({ key: "outs", label: "能帮你的牌", text: "没有一张牌能明显帮到你" })
   lines.push({ key: "opponents", label: "对手", text: readOpponents(state, read.strength) })
   const simulated = `电脑模拟约 ${percent(have)}`
   if (read.strength >= Strength.TopPair) {
     lines.push({ key: "estimate", label: "估算", text: `你多半已经领先，不用数有效牌，要担心的是比你大的牌（${simulated}）` })
     return lines
   }
-  const { times, percent: rough } = ruleOfThumb(outs.count, state.board)
-  if (outs.count > 0) {
-    const left = times === 4 ? "还有转牌和河牌两张" : "只剩河牌一张"
-    lines.push({ key: "estimate", label: "估算", text: `${left}，二四法则：${outs.count} 张有效牌 × ${times} ≈ ${rough}%（${simulated}）` })
-  } else {
-    lines.push({ key: "estimate", label: "估算", text: `没有有效牌，只能靠对手在诈唬（${simulated}）` })
+  if (outs.count === 0) {
+    // With nothing to draw, say what the hand beats at the showdown as it is. There is no rule-of-thumb number.
+    const boardOnly = read.strength === Strength.Nothing && read.makes !== "高牌"
+    const wins =
+      boardOnly ? "这手牌大家都有，最多和别人平分"
+      : read.strength === Strength.WeakPair ? "你的对子能赢更小的对子，也能赢诈唬"
+      : bettorsAgainst(state, HERO) > 0 ? "下注的人在诈唬时你才赢"
+      : "只有对手也没成牌时你才赢"
+    lines.push({ key: "estimate", label: "估算", text: `${river ? "牌已经发完，比的是现在谁大" : "没有有效牌"}：${wins}（${simulated}）` })
+    return lines
   }
+  const { times, percent: rough } = ruleOfThumb(outs.count, state.board)
+  const left = times === 4 ? "还有转牌和河牌两张" : "只剩河牌一张"
+  lines.push({ key: "estimate", label: "估算", text: `${left}，二四法则：${outs.count} 张有效牌 × ${times} ≈ ${rough}%（${simulated}）` })
   // The rule counts only cards that make a solid hand; the simulation also counts the times the opponents have less.
   const gap = Math.round(have * 100) - rough
   if (gap > 8) lines.push({ key: "gap", label: "为什么不同", text: "电脑模拟更高：它也算上了对手牌更差、或者只是在诈唬的时候，这时你不中牌也能赢" })
