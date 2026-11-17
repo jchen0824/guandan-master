@@ -4,7 +4,8 @@ import { BIG_BLIND, HERO, SEAT_NAMES, SEATS, describeAction, lastWhere, legalAct
 import type { Action, HoldemState } from "./game"
 import { evaluate } from "./hands"
 import type { HandCategory } from "./hands"
-import { draws, potOdds, shareOfPot } from "./odds"
+import { bettorsAgainst, draws, potOdds, shareOfPot } from "./odds"
+import { Strength, boardDangers, countOuts, readHand, readOpponents, ruleOfThumb } from "./read"
 
 export interface Advice {
   action: Action
@@ -23,6 +24,11 @@ export interface Advice {
   /** What just happened at the table. */
   situation: string
   reminder: string | null
+  /**
+   * The coach's working after the flop, so the player can learn to do it without a computer: 你的牌, 能帮你的牌,
+   * 对手 and 估算 (the 2-and-4 rule, with the simulated win rate beside it). Empty before the flop.
+   */
+  explain: { key: "hand" | "outs" | "opponents" | "estimate" | "gap"; label: string; text: string }[]
 }
 
 const percent = (value: number) => `${Math.round(value * 100)}%`
@@ -96,6 +102,56 @@ function afterTheFlop(state: HoldemState, have: number, drawText: string | null)
   return { action: { kind: "fold" }, reason: `${price}。${mine}，不够。弃牌，少输就是赢。` }
 }
 
+/** The working behind a win rate after the flop, in the steps a player can do at the table. */
+function explain(state: HoldemState, have: number): Advice["explain"] {
+  const { hole } = state.seats[HERO]
+  const read = readHand(hole, state.board)
+  const outs = countOuts(hole, state.board)
+  // On the river no card is left to come, so there are no outs to count.
+  const river = state.board.length === 5
+  const lines: Advice["explain"] = [{ key: "hand", label: "你的牌", text: read.text }]
+  if (outs.text) lines.push({ key: "outs", label: "能帮你的牌", text: outs.text })
+  else if (!river && read.strength < Strength.Strong) lines.push({ key: "outs", label: "能帮你的牌", text: "没有一张牌能明显帮到你" })
+  lines.push({ key: "opponents", label: "对手", text: readOpponents(state, read) })
+  const simulated = `电脑模拟约 ${percent(have)}`
+  if (read.strength >= Strength.TopPair) {
+    // A made hand is not always ahead. Say what on the board beats it, so the player learns to look: when ahead,
+    // only what one card makes; when behind, everything, or failing that the bet or the number of players.
+    const dangers = boardDangers(hole, state.board)
+    const near = dangers.filter((danger) => danger.oneCard).map((danger) => danger.text)
+    const all = dangers.map((danger) => danger.text)
+    const why = all.length > 0 ? `对手${all.join("，")}` : bettorsAgainst(state, HERO) > 0 ? "下注的人常常有更大的牌" : "对手多，总有人的牌可能更大"
+    const ahead =
+      read.nuts ? "没人能赢你，最多和别人平分，不用数有效牌"
+      : have >= 0.5 ? `你多半已经领先，不用数有效牌，${near.length > 0 ? `但要小心：对手${near.join("，")}` : "要担心的是比你大的牌"}`
+      : `你的牌${have < 0.35 ? "多半已经落后" : "未必领先"}：${why}`
+    lines.push({ key: "estimate", label: "估算", text: `${ahead}（${simulated}）` })
+    return lines
+  }
+  if (outs.count === 0) {
+    // With nothing to draw, say what the hand beats at the showdown as it is. There is no rule-of-thumb number.
+    const wins =
+      read.boardOnly ? "这手牌大家都有，最多和别人平分"
+      : read.strength === Strength.WeakPair ? "你的对子能赢更小的对子，也能赢诈唬"
+      : bettorsAgainst(state, HERO) > 0 ? "下注的人在诈唬时你才赢"
+      : "只有对手也没成牌时你才赢"
+    lines.push({ key: "estimate", label: "估算", text: `${river ? "牌已经发完，比的是现在谁大" : "没有有效牌"}：${wins}（${simulated}）` })
+    return lines
+  }
+  const { times, percent: rough } = ruleOfThumb(outs.count, state.board)
+  const left = times === 4 ? "还有转牌和河牌两张" : "只剩河牌一张"
+  lines.push({ key: "estimate", label: "估算", text: `${left}，二四法则：${outs.count} 张有效牌 × ${times} ≈ ${rough}%（${simulated}）` })
+  // The rule counts only cards that make a solid hand; the simulation also counts the times the opponents have less.
+  const gap = Math.round(have * 100) - rough
+  if (gap > 8) lines.push({ key: "gap", label: "为什么不同", text: "电脑模拟更高：它也算上了对手牌更差、或者只是在诈唬的时候，这时你不中牌也能赢" })
+  if (gap < -8) {
+    // Times 4 counts a card that comes on both the turn and the river twice, which adds up once there are many outs.
+    const many = times === 4 && outs.count > 8 ? "有效牌多于 8 张时，乘 4 会算多；而且" : ""
+    lines.push({ key: "gap", label: "为什么不同", text: `电脑模拟更低：${many}有些有效牌中了也未必赢，比如对手的牌更大` })
+  }
+  return lines
+}
+
 /** What the coach would do in the hero's place, and why. Call it when it is the hero's turn. */
 export function advise(state: HoldemState, rng: () => number): Advice {
   const me = state.seats[HERO]
@@ -105,6 +161,7 @@ export function advise(state: HoldemState, rng: () => number): Advice {
   const { action, reason } = state.street === "preflop" ? beforeTheFlop(state) : afterTheFlop(state, have, drawn.text)
   const behind = state.pending.filter((seat) => seat !== HERO)
   return {
+    explain: state.street === "preflop" ? [] : explain(state, have),
     action,
     title: `建议：${label(state, action)}`,
     reason,

@@ -12,10 +12,19 @@ interface GameScreen {
   dialog: boolean
 }
 
+/** Exact cards for a Texas Hold'em hand: hole cards by seat (0 is the player) such as "AH TD", and the board. */
+export interface HoldemDeal {
+  button?: number
+  holes: Record<number, string>
+  board: string
+  seed?: number
+}
+
 declare global {
   interface Window {
     guandanQa: {
       seed: (value: number) => void
+      dealHoldem: (deal: HoldemDeal) => void
       state: () => GameScreen
       signature: () => string
       layoutProblems: () => string[]
@@ -93,6 +102,31 @@ export async function dealExactly(page: Page, seed: number) {
   await page.evaluate((value) => window.guandanQa.seed(value), seed)
   await page.getByRole("button", { name: /^确认/ }).click()
   await expect(page.getByRole("dialog")).toHaveCount(0)
+}
+
+/** Texas Hold'em: starts the table over from 设置, with exactly these cards. */
+export async function dealHoldemExactly(page: Page, deal: HoldemDeal) {
+  await page.getByRole("button", { name: "设置", exact: true }).click()
+  await page.getByRole("button", { name: "重新开始", exact: true }).click()
+  await page.evaluate((value) => window.guandanQa.dealHoldem(value), deal)
+  await page.getByRole("button", { name: /^确认/ }).click()
+  await expect(page.getByRole("dialog")).toHaveCount(0)
+}
+
+/** Texas Hold'em: checks or calls until it is the player's turn with this many cards on the board. */
+export async function callDownTo(page: Page, boardCards: number) {
+  const board = page.locator('[data-slot="he-board"] [data-slot="playing-card"]')
+  for (let step = 0; step < 200; step++) {
+    const now = await screen(page)
+    if (now.over) throw new Error(`the hand ended before the player's turn with ${boardCards} cards on the board`)
+    if (now.myTurn && (await board.count()) === boardCards) return
+    if (now.myTurn) {
+      const before = await page.evaluate(() => window.guandanQa.signature())
+      await page.getByRole("button", { name: /^(过牌|跟注)/ }).click()
+      await expect.poll(() => page.evaluate(() => window.guandanQa.signature())).not.toBe(before)
+    } else await waitForNextMove(page)
+  }
+  throw new Error(`no turn for the player with ${boardCards} cards on the board within 200 steps`)
 }
 
 export const screen = (page: Page) => page.evaluate(() => window.guandanQa.state())

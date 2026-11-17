@@ -61,6 +61,7 @@ Automated checks only cover what someone thought to assert. Use whatever browser
 | End of a hand | Loop: when 提示 is showing, click it, then 出牌 if cards were selected, otherwise 不出. Bots move every 0.8s, so a hand takes about a minute and a half. `guandanQa.state().over` turns true |
 | A hand with tribute | In the console: `localStorage.setItem("guandan.match", <save>)` with the `SAVE_AFTER_DOUBLE_WIN` text from `e2e/helpers.ts`, reload, click 继续第 2 局. You win the previous hand by a double, so you receive tribute and must return a card |
 | An exact deal | Open 设置, click 重新开始整场比赛, run `guandanQa.seed(4)`, then click the 确认 button. Seed 4 with hint-following play ends on your own bomb of 9s |
+| Exact Texas Hold'em cards | Open 设置, click 重新开始, run `guandanQa.dealHoldem({ holes: { 0: "5H 2D", 1: "AH AC" }, board: "5S 6D 7C 8H 9S" })`, then click 确认. Seat 0 is you; cards are rank then suit, T for ten. The button goes to you unless you pass `button`. In a test, `dealHoldemExactly` and `callDownTo` in `e2e/helpers.ts` do the same and play to a street |
 | Both tables | The game opens on the 3D table. For the flat one use the 2D/3D switch in the top bar (it is also in 设置), or run `localStorage.setItem("guandan.view", "2d")` and reload. Check every state above on both tables when the change touches something they share |
 
 `guandanQa.state()` tells you where you are: `{ over, myTurn, mustReturn, cards, selected, dialog }`.

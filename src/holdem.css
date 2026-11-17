@@ -721,7 +721,7 @@
 }
 
 [data-slot="he-ranks"] h2,
-[data-slot="he-coach"] h2,
+[data-slot="he-coach"] > h2,
 [data-slot="he-coach"] h3 {
   margin: 0;
   color: var(--cream-soft);
@@ -824,6 +824,77 @@
 
 [data-slot="he-bar"][data-kind="have"] {
   background: linear-gradient(90deg, var(--brass) calc(var(--share) * 100%), rgb(255 255 255 / 0.12) 0);
+}
+
+/* The coach's working after the flop: a label, then what a player would think, one step to a line. */
+[data-slot="he-explain"] {
+  margin: 8px 0 0;
+}
+
+[data-slot="he-explain"] div {
+  display: grid;
+  grid-template-columns: 5.2em minmax(0, 1fr);
+  gap: 0 6px;
+}
+
+[data-slot="he-explain"] div + div {
+  margin-top: 3px;
+}
+
+[data-slot="he-explain"] dt {
+  color: #f0c869;
+  font-size: 12px;
+}
+
+[data-slot="he-explain"] dd {
+  margin: 0;
+}
+
+/* Only where the coach is a bar: a button for the full working, at the top right of the bar. */
+[data-slot="holdem"] [data-working] {
+  display: none;
+}
+
+[data-slot="holdem"] [data-slot][data-working] {
+  float: right;
+  min-height: 28px;
+  margin: 0 0 2px 8px;
+  padding: 0 10px;
+  border: 1px solid var(--brass);
+  border-radius: 14px;
+  color: #f0c869;
+  font-size: 12px;
+}
+
+/* The same working in a dialog, on its light panel. */
+[data-slot="he-working"] {
+  width: 100%;
+  font-size: 14px;
+}
+
+[data-slot="he-working"] [data-slot="he-odds"] {
+  background: rgb(0 0 0 / 0.05);
+}
+
+[data-slot="he-working"] [data-slot="he-odds"] dt {
+  color: var(--panel-soft);
+}
+
+[data-slot="he-working"] [data-slot="he-bar"] {
+  background: linear-gradient(90deg, #3d6f99 calc(var(--share) * 100%), rgb(0 0 0 / 0.1) 0);
+}
+
+[data-slot="he-working"] [data-slot="he-bar"][data-kind="have"] {
+  background: linear-gradient(90deg, #a67816 calc(var(--share) * 100%), rgb(0 0 0 / 0.1) 0);
+}
+
+[data-slot="he-working"] [data-slot="he-explain"] dt,
+[data-slot="he-working"] h3 {
+  color: #7d5a0f;
+}
+
+[data-slot="he-working"] [data-slot="he-explain"] div + div {
+  margin-top: 6px;
 }
 
 [data-slot="he-review"] li + li {
@@ -1052,12 +1123,34 @@
     display: block;
   }
   [data-slot="he-ranks"],
-  [data-slot="he-coach"] h2,
-  [data-slot="he-coach"] [data-slot="he-odds"],
-  [data-slot="he-coach"] [data-slot="he-remind"],
-  [data-slot="he-coach"] [data-slot="he-review"],
+  [data-slot="he-coach"] > h2,
+  [data-slot="he-coach"] > [data-slot="he-odds"],
+  [data-slot="he-coach"] > [data-slot="he-remind"],
+  [data-slot="he-coach"] > [data-slot="he-review"],
   [data-slot="he-banner"] span {
     display: none;
+  }
+  /* The bar keeps the estimate and the decision. What happened is on the table, and the rest of the working
+     opens from 怎么算的. */
+  [data-slot="he-coach"]:has(> [data-slot="he-explain"]) > [role="status"],
+  [data-slot="he-coach"] > [data-slot="he-explain"] > :not([data-line="estimate"]) {
+    display: none;
+  }
+  [data-slot="he-coach"] > [data-slot="he-explain"] {
+    margin-top: 2px;
+  }
+  [data-slot="he-coach"] > [data-slot="he-explain"] > div {
+    display: block;
+  }
+  [data-slot="he-coach"] > [data-slot="he-explain"] :is(dt, dd) {
+    display: inline;
+  }
+  [data-slot="he-coach"] > [data-slot="he-explain"] dt::after {
+    content: "：";
+  }
+  [data-slot="holdem"] [data-working] {
+    display: inline-flex;
+    align-items: center;
   }
   [data-slot="he-outcome"],
   [data-slot="he-tally"],
@@ -1300,6 +1393,7 @@
     bottom: calc(100% + 16px);
   }
   [data-slot="he-coach"][data-advice] [role="status"],
+  [data-slot="he-coach"] > [data-slot="he-explain"],
   [data-slot="he-hand"] {
     display: none;
   }
@@ -1402,7 +1496,8 @@
     gap: calc(5 * var(--v));
   }
   [data-slot="he-banner"],
-  [data-slot="he-coach"][data-advice] [role="status"] {
+  [data-slot="he-coach"][data-advice] [role="status"],
+  [data-slot="he-coach"] > [data-slot="he-explain"] {
     display: none;
   }
   /* The box stops under the label of the seat above it (甲, at 106 of the stage's 256). */

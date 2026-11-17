@@ -63,6 +63,13 @@ The Chinese the player reads, what it means, and where it comes from. Use these 
 | 位置 | position |
 | 听同花 / 两头听顺子 / 听卡顺 | flush draw / open-ended straight draw / gutshot |
 | 还有 N 张牌能帮你 | N outs |
+| 有效牌 | outs, in the coach's working (能帮你的牌, N 张有效牌) |
+| 二四法则 | the 2-and-4 rule: outs × 4 on the flop, × 2 on the turn |
+| 电脑模拟 | the simulated win rate, beside the 2-and-4 estimate |
+| 顶对 / 中对 / 底对 / 超对 | top pair / middle pair / bottom pair / overpair |
+| 踢脚 | kicker; 踢脚不错 is Q or better |
+| 暗三条 | a set: a pocket pair that hit the board |
+| 怎么算的 | the button that opens the coach's working in a dialog (教练是怎么算的) |
 | 中了还能再赢一笔 | implied odds: hitting the draw can win more later |
 | 刚好够 | the win rate just covers the price |
 | 偷盲 | stealing the blinds (设置, describing 进阶) |
