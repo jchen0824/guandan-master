@@ -209,6 +209,14 @@ describe("players who run out of chips", () => {
     expect(state.seats[2]).toMatchObject({ bet: 5, stack: 0, allIn: true })
     expect(state.log[0]).toMatchObject({ seat: 2, kind: "blind", amount: 5, allIn: true })
     expect(state.currentBet).toBe(BIG_BLIND)
+    // The pot holds what was posted, so when everyone folds the big blind wins 25 and no chip is made up.
+    expect(state.pot).toBe(25)
+    const before = state.seats.reduce((sum, seat) => sum + seat.stack + seat.total, 0)
+    // Everyone folds, the big blind too, so the all-in small blind takes it.
+    const folded = foldTo(state, -1)
+    expect(folded.result?.winnings[2]).toBe(25)
+    expect(state.log.slice(0, 2).map(describeAction)).toEqual(["小盲 5", "大盲 20"])
+    expect(folded.seats.reduce((sum, seat) => sum + seat.stack, 0)).toBe(before)
   })
 
   it("ends the table for the player when they lose their last chip, or when nobody else has any", () => {

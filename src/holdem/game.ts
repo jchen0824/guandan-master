@@ -38,6 +38,8 @@ export interface LogEntry {
   /** The seat's bet on this street after it. */
   to: number
   allIn: boolean
+  /** For a blind: true for the small one, which a short stack may post for less than 10. */
+  small?: boolean
 }
 
 export interface Pot {
@@ -130,7 +132,7 @@ function deal(stacks: number[], button: number, handNumber: number, rng: () => n
     // A stack shorter than its blind posts what it has and is all-in.
     const posted = Math.min(amount, seats[seat].stack)
     seats[seat] = put(seats[seat], posted)
-    log.push({ seat, street: "preflop", kind: "blind", amount: posted, to: posted, allIn: seats[seat].allIn })
+    log.push({ seat, street: "preflop", kind: "blind", amount: posted, to: posted, allIn: seats[seat].allIn, small: seat === smallBlind })
   }
   const pending = clockwise(after(bigBlind)).filter((seat) => canAct(seats[seat]))
   return {
@@ -142,7 +144,8 @@ function deal(stacks: number[], button: number, handNumber: number, rng: () => n
     toAct: pending[0],
     currentBet: BIG_BLIND,
     minRaiseTo: BIG_BLIND * 2,
-    pot: SMALL_BLIND + BIG_BLIND,
+    // What was posted, which is less than 30 when a blind was short.
+    pot: log.reduce((sum, entry) => sum + entry.amount, 0),
     handNumber,
     log,
     result: null,
@@ -410,7 +413,7 @@ export function lastWhere<T>(items: readonly T[], test: (item: T) => boolean): T
 }
 
 export function describeAction(entry: LogEntry): string {
-  if (entry.kind === "blind") return `${entry.amount === SMALL_BLIND ? "小盲" : "大盲"} ${entry.amount}`
+  if (entry.kind === "blind") return `${entry.small ? "小盲" : "大盲"} ${entry.amount}`
   if (entry.kind === "fold") return "弃牌"
   if (entry.kind === "check") return "过牌"
   if (entry.allIn) return `全下 ${chips(entry.to)}`

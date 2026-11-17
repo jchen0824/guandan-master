@@ -243,6 +243,17 @@ test("a player who is out of chips shows as 出局, and the table plays on witho
   await expect(page.getByRole("button", { name: "下一手" })).toBeVisible()
 })
 
+test("a small blind shorter than 10 puts only what it has into the pot", async ({ page }) => {
+  await openHoldem(page)
+  // The button moves from the player to 甲, so 乙, with 5 chips, posts the small blind.
+  await page.evaluate((key) => localStorage.setItem(key, JSON.stringify({ version: 1, savedAt: "", handNumber: 8, button: 0, stacks: [2000, 2000, 5, 2000, 2000, 2000] })), TABLE_KEY)
+  await page.reload()
+  await expect(page.locator('[data-slot="he-pot"]')).toHaveText(/底池\s*25$/)
+  await expect(page.getByRole("region", { name: /^乙/ })).toContainText("全下")
+  await playHoldemHand(page)
+  await expectLayoutToHold(page, "after a hand with a short small blind")
+})
+
 test("a player who loses every chip is out, and 再开一桌 starts a new table", async ({ page }) => {
   await openHoldem(page)
   // All-in with seven-two; 甲 calls with aces, and the board gives the player nothing.
