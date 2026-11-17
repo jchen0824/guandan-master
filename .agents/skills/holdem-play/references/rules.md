@@ -8,6 +8,7 @@ No-limit Texas Hold'em for six seats. Where this repo makes a choice that other 
 - Everyone starts with 2,000 practice chips (`STARTING_STACK`). Small blind 10, big blind 20 (`SMALL_BLIND`, `BIG_BLIND`). No antes, no rake.
 - **Rebuys.** When a hand starts, any seat with fewer chips than one big blind is given a full 2,000 again (`nextHand`). Nobody is ever out, and blinds are always posted in full.
 - The button moves one seat clockwise each hand. The first button is random (`newTable`).
+- **Between visits.** At the end of every hand the stacks, the button and the hand number are saved (`toTableSave`), and the next visit deals the hand after it (`resumeTable`), rebuys included. No cards are saved, so a hand left halfway is dealt afresh from the stacks it started with, as with a 掼蛋 match. 重新开始 in 设置 puts everyone back to 2,000 at hand 1.
 
 ## Dealing and positions
 

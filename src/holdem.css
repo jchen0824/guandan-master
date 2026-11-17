@@ -298,7 +298,8 @@
   [data-slot="home"] [data-slot="button"][data-variant="enter"] {
     align-self: stretch;
   }
-  [data-slot="tile-note"] {
+  /* A phone has room only for the note that says where the player left off. */
+  [data-slot="tile-note"]:not([data-progress]) {
     display: none;
   }
 }

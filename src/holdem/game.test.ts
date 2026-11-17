@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { BOT_SKILLS, botAction } from "./bot"
 import type { BotSkill } from "./bot"
-import { BIG_BLIND, SEATS, STARTING_STACK, act, describeAction, legalActions, newTable, nextHand, positionName } from "./game"
+import { BIG_BLIND, SEATS, STARTING_STACK, act, describeAction, legalActions, newTable, nextHand, parseTableSave, positionName, resumeTable, toTableSave } from "./game"
 import type { Action, HoldemState } from "./game"
 import { allSeats, rig, seeded, stacked } from "./testing"
 
@@ -170,6 +170,38 @@ describe("from one hand to the next", () => {
     expect(showdowns).toBeGreaterThan(30)
     // Novices reach a showdown in almost every hand, which takes several seconds on a slow CI runner.
   }, 30_000)
+})
+
+describe("keeping the table between visits", () => {
+  it("saves a hand only once it has ended, and deals the same next hand from the save", () => {
+    const dealt = newTable(seeded(1))
+    expect(toTableSave(dealt)).toBeNull()
+    const ended = foldTo(dealt, -1)
+    const save = toTableSave(ended, new Date("2026-11-17T00:00:00Z"))
+    expect(save).toEqual({ version: 1, savedAt: "2026-11-17T00:00:00.000Z", handNumber: 1, button: ended.button, stacks: ended.seats.map((seat) => seat.stack) })
+
+    const read = parseTableSave(JSON.stringify(save))
+    expect(read).toEqual(save)
+    const resumed = resumeTable(read as NonNullable<typeof read>, seeded(9))
+    const next = nextHand(ended, seeded(9))
+    expect(resumed).toEqual(next)
+    expect(resumed.handNumber).toBe(2)
+    expect(resumed.button).toBe((ended.button + 1) % SEATS)
+  })
+
+  it("gives a seat below one big blind a full stack when it resumes", () => {
+    const resumed = resumeTable({ version: 1, savedAt: "", handNumber: 7, button: 0, stacks: [5, 3990, 2000, 2000, 2000, 2005] }, seeded(1))
+    expect(resumed.seats.map((seat) => seat.stack + seat.total)).toEqual([STARTING_STACK, 3990, 2000, 2000, 2000, 2005])
+    expect(resumed.handNumber).toBe(8)
+  })
+
+  it("ignores anything in storage that is not a save this version wrote", () => {
+    const good = { version: 1, savedAt: "", handNumber: 3, button: 2, stacks: [2000, 2000, 2000, 2000, 2000, 2000] }
+    expect(parseTableSave(JSON.stringify(good))).toEqual(good)
+    for (const bad of [null, "", "not json", "{}", JSON.stringify({ ...good, version: 2 }), JSON.stringify({ ...good, stacks: [2000] }), JSON.stringify({ ...good, button: 6 }), JSON.stringify({ ...good, stacks: [-1, 2000, 2000, 2000, 2000, 2000] }), JSON.stringify({ ...good, handNumber: 0 })]) {
+      expect(parseTableSave(bad)).toBeNull()
+    }
+  })
 })
 
 describe("how well the computer players play", () => {
