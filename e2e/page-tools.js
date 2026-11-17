@@ -20,22 +20,23 @@
    * test. `holes` maps a seat (0 is the player) to two cards such as "AH TD"; `board` is the five board cards in
    * the order they come. Seats not named get cards nobody asked for. Every random number after the deal comes
    * from `seed`, so the hand plays out the same way each time. Call it right before confirming 重新开始.
+   * `seats` is the size of the table on screen unless given, since 重新开始 deals a new table of the same size.
    */
-  function dealHoldem({ button = 0, holes, board, seed: after = 5 }) {
+  function dealHoldem({ button = 0, seats = Number(holdem()?.dataset.seats ?? 6), holes, board, seed: after = 5 }) {
     const id = (name) => "SHCD".indexOf(name[1]) * 13 + ("23456789TJQKA".indexOf(name[0]))
-    const want = Array.from({ length: 17 }, () => null)
+    const want = Array.from({ length: 2 * seats + 5 }, () => null)
     for (const [seat, names] of Object.entries(holes)) {
       // Hole cards go round twice, clockwise from the small blind, then the board comes off the top.
-      const from = (Number(seat) - button - 1 + 12) % 6
-      names.split(" ").forEach((name, round) => (want[round * 6 + from] = id(name)))
+      const from = (Number(seat) - button - 1 + 2 * seats) % seats
+      names.split(" ").forEach((name, round) => (want[round * seats + from] = id(name)))
     }
-    board.split(" ").forEach((name, i) => (want[12 + i] = id(name)))
+    board.split(" ").forEach((name, i) => (want[2 * seats + i] = id(name)))
     const named = new Set(want.filter((card) => card !== null))
     // Run the game's shuffle backwards: at each step pick the swap that leaves the wanted card in place.
     const deck = Array.from({ length: 52 }, (_, card) => card)
-    const draws = [(button + 0.5) / 6]
+    const draws = [(button + 0.5) / seats]
     for (let i = 51; i > 0; i--) {
-      const j = i < 17 && want[i] !== null ? deck.indexOf(want[i]) : deck.findIndex((card, at) => at <= i && !named.has(card))
+      const j = i < want.length && want[i] !== null ? deck.indexOf(want[i]) : deck.findIndex((card, at) => at <= i && !named.has(card))
       draws.push((j + 0.5) / (i + 1))
       ;[deck[i], deck[j]] = [deck[j], deck[i]]
     }
