@@ -2,6 +2,21 @@
 
 What changed in each release of 掼蛋教练. The newest release is first. Versions follow [Semantic Versioning](https://semver.org/): the middle number rises for a new feature, the last for a fix. How to cut a release is in [CONTRIBUTING.md](CONTRIBUTING.md#releases).
 
+## [0.3.0] - 2026-11-17
+
+Texas Hold'em remembers your table.
+
+### Added
+
+- Texas Hold'em keeps the table between visits, like a 掼蛋 match: everyone's chips are saved at the end of each hand, and coming back carries on from the next hand. A hand left halfway is dealt again. 重新开始 in 设置 puts everyone back to 2,000 at hand 1.
+- The home page says where you left off, for 掼蛋 and for 德州扑克, on phones too.
+- At the Hold'em table your label shows how much you have put into the hand (本手已下).
+
+### Fixed
+
+- When all-in is the only raise you can make, Hold'em shows a single 全下 button instead of five size buttons that all showed the same amount. The raise button says 全下 whenever the size is your whole stack.
+- On a phone held sideways, a large pot no longer runs into the cards on the board.
+
 ## [0.2.0] - 2026-11-17
 
 A second game, Texas Hold'em (德州扑克), and a 3D table for 掼蛋.
