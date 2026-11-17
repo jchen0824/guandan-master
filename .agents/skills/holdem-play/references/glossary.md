@@ -42,9 +42,10 @@ The Chinese the player reads, what it means, and where it comes from. Use these 
 | 跟注 N | call N | |
 | 下注 N | bet N | when nobody has bet on the street |
 | 加注到 N | raise to N | always the total, never the raise amount |
-| 全下 | all-in | |
+| 全下 N | all-in | also the raise button whenever the size is the whole stack; when the smallest legal raise is the whole stack it is the only raise shown, with no size buttons (`raiseSizes`) |
 | 最小 / 半池 / 三分之二 / 满池 | minimum raise / half the pot / two thirds of the pot / the pot | the size buttons |
 | 下一手 | next hand | |
+| 本手已下 N | the chips the player has put into this hand | the player's label, while a hand is on |
 
 ## Hands (`categoryName`, `describeHand`)
 

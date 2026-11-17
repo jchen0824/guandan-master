@@ -13,7 +13,7 @@ import type { HandCategory } from "../../holdem/hands"
 import { place } from "../place"
 import { useSaved } from "../useSaved"
 import { PlayingCard } from "./PlayingCard"
-import { nearestStep, raiseSteps } from "./sizes"
+import { nearestStep, raiseLabel, raiseSizes } from "./sizes"
 import { biggestWinner, resultLine } from "./summary"
 import { useHoldem } from "./useHoldem"
 import type { Decision } from "./useHoldem"
@@ -240,29 +240,19 @@ function Coach({ on, game, advice, decisions, outcome }: { on: boolean; game: Ho
 /** `coached` starts the raise size at the coach's amount; without the coach it starts at two thirds of the pot. */
 function Actions({ game, advice, coached, onChoose }: { game: HoldemState; advice: Advice; coached: boolean; onChoose: (action: Action) => void }) {
   const legal = legalActions(game)
-  const { minRaiseTo: least, maxRaiseTo: most } = legal
-  const steps = least === null || most === null ? [0] : raiseSteps(least, most)
-  const fit = (to: number) => nearestStep(steps, to)
-  const ofPot = (share: number) => fit(game.currentBet + (game.pot + legal.callAmount) * share)
-  const [size, setSize] = useState(() => ({ name: "", to: coached && advice.action.kind === "raise" ? advice.action.to : ofPot(2 / 3) }))
+  const options = raiseSizes(game)
+  const [size, setSize] = useState(() => ({
+    name: "",
+    to: options === null ? 0 : coached && advice.action.kind === "raise" ? nearestStep(options.steps, advice.action.to) : options.ofPot(2 / 3),
+  }))
   const amount = size.to
-  const sizes: [string, number][] =
-    least === null || most === null
-      ? []
-      : [
-          ["最小", least],
-          ["半池", ofPot(1 / 2)],
-          ["三分之二", ofPot(2 / 3)],
-          ["满池", ofPot(1)],
-          ["全下", most],
-        ]
   const raising = game.currentBet > 0 ? "加注到" : "下注"
   return (
     <div data-slot="he-actions">
-      {sizes.length > 0 ? (
+      {options && options.presets.length > 0 ? (
         <>
           <div data-slot="he-sizes" role="group" aria-label={`${raising}多少`}>
-            {sizes.map(([name, to]) => (
+            {options.presets.map(([name, to]) => (
               <Button key={name} data-variant="size" aria-pressed={size.name === name} onClick={() => setSize({ name, to })}>
                 <span>{name}</span>
                 <b>{chips(to)}</b>
@@ -275,11 +265,11 @@ function Actions({ game, advice, coached, onChoose }: { game: HoldemState; advic
             <input
               type="range"
               min={0}
-              max={steps.length - 1}
+              max={options.steps.length - 1}
               step={1}
-              value={steps.indexOf(fit(amount))}
+              value={options.steps.indexOf(nearestStep(options.steps, amount))}
               aria-valuetext={chips(amount)}
-              onChange={(event) => setSize({ name: "", to: steps[Number(event.target.value)] })}
+              onChange={(event) => setSize({ name: "", to: options.steps[Number(event.target.value)] })}
             />
           </label>
         </>
@@ -297,9 +287,9 @@ function Actions({ game, advice, coached, onChoose }: { game: HoldemState; advic
             跟注 {chips(legal.callAmount)}
           </Button>
         )}
-        {sizes.length > 0 ? (
+        {options ? (
           <Button data-variant="raise" onClick={() => onChoose({ kind: "raise", to: amount })}>
-            {raising} {chips(amount)}
+            {raiseLabel(game, amount, options.most)}
           </Button>
         ) : null}
       </div>
@@ -454,6 +444,7 @@ function Holdem({ onHome }: { onHome: () => void }) {
             <b>{game.toAct === HERO ? "轮到你" : hero.folded ? "你已弃牌" : "你"}</b> <span>{positionName(game, HERO)}</span>
           </span>
           <span data-slot="he-note">筹码 {chips(hero.stack)}</span>
+          {hero.total > 0 && !over ? <span data-slot="he-in">本手已下 {chips(hero.total)}</span> : null}
           {game.button === HERO ? <DealerMark seat={HERO} /> : null}
         </div>
         {hero.bet > 0 && !over ? (

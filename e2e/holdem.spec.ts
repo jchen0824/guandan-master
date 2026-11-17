@@ -66,7 +66,8 @@ for (const view of ["2d", "3d"] as const) {
 
 test("a raise of any size can be chosen, the minimum and all-in included", async ({ page }) => {
   await openHoldem(page)
-  const raise = page.getByRole("button", { name: /^(下注|加注到) / })
+  // The raise button, not the 全下 size button, which has the same words.
+  const raise = page.locator('[data-slot="he-buttons"] [data-variant="raise"]')
   await expect(raise).toBeVisible()
   const slider = page.getByRole("slider")
   // A phone on its side has only the slider; an upright phone only the size buttons; a wide screen both.

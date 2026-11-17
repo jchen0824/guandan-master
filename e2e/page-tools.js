@@ -74,7 +74,7 @@
         if (!a.contains(b) && !b.contains(a) && !together(a, b) && cross(box(a), box(b))) problems.push(`the label ${name(a)} overlaps ${name(b)}`)
       }
     })
-    for (const el of all('[data-slot="he-who"], [data-slot="he-note"], [data-slot="he-streets"] li, [data-slot="he-buttons"] > *, [data-slot="he-sizes"] > *')) {
+    for (const el of all('[data-slot="he-who"], [data-slot="he-note"], [data-slot="he-in"], [data-slot="he-streets"] li, [data-slot="he-buttons"] > *, [data-slot="he-sizes"] > *')) {
       if (el.scrollWidth > el.clientWidth + 1) problems.push(`the text of ${name(el)} is cut off`)
     }
     // The dealer badge sits on a corner of its seat's label, so it is inside the label and the pair check skips it.
