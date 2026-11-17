@@ -212,9 +212,11 @@ describe("players who run out of chips", () => {
     // The pot holds what was posted, so when everyone folds the big blind wins 25 and no chip is made up.
     expect(state.pot).toBe(25)
     const before = state.seats.reduce((sum, seat) => sum + seat.stack + seat.total, 0)
-    // Everyone folds, the big blind too, so the all-in small blind takes it.
+    // Once the others fold, the big blind already covers the small blind, so it has no decision and the cards
+    // decide: the small blind can win only its 5 and 5 of the big blind's.
     const folded = foldTo(state, -1)
-    expect(folded.result?.winnings[2]).toBe(25)
+    expect(folded.street).toBe("showdown")
+    expect(folded.result?.winnings[2]).toBeLessThanOrEqual(10)
     expect(state.log.slice(0, 2).map(describeAction)).toEqual(["小盲 5", "大盲 20"])
     expect(folded.seats.reduce((sum, seat) => sum + seat.stack, 0)).toBe(before)
   })
@@ -231,10 +233,18 @@ describe("players who run out of chips", () => {
     expect(short.seats[HERO].stack).toBeGreaterThanOrEqual(11990)
     // A short small blind instead: the big blind has nothing to decide either.
     expect(table([5, 11995, 0, 0, 0, 0], 5).result).not.toBeNull()
+    // Three left: the small blind posts 10 against a big blind all-in for 5. Once the button folds, the small blind
+    // already covers the big blind, so the board is dealt out instead of asking it for 10 more.
+    const three = table([2000, 2000, 5, 0, 0, 0], 5)
+    expect([three.button, three.toAct]).toEqual([HERO, HERO])
+    const folded = act(three, HERO, FOLD)
+    expect(folded.toAct).toBeNull()
+    expect(folded.street).toBe("showdown")
+    expect(folded.seats.reduce((sum, seat) => sum + seat.stack, 0)).toBe(4005)
     // Two all-in from the blinds and a third who has put nothing in: the third still decides.
-    const three = table([2000, 5, 15, 0, 0, 0], 5)
-    expect(three.toAct).toBe(HERO)
-    expect(legalActions(three).callAmount).toBe(BIG_BLIND)
+    const third = table([2000, 5, 15, 0, 0, 0], 5)
+    expect(third.toAct).toBe(HERO)
+    expect(legalActions(third).callAmount).toBe(BIG_BLIND)
   })
 
   it("ends the table for the player when they lose their last chip, or when nobody else has any", () => {

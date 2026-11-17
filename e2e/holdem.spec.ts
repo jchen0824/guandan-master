@@ -265,6 +265,18 @@ test("a big blind too short to match the small blind leaves nothing to decide, a
   await expectLayoutToHold(page, "after a hand dealt out with no decision")
 })
 
+test("folding against a covered short blind deals the board out at once", async ({ page }) => {
+  await openHoldem(page)
+  // Three left, the player on the button: 甲 posts 10, 乙 is all-in for 5. Once the player folds, 甲 already
+  // covers 乙, so there is no decision left for 甲 and the hand ends without waiting for a move.
+  await page.evaluate((key) => localStorage.setItem(key, JSON.stringify({ version: 1, savedAt: "", handNumber: 12, button: 5, stacks: [2000, 2000, 5, 0, 0, 0] })), TABLE_KEY)
+  await page.reload()
+  await page.getByRole("button", { name: "弃牌", exact: true }).click()
+  expect((await screen(page)).over).toBe(true)
+  await expect(page.getByRole("list", { name: /^公共牌：/ }).getByRole("listitem")).toHaveCount(5)
+  await expectLayoutToHold(page, "after a covered short blind is dealt out")
+})
+
 test("a player who loses every chip is out, and 再开一桌 starts a new table", async ({ page }) => {
   await openHoldem(page)
   // All-in with seven-two; 甲 calls with aces, and the board gives the player nothing.

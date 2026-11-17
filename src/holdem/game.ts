@@ -98,6 +98,15 @@ function put(seat: Seat, amount: number): Seat {
   return { ...seat, stack: seat.stack - amount, bet: seat.bet + amount, total: seat.total + amount, allIn: seat.stack === amount }
 }
 
+/**
+ * Nobody has a decision left when at most one seat can bet and it has already put in as much as any other seat still
+ * in, as when a big blind short of the small blind is all-in. The board is then dealt out, as after an all-in call.
+ */
+function nothingToDecide(seats: readonly Seat[]): boolean {
+  const able = seats.filter(canAct)
+  return able.length === 0 || (able.length === 1 && seats.every((seat) => seat.folded || seat.bet <= able[0].bet))
+}
+
 /** The first seat clockwise after `from` that still has chips. */
 function nextIn(stacks: readonly number[], from: number): number {
   return clockwise(after(from)).find((seat) => stacks[seat] > 0) ?? from
@@ -153,11 +162,7 @@ function deal(stacks: number[], button: number, handNumber: number, rng: () => n
     actedAt: nobodyYet(),
     lastRaise: BIG_BLIND,
   }
-  // Nobody has a decision when at most one seat can bet and it has already put in as much as anyone else, as when
-  // a big blind short of the small blind is all-in heads-up. The board is dealt out, as after an all-in call.
-  const able = pending.map((seat) => seats[seat])
-  const covered = able.length === 0 || (able.length === 1 && seats.every((seat) => seat.folded || seat.bet <= able[0].bet))
-  return covered ? nextStreet({ ...dealt, pending: [], toAct: null }) : dealt
+  return nothingToDecide(seats) ? nextStreet({ ...dealt, pending: [], toAct: null }) : dealt
 }
 
 /** Six seats with full stacks, the button on a seat picked by `rng`, and the first hand dealt. */
@@ -382,8 +387,8 @@ export function act(state: HoldemState, seat: number, action: Action): HoldemSta
     log: [...state.log, { ...entry, kind, amount: added, to: now.bet, allIn: now.allIn && added > 0 }],
   }
   if (seats.filter((other) => !other.folded).length === 1) return settle(next, false)
-  if (pending.length > 0) return { ...next, toAct: pending[0] }
-  return nextStreet(next)
+  if (pending.length > 0 && !nothingToDecide(seats)) return { ...next, toAct: pending[0] }
+  return nextStreet({ ...next, pending: [] })
 }
 
 export type Position = "button" | "smallBlind" | "bigBlind" | "early" | "middle" | "late" | "out"
