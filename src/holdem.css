@@ -1389,8 +1389,9 @@
 }
 
 /* A tablet held upright: the table is as wide as the screen with height to spare, and at that width eight labels
-   and their bets do not fit round the wide table. A nine-seat table stands taller there, its seats spread up and down. */
-@media (min-width: 621px) and (max-width: 899px) and (min-height: 760px) {
+   and their bets do not fit round the wide table. A nine-seat table stands taller there, its seats spread up and down.
+   Under 740px wide the upright phone's layout, below, takes over. */
+@media (min-width: 740px) and (max-width: 899px) and (min-height: 760px) {
   [data-seats="9"] [data-slot="he-table"] {
     --sh: 580;
   }
@@ -1445,8 +1446,10 @@
 }
 
 /* ---- Phone upright: a tall table as wide as the screen. The player's two cards and label lie over its
-   near edge, and the buttons run across the bottom. ---- */
-@media (max-width: 620px) {
+   near edge, and the buttons run across the bottom. Any window under 740px wide that is not a phone on its side gets
+   it too: there the wide table is drawn at --u under 0.58, where the six-seat bets reach the board, and the strip
+   under it has no room for the player's label, two cards and five size buttons side by side. ---- */
+@media (max-width: 620px), (max-width: 739px) and (min-height: 481px) {
   [data-slot="holdem"] [data-slot="button"][data-home] {
     min-width: 44px;
     padding: 0 6px;
@@ -1649,8 +1652,9 @@
   }
 }
 
-/* A short upright phone: smaller cards in hand, and the bar says only what to do and why. */
-@media (max-width: 620px) and (max-height: 620px) {
+/* A short upright phone: smaller cards in hand, and the bar says only what to do and why. A window from 621px to 739px
+   wide counts as short up to 680px high: below that, full-size cards in hand cover the pot of a nine-seat table. */
+@media (max-width: 620px) and (max-height: 620px), (min-width: 621px) and (max-width: 739px) and (min-height: 481px) and (max-height: 680px) {
   [data-slot="he-table"] {
     --coach: 78px;
   }
@@ -1861,10 +1865,13 @@
   [data-slot="he-me"] [data-slot="he-avatar"] {
     display: none;
   }
-  /* The player's line is the last line of the coach's box; what they have put in wraps onto a second one. */
+  /* The player's line is the last line of the coach's box; what they have put in wraps onto a second one. The label is
+     only as tall as its lines: at the 52px of the wider layouts the line sat centred 16px above the room the box keeps
+     for it at the bottom, and the coach's last line was drawn over it. */
   [data-slot="he-me"] {
     flex-wrap: wrap;
     row-gap: 0;
+    min-height: 0;
     max-width: calc(min(300px, 36%) - 24px);
   }
   [data-slot="holdem"]:has([data-slot="he-in"]) [data-slot="he-coach"] {

@@ -92,11 +92,14 @@ test("a raise of any size can be chosen, the minimum and all-in included", async
 })
 
 // The four test sizes have no tablet and no short desktop window. These are where seat labels ran into each
-// other or into the coach panel.
+// other or into the coach panel, and, under 740px wide, where the player's label ran into their cards and the
+// buttons' words were cut off.
 for (const [width, height] of [
   [900, 800],
   [1240, 800],
   [1280, 550],
+  [700, 700],
+  [640, 900],
 ]) {
   test(`a hand at ${width}×${height} keeps every label clear of the others`, async ({ page }, info) => {
     test.skip(info.project.name !== "desktop-chromium", "one browser is enough for a size set by the test itself")
@@ -160,6 +163,8 @@ test.describe("a nine-seat table", () => {
     [1280, 550],
     [1280, 500],
     [800, 600],
+    [700, 700],
+    [640, 900],
   ]) {
     test(`a hand at ${width}×${height} keeps every label clear of the others`, async ({ page }, info) => {
       test.skip(info.project.name !== "desktop-chromium", "one browser is enough for a size set by the test itself")
