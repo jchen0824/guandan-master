@@ -44,7 +44,8 @@ jobs:
 
   e2e:
     name: e2e
-    runs-on: ubuntu-latest
+    # Pinned, not ubuntu-latest: the screenshot tests compare pictures drawn on this image, so a new image would shift them all.
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -56,9 +57,10 @@ jobs:
         run: npm ci
       - name: Install Chromium and WebKit
         run: npx playwright install --with-deps chromium webkit
-      - name: Browser tests (desktop, phone upright, phone landscape, small phone)
+      - name: Browser tests and screenshots (desktop, phone upright, phone landscape, small phone)
         run: npm run test:e2e
-      - name: Keep the report and traces when a test fails
+      # test-results holds each picture that differs or is missing as *-actual.png: `npm run screenshots:accept -- <run id>` reads them.
+      - name: Keep the report, traces and new screenshots when a test fails
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
