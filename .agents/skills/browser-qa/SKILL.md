@@ -40,7 +40,7 @@ When you add something a player can see or press, add it to a test in `e2e/game.
 
 ### Screenshot tests
 
-`e2e/visual.spec.ts` compares a few fixed screens with saved pictures (`e2e/__screenshots__/<project>/<name>.png`). Only the CI `e2e` job compares them: locally `playwright.config.ts` sets `ignoreSnapshots`, so the steps run and the comparison is skipped. Never commit a picture made on your own machine; fonts and anti-aliasing differ from the runner's and every picture would fail.
+`e2e/visual.spec.ts` compares a few fixed screens with saved pictures (`e2e/__screenshots__/<project>/<name>.png`). Only the CI `e2e` job compares them, inside the Playwright image named in `.github/workflows/e2e.yml`: locally `playwright.config.ts` sets `ignoreSnapshots`, so the steps run and the comparison is skipped. Never commit a picture made on your own machine; fonts and anti-aliasing differ from the image's and every picture would fail.
 
 When one fails in CI, open the report and look at the expected, actual and diff pictures. If a layout bug moved it, fix the layout. If the change was meant, or the picture is missing:
 
