@@ -100,16 +100,27 @@
       '[data-slot="he-top"] > *, [data-slot="he-chip"], [data-slot="he-bet"], [data-slot="he-pot"], [data-slot="he-board"], [data-slot="he-banner"] > *, [data-slot="he-coach"], [data-slot="he-ranks"], [data-slot="he-me"], [data-slot="he-hole"], [data-slot="he-notice"], [data-slot="he-sizes"] > *, [data-slot="he-slider"], [data-slot="he-buttons"] > *',
     )
     const cross = (a, b) => Math.min(a.right, b.right) - Math.max(a.left, b.left) > 3 && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 3
-    // On a phone held sideways the player's label is the last line of the coach's box, by design.
-    const together = (a, b) => [a.dataset.slot, b.dataset.slot].sort().join() === "he-coach,he-me" && window.innerHeight <= 480
+    // On a phone held sideways the player's label is the last line of the coach's box, by design, so it is checked
+    // against each line in the box instead of the box.
+    const sideways = window.innerHeight <= 480
+    const together = (a, b) => sideways && [a.dataset.slot, b.dataset.slot].sort().join() === "he-coach,he-me"
     for (const el of labels) mustBeOnScreen(el, `the label ${name(el)}`)
     labels.forEach((a, i) => {
       for (const b of labels.slice(i + 1)) {
         if (!a.contains(b) && !b.contains(a) && !together(a, b) && cross(box(a), box(b))) problems.push(`the label ${name(a)} overlaps ${name(b)}`)
       }
     })
+    for (const me of sideways ? all('[data-slot="he-me"]') : []) {
+      for (const line of all('[data-slot="he-coach"] > *')) if (cross(box(me), box(line))) problems.push(`the label ${name(me)} overlaps the coach's line ${name(line)}`)
+    }
     for (const el of all('[data-slot="he-who"], [data-slot="he-note"], [data-slot="he-in"], [data-slot="he-streets"] li, [data-slot="he-buttons"] > *, [data-slot="he-sizes"] > *')) {
       if (el.scrollWidth > el.clientWidth + 1) problems.push(`the text of ${name(el)} is cut off`)
+    }
+    // A size button's words may wrap instead of being cut off, and 三分之 over 二 does not read as one name.
+    for (const el of all('[data-slot="he-sizes"] > * > *')) {
+      const range = document.createRange()
+      range.selectNodeContents(el)
+      if (new Set([...range.getClientRects()].map((r) => Math.round(r.top))).size > 1) problems.push(`the words ${el.textContent} on a size button wrap onto two lines`)
     }
     // The dealer badge sits on a corner of its seat's label, so it is inside the label and the pair check skips it.
     for (const badge of all('[data-slot="he-dealer"]')) {
