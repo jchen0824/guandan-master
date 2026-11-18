@@ -29,22 +29,33 @@ async function callToTheShowdown(page: Page) {
   await expect(page.getByRole("list", { name: "这一手打到哪一步" }).locator("[aria-current]")).toHaveText("摊牌")
 }
 
+/**
+ * Plays the 掼蛋 table on to the player's turn. The test clock keeps running, so a computer player who leads plays
+ * 800 ms after the deal; on the player's turn nothing moves until the player does, so the picture is the same every run.
+ */
+async function untilMyTurn(page: Page) {
+  for (let step = 0; step < 20 && !(await screen(page)).myTurn; step++) await waitForNextMove(page)
+  expect((await screen(page)).myTurn).toBe(true)
+}
+
 test("home page", async ({ page }) => {
   await openHome(page)
   await expectPicture(page, "home.png")
 })
 
-test("掼蛋, flat table, after an exact deal", async ({ page }) => {
+test("掼蛋, flat table, at the player's first turn of an exact deal", async ({ page }) => {
   await openGame(page, { view: "2d" })
   await dealExactly(page, 4)
+  await untilMyTurn(page)
   await expectPicture(page, "guandan-2d-deal.png")
 })
 
-test("掼蛋, 3D table, after an exact deal", async ({ page, browserName }) => {
+test("掼蛋, 3D table, at the player's first turn of an exact deal", async ({ page, browserName }) => {
   // Playwright's WebKit paints every 3D scene flat, so a picture from it would bless a wrong drawing.
   test.skip(browserName !== "chromium", "WebKit paints 3D scenes flat in Playwright")
   await openGame(page, { view: "3d" })
   await dealExactly(page, 4)
+  await untilMyTurn(page)
   await expectPicture(page, "guandan-3d-deal.png")
 })
 
