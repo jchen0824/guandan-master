@@ -294,6 +294,24 @@
   font-weight: 700;
 }
 
+/* The size picker on the Hold'em tile: dark, to sit on the tile, and no wider than its two choices need. */
+[data-slot="tile-body"] > [data-slot="segmented-control"] {
+  align-self: flex-start;
+  width: 180px;
+  max-width: 100%;
+  background: rgb(255 255 255 / 0.1);
+}
+
+[data-slot="tile-body"] > [data-slot="segmented-control"] [data-slot="segmented-control-item"] {
+  min-height: 44px;
+  color: var(--cream-soft);
+}
+
+[data-slot="tile-body"] > [data-slot="segmented-control"] [data-slot="segmented-control-item"][data-checked] {
+  background: var(--brass);
+  color: var(--brass-ink);
+}
+
 @media (max-width: 620px) {
   [data-slot="home"] [data-slot="button"][data-variant="enter"] {
     align-self: stretch;

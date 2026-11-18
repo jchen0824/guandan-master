@@ -33,12 +33,21 @@ export function writeTable(save: TableSave): void {
   }
 }
 
-/** Forgets the saved table and remembers the size of the one being started. */
-export function startOver(size: TableSize): void {
+/** Remembers the size of the table the player picked, for the next visit with nothing to carry on. */
+export function writeSize(size: TableSize): void {
   try {
-    localStorage.removeItem(TABLE_KEY)
     localStorage.setItem(SIZE_KEY, String(size))
   } catch {
     return
   }
+}
+
+/** Forgets the saved table and remembers the size of the one being started. */
+export function startOver(size: TableSize): void {
+  try {
+    localStorage.removeItem(TABLE_KEY)
+  } catch {
+    return
+  }
+  writeSize(size)
 }

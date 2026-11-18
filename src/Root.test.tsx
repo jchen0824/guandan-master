@@ -22,6 +22,14 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
+const SIX_SAVE = { version: 1, savedAt: "", handNumber: 12, button: 3, stacks: [3000, 0, 2000, 0, 2500, 2000] }
+
+/** The size the tile's picker shows as chosen. */
+function sizePicked(): string {
+  const checked = within(screen.getByRole("radiogroup", { name: "牌桌人数" })).getAllByRole("radio").find((item) => item.getAttribute("aria-checked") === "true")
+  return checked?.textContent ?? ""
+}
+
 describe("the home page", () => {
   it("offers both games by name and deals nothing yet", () => {
     render(<Root />)
@@ -96,20 +104,21 @@ describe("the home page", () => {
 
   it("says how big the Texas Hold'em table is that the player will walk into", () => {
     const first = render(<Root />)
-    expect(screen.getByText("6 人 · 一副牌 · 无限注")).toBeTruthy()
+    expect(screen.getByText("一副牌 · 无限注")).toBeTruthy()
+    expect(sizePicked()).toBe("6 人")
     expect(screen.getByText("和 5 个电脑对手打，从 2,000 筹码开始")).toBeTruthy()
     first.unmount()
 
     localStorage.setItem("guandan.holdem.seats", "9")
     const second = render(<Root />)
-    expect(screen.getByText("9 人 · 一副牌 · 无限注")).toBeTruthy()
+    expect(sizePicked()).toBe("9 人")
     expect(screen.getByText("和 8 个电脑对手打，从 2,000 筹码开始")).toBeTruthy()
     second.unmount()
 
     localStorage.setItem("guandan.holdem.table", JSON.stringify({ version: 1, savedAt: "", handNumber: 12, button: 3, stacks: [3000, 0, 2000, 0, 2500, 2000, 2000, 2500, 0] }))
     localStorage.removeItem("guandan.holdem.seats")
     render(<Root />)
-    expect(screen.getByText("9 人 · 一副牌 · 无限注")).toBeTruthy()
+    expect(sizePicked()).toBe("9 人")
     expect(screen.getByText("上次打到第 12 手，你有 3,000 筹码，桌上还剩 6 人，进去接着打")).toBeTruthy()
   })
 
@@ -117,5 +126,41 @@ describe("the home page", () => {
     localStorage.setItem("guandan.match", "{}")
     render(<Root />)
     expect(screen.getByText(/没打完/)).toBeTruthy()
+  })
+
+  it("picks the table size on the tile and keeps it as the preference when nothing is saved", () => {
+    const first = render(<Root />)
+    fireEvent.click(within(screen.getByRole("radiogroup", { name: "牌桌人数" })).getByRole("radio", { name: "9 人" }))
+    expect(localStorage.getItem("guandan.holdem.seats")).toBe("9")
+    expect(sizePicked()).toBe("9 人")
+    expect(screen.getByText("和 8 个电脑对手打，从 2,000 筹码开始")).toBeTruthy()
+    first.unmount()
+
+    render(<Root />)
+    expect(sizePicked()).toBe("9 人")
+    fireEvent.click(screen.getByRole("button", { name: "进入德州扑克牌桌" }))
+    expect(document.querySelectorAll('[data-slot="he-seat"]')).toHaveLength(8)
+  })
+
+  it("asks before giving up a saved table: picking the other size changes nothing until the button is pressed", () => {
+    localStorage.setItem("guandan.holdem.table", JSON.stringify(SIX_SAVE))
+    render(<Root />)
+    const group = within(screen.getByRole("radiogroup", { name: "牌桌人数" }))
+    fireEvent.click(group.getByRole("radio", { name: "9 人" }))
+    expect(screen.getByText("上次的 6 人桌打到第 12 手。换成 9 人桌会从第 1 手重新开始，上次的进度不保留")).toBeTruthy()
+    expect(localStorage.getItem("guandan.holdem.table")).not.toBeNull()
+    expect(localStorage.getItem("guandan.holdem.seats")).toBeNull()
+
+    fireEvent.click(group.getByRole("radio", { name: "6 人" }))
+    expect(screen.getByRole("button", { name: "进入德州扑克牌桌" })).toBeTruthy()
+    expect(screen.getByText(/^上次打到第 12 手/)).toBeTruthy()
+    expect(localStorage.getItem("guandan.holdem.table")).not.toBeNull()
+
+    fireEvent.click(group.getByRole("radio", { name: "9 人" }))
+    fireEvent.click(screen.getByRole("button", { name: "开一张 9 人桌" }))
+    expect(document.querySelectorAll('[data-slot="he-seat"]')).toHaveLength(8)
+    expect(document.querySelector('[data-slot="he-hand"]')?.textContent).toContain("第 1 手")
+    expect(localStorage.getItem("guandan.holdem.table")).toBeNull()
+    expect(localStorage.getItem("guandan.holdem.seats")).toBe("9")
   })
 })

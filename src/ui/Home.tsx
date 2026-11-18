@@ -1,9 +1,11 @@
+import { useState } from "react"
 import { Button } from "@ui-sdk/react/button"
+import { SegmentedControl, SegmentedControlItem } from "@ui-sdk/react/segmented-control"
 import { chips, newDeck } from "../holdem/cards"
-import { HERO } from "../holdem/game"
-import type { TableSave } from "../holdem/game"
+import { HERO, TABLE_SIZES } from "../holdem/game"
+import type { TableSave, TableSize } from "../holdem/game"
 import { REPO_URL } from "./buildInfo"
-import { savedSize, savedTable } from "./holdem/storage"
+import { savedSize, savedTable, startOver, writeSize } from "./holdem/storage"
 import { PlayingCard } from "./holdem/PlayingCard"
 
 // The GitHub mark, from GitHub's Octicons (MIT licence).
@@ -32,11 +34,67 @@ function hasUnfinishedMatch(): boolean {
   }
 }
 
+/** The Texas Hold'em tile. Picking a size here is the same choice as 牌桌人数 in 设置, made before sitting down. */
+function HoldemTile({ onPick }: { onPick: (game: GameChoice) => void }) {
+  const [save] = useState(savedTable)
+  const [size, setSize] = useState<TableSize>(() => TABLE_SIZES.find((option) => option === save?.stacks.length) ?? savedSize())
+  // A saved table keeps its own size until the player presses the button: only then is it given up.
+  const switching = save !== null && size !== save.stacks.length
+  const choose = (picked: string | null) => {
+    const chosen = TABLE_SIZES.find((option) => String(option) === picked)
+    if (!chosen) return
+    setSize(chosen)
+    if (!save) writeSize(chosen)
+  }
+  const enter = () => {
+    if (switching) startOver(size)
+    onPick("holdem")
+  }
+  const note = switching
+    ? `上次的 ${save.stacks.length} 人桌打到第 ${save.handNumber} 手。换成 ${size} 人桌会从第 1 手重新开始，上次的进度不保留`
+    : (holdemProgress(save) ?? `和 ${size - 1} 个电脑对手打，从 2,000 筹码开始`)
+  return (
+    <section data-slot="game-tile" data-game="holdem" data-new="" aria-labelledby="home-holdem">
+      <div data-slot="tile-scene" aria-hidden="true">
+        <span data-slot="tile-table" />
+        <span data-slot="tile-cards">
+          {FLOP.map((card) => (
+            <PlayingCard key={card.id} card={card} />
+          ))}
+          <span data-slot="card-gap" />
+          <span data-slot="card-gap" />
+        </span>
+      </div>
+      <span data-slot="tile-badge">新增</span>
+      <div data-slot="tile-body">
+        <h2 id="home-holdem">德州扑克</h2>
+        <p data-slot="tile-facts">一副牌 · 无限注</p>
+        <SegmentedControl aria-label="牌桌人数" value={String(size)} onValueChange={choose}>
+          {TABLE_SIZES.map((option) => (
+            <SegmentedControlItem key={option} value={String(option)}>
+              {option} 人
+            </SegmentedControlItem>
+          ))}
+        </SegmentedControl>
+        <ul data-slot="tile-skills">
+          <li>起手牌</li>
+          <li>位置</li>
+          <li>底池赔率</li>
+          <li>下注尺度</li>
+        </ul>
+        <Button data-variant="enter" aria-label={switching ? undefined : "进入德州扑克牌桌"} onClick={enter}>
+          {switching ? `开一张 ${size} 人桌` : "进入牌桌"}
+        </Button>
+        <p data-slot="tile-note" data-progress={save ? "" : undefined}>
+          {note}
+        </p>
+      </div>
+    </section>
+  )
+}
+
 /** The first screen: pick 掼蛋 or 德州扑克. */
 function Home({ onPick }: { onPick: (game: GameChoice) => void }) {
-  const save = savedTable()
-  const progress = holdemProgress(save)
-  const seats = save?.stacks.length ?? savedSize()
   return (
     <main data-slot="home">
       <header data-slot="home-top">
@@ -77,35 +135,7 @@ function Home({ onPick }: { onPick: (game: GameChoice) => void }) {
             </p>
           </div>
         </section>
-        <section data-slot="game-tile" data-game="holdem" data-new="" aria-labelledby="home-holdem">
-          <div data-slot="tile-scene" aria-hidden="true">
-            <span data-slot="tile-table" />
-            <span data-slot="tile-cards">
-              {FLOP.map((card) => (
-                <PlayingCard key={card.id} card={card} />
-              ))}
-              <span data-slot="card-gap" />
-              <span data-slot="card-gap" />
-            </span>
-          </div>
-          <span data-slot="tile-badge">新增</span>
-          <div data-slot="tile-body">
-            <h2 id="home-holdem">德州扑克</h2>
-            <p data-slot="tile-facts">{seats} 人 · 一副牌 · 无限注</p>
-            <ul data-slot="tile-skills">
-              <li>起手牌</li>
-              <li>位置</li>
-              <li>底池赔率</li>
-              <li>下注尺度</li>
-            </ul>
-            <Button data-variant="enter" aria-label="进入德州扑克牌桌" onClick={() => onPick("holdem")}>
-              进入牌桌
-            </Button>
-            <p data-slot="tile-note" data-progress={progress ? "" : undefined}>
-              {progress ?? `和 ${seats - 1} 个电脑对手打，从 2,000 筹码开始`}
-            </p>
-          </div>
-        </section>
+        <HoldemTile onPick={onPick} />
       </div>
       <p data-slot="home-note">*纯人机练习</p>
     </main>
