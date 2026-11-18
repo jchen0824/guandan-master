@@ -1861,10 +1861,13 @@
   [data-slot="he-me"] [data-slot="he-avatar"] {
     display: none;
   }
-  /* The player's line is the last line of the coach's box; what they have put in wraps onto a second one. */
+  /* The player's line is the last line of the coach's box; what they have put in wraps onto a second one. The label is
+     only as tall as its lines: at the 52px of the wider layouts the line sat centred 16px above the room the box keeps
+     for it at the bottom, and the coach's last line was drawn over it. */
   [data-slot="he-me"] {
     flex-wrap: wrap;
     row-gap: 0;
+    min-height: 0;
     max-width: calc(min(300px, 36%) - 24px);
   }
   [data-slot="holdem"]:has([data-slot="he-in"]) [data-slot="he-coach"] {
