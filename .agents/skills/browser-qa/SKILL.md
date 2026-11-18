@@ -38,6 +38,20 @@ A failure lists what is wrong in sentences, for example `the 出牌 button is pa
 
 When you add something a player can see or press, add it to a test in `e2e/game.spec.ts`, or in `e2e/holdem.spec.ts` for the home page and the Texas Hold'em table. Keep rules out of there; they belong in `src/engine/engine.test.ts` and `src/holdem`.
 
+### Screenshot tests
+
+`e2e/visual.spec.ts` compares a few fixed screens with saved pictures (`e2e/__screenshots__/<project>/<name>.png`). Only the CI `e2e` job compares them: locally `playwright.config.ts` sets `ignoreSnapshots`, so the steps run and the comparison is skipped. Never commit a picture made on your own machine; fonts and anti-aliasing differ from the runner's and every picture would fail.
+
+When one fails in CI, open the report and look at the expected, actual and diff pictures. If a layout bug moved it, fix the layout. If the change was meant, or the picture is missing:
+
+```bash
+gh run list --branch <your-branch>                       # find the failed run
+npm run screenshots:accept -- <run-id>                   # downloads its playwright-report artifact, saves each *-actual.png
+npm run screenshots:accept -- --from <folder>            # the same from a downloaded copy, or a local test-results folder
+```
+
+Open each picture it saved before you commit it. The 3D table is pictured in Chromium only, because Playwright's WebKit paints 3D scenes flat.
+
 ## Pass 2: look at it yourself
 
 Automated checks only cover what someone thought to assert. Use whatever browser tool you have (a built-in browser, Playwright MCP, Chrome DevTools).
