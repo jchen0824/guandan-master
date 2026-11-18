@@ -37,6 +37,7 @@ npm run dev
 npm run check              # 提交前跑这一条：代码检查、约定检查、测试、构建、包体积
 npm run test:e2e           # 改动界面后还要跑这一条：在真实浏览器里测试电脑和手机共四种屏幕尺寸
 npm run test:e2e:install   # 首次运行浏览器测试前执行一次：下载 Chromium 和 WebKit
+npm run screenshots:accept -- <run-id>   # CI 的截图对比失败且改动是有意的：把那次运行生成的新截图存为基准图
 npm test                   # 规则引擎和界面测试
 npm run bench              # 三档电脑玩家互相对打的基准测试
 npm run test:levels        # 德州扑克三档电脑玩家互相对打，检查难度没有退步

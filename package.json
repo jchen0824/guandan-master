@@ -21,6 +21,7 @@
     "typecheck": "tsc -b",
     "test": "vitest run",
     "test:e2e": "playwright test",
+    "screenshots:accept": "node scripts/accept-screenshots.mjs",
     "test:e2e:install": "playwright install chromium webkit",
     "bench": "VITE_BENCH=1 vitest run src/engine/benchmark.test.ts --reporter=verbose",
     "test:levels": "VITE_LEVELS=1 vitest run src/holdem/levels.test.ts --reporter=verbose",

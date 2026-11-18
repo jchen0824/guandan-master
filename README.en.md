@@ -39,6 +39,7 @@ npm run dev
 npm run check              # run this before you commit: lint, conventions, tests, build, bundle size
 npm run test:e2e           # also run this after changing the screen: browser tests at four desktop and phone sizes
 npm run test:e2e:install   # once, before the first browser test run: downloads Chromium and WebKit
+npm run screenshots:accept -- <run-id>   # after a CI screenshot comparison fails on purpose: save that run's new pictures as the baselines
 npm test                   # rules engine and game screen tests
 npm run bench              # the three bot levels playing each other
 npm run test:levels        # Texas Hold'em: the three computer player levels play each other, to catch a level that got weaker

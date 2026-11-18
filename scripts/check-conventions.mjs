@@ -124,6 +124,21 @@ if (!exists("CHANGELOG.md") || !read("CHANGELOG.md").includes(`\n## [${version}]
   )
 }
 
+// 10. The browser tests run in the Playwright image of the version the lockfile installs. Dependabot cannot update the
+// tag in the workflow, and a mismatched image has no browsers for the installed Playwright.
+const E2E = ".github/workflows/e2e.yml"
+if (exists(E2E) && exists("package-lock.json")) {
+  const locked = JSON.parse(read("package-lock.json")).packages?.["node_modules/@playwright/test"]?.version
+  const image = read(E2E).match(/mcr\.microsoft\.com\/playwright:v([\d.]+)-/)?.[1]
+  if (locked && image !== locked) {
+    fail(
+      E2E,
+      `Playwright image v${image ?? "?"} does not match @playwright/test ${locked} in package-lock.json`,
+      `Set the image to mcr.microsoft.com/playwright:v${locked}-noble. The new browsers redraw the screenshots: accept them from the first CI run with \`npm run screenshots:accept -- <run id>\`.`,
+    )
+  }
+}
+
 if (failures.length > 0) {
   for (const f of failures) console.error(`✗ ${f.file}\n    ${f.rule}\n    Fix: ${f.fix}`)
   console.error(`\n${failures.length} convention ${failures.length === 1 ? "problem" : "problems"}.`)

@@ -9,6 +9,12 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
+  // Pictures are made and compared only in CI, inside the Playwright image (.github/workflows/e2e.yml); fonts differ elsewhere.
+  // Locally the visual tests still run their steps but skip the comparison. In CI nothing is ever written to e2e/__screenshots__:
+  // a missing or changed picture fails both attempts, and `npm run screenshots:accept` takes the new ones from the run.
+  ignoreSnapshots: !process.env.CI,
+  updateSnapshots: "none",
+  snapshotPathTemplate: "{testDir}/__screenshots__/{projectName}/{arg}{ext}",
   reporter: process.env.CI ? [["list"], ["html", { open: "never" }]] : "list",
   timeout: 60_000,
   use: {
