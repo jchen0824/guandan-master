@@ -153,10 +153,13 @@ test.describe("a nine-seat table", () => {
     }
   })
 
+  // 1280×500 and 800×600 draw the table at --u of about 0.62, where bets ran into labels and the top seats into the banner.
   for (const [width, height] of [
     [900, 800],
     [1240, 800],
     [1280, 550],
+    [1280, 500],
+    [800, 600],
   ]) {
     test(`a hand at ${width}×${height} keeps every label clear of the others`, async ({ page }, info) => {
       test.skip(info.project.name !== "desktop-chromium", "one browser is enough for a size set by the test itself")
