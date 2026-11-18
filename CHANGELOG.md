@@ -2,6 +2,19 @@
 
 What changed in each release of 掼蛋教练. The newest release is first. Versions follow [Semantic Versioning](https://semver.org/): the middle number rises for a new feature, the last for a fix. How to cut a release is in [CONTRIBUTING.md](CONTRIBUTING.md#releases).
 
+## [0.5.0] - 2026-11-18
+
+Texas Hold'em at a nine-seat table.
+
+### Added
+
+- Texas Hold'em can be played at a nine-seat table as well as a six-seat one. 设置 has a new 牌桌人数 field (6 人 or 9 人); picking the other size starts a new table after a confirm. A nine-seat table has eight computer players (甲 to 辛) and three more positions, 枪口+1, 枪口+2 and 劫位, and 规则 explains the positions at both sizes. Your table keeps its size between visits, tables saved before this release still load, and the home page shows the size of the table you will walk into.
+
+### Fixed
+
+- On a phone held sideways, the Hold'em coach's advice no longer covers your own line at the bottom left.
+- In browser windows 621 to 739 pixels wide, the Hold'em table uses the narrow-screen layout: your label no longer runs into your cards, and the raise and call buttons show their full text.
+
 ## [0.4.0] - 2026-11-17
 
 The Hold'em coach shows how to work out a win rate yourself, and players who run out of chips are out.
