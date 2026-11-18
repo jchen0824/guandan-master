@@ -35,7 +35,7 @@ function hasUnfinishedMatch(): boolean {
 }
 
 /** The Texas Hold'em tile. Picking a size here is the same choice as 牌桌人数 in 设置, made before sitting down. */
-function HoldemTile({ onPick }: { onPick: (game: GameChoice) => void }) {
+function HoldemTile({ onPick }: { onPick: (game: GameChoice, seats?: TableSize) => void }) {
   const [save] = useState(savedTable)
   const [size, setSize] = useState<TableSize>(() => TABLE_SIZES.find((option) => option === save?.stacks.length) ?? savedSize())
   // A saved table keeps its own size until the player presses the button: only then is it given up.
@@ -48,7 +48,7 @@ function HoldemTile({ onPick }: { onPick: (game: GameChoice) => void }) {
   }
   const enter = () => {
     if (switching) startOver(size)
-    onPick("holdem")
+    onPick("holdem", size)
   }
   const note = switching
     ? `上次的 ${save.stacks.length} 人桌打到第 ${save.handNumber} 手。换成 ${size} 人桌会从第 1 手重新开始，上次的进度不保留`
@@ -94,7 +94,7 @@ function HoldemTile({ onPick }: { onPick: (game: GameChoice) => void }) {
 }
 
 /** The first screen: pick 掼蛋 or 德州扑克. */
-function Home({ onPick }: { onPick: (game: GameChoice) => void }) {
+function Home({ onPick }: { onPick: (game: GameChoice, seats?: TableSize) => void }) {
   return (
     <main data-slot="home">
       <header data-slot="home-top">

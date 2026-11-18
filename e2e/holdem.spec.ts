@@ -254,6 +254,22 @@ test("the home page picks nine seats before the table opens: eight opponents, an
   await expect(page.getByRole("radiogroup", { name: "牌桌人数" }).getByRole("radio", { name: "9 人", exact: true })).toHaveAttribute("aria-checked", "true")
 })
 
+test("the home page opens the size picked even when the browser refuses to store it", async ({ page }) => {
+  await openHome(page)
+  await page.evaluate(() => {
+    const refuse = () => {
+      throw new DOMException("The quota has been exceeded.", "QuotaExceededError")
+    }
+    Storage.prototype.setItem = refuse
+    Storage.prototype.removeItem = refuse
+  })
+  await page.getByRole("radiogroup", { name: "牌桌人数" }).getByRole("radio", { name: "9 人", exact: true }).click()
+  const enter = page.getByRole("button", { name: "进入德州扑克牌桌" })
+  await enter.scrollIntoViewIfNeeded()
+  await enter.click()
+  await expect(page.getByRole("region", { name: /，/ })).toHaveCount(8)
+})
+
 test("with a table in progress, the home page warns before a different size replaces it", async ({ page }) => {
   await openHoldem(page)
   await playHoldemHand(page)

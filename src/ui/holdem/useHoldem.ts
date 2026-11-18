@@ -37,19 +37,26 @@ interface View {
 
 const random = () => Math.random()
 
-/** The table to open with: the hand after the last one played, or a new table of the last size picked. */
-function opening(): HoldemState {
+/**
+ * The table to open with: the hand after the last one played, or a new table. `seats` is the size picked on the home
+ * page; a saved table of another size is not resumed. It comes from the page, not storage, which a browser may refuse.
+ */
+function opening(seats?: TableSize): HoldemState {
   const save = savedTable()
-  return save ? resumeTable(save, random) : newTable(random, savedSize())
+  if (save && (seats === undefined || save.stacks.length === seats)) return resumeTable(save, random)
+  return newTable(random, seats ?? savedSize())
 }
 
 function look(game: HoldemState, decisions: Decision[]): View {
   return { game, advice: game.toAct === HERO ? advise(game, random) : null, decisions, notice: null }
 }
 
-/** The Hold'em table as the screen needs it: the hand, the coach's advice, and the computer players moving on a timer. */
-export function useHoldem() {
-  const [view, setView] = useState<View>(() => look(opening(), []))
+/**
+ * The Hold'em table as the screen needs it: the hand, the coach's advice, and the computer players moving on a timer.
+ * `seats` is the table size picked on the home page, if the player came from there.
+ */
+export function useHoldem(seats?: TableSize) {
+  const [view, setView] = useState<View>(() => look(opening(seats), []))
   const [skill, setSkillState] = useState<BotSkill>(savedSkill)
   const { game } = view
 

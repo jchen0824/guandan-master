@@ -163,4 +163,33 @@ describe("the home page", () => {
     expect(localStorage.getItem("guandan.holdem.table")).toBeNull()
     expect(localStorage.getItem("guandan.holdem.seats")).toBe("9")
   })
+
+  describe("when the browser refuses to store anything", () => {
+    const refuseStorage = () => {
+      const refuse = () => {
+        throw new DOMException("The quota has been exceeded.", "QuotaExceededError")
+      }
+      // On the instance: the test environment's localStorage is not a Storage, so a spy on Storage.prototype misses it.
+      vi.spyOn(localStorage, "setItem").mockImplementation(refuse)
+      vi.spyOn(localStorage, "removeItem").mockImplementation(refuse)
+    }
+
+    it("opens a table of the size picked on the tile", () => {
+      refuseStorage()
+      render(<Root />)
+      fireEvent.click(within(screen.getByRole("radiogroup", { name: "牌桌人数" })).getByRole("radio", { name: "9 人" }))
+      fireEvent.click(screen.getByRole("button", { name: "进入德州扑克牌桌" }))
+      expect(document.querySelectorAll('[data-slot="he-seat"]')).toHaveLength(8)
+    })
+
+    it("replaces a saved table of the other size with a new one of the size picked", () => {
+      localStorage.setItem("guandan.holdem.table", JSON.stringify(SIX_SAVE))
+      refuseStorage()
+      render(<Root />)
+      fireEvent.click(within(screen.getByRole("radiogroup", { name: "牌桌人数" })).getByRole("radio", { name: "9 人" }))
+      fireEvent.click(screen.getByRole("button", { name: "开一张 9 人桌" }))
+      expect(document.querySelectorAll('[data-slot="he-seat"]')).toHaveLength(8)
+      expect(document.querySelector('[data-slot="he-hand"]')?.textContent).toContain("第 1 手")
+    })
+  })
 })
