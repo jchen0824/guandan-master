@@ -418,7 +418,7 @@
   --banner-y: 24;
   position: relative;
   min-height: 0;
-  container-type: size;
+  container: he-table / size;
 }
 
 [data-slot="he-stage"] {
@@ -1336,6 +1336,58 @@
   display: inline;
 }
 
+/* ---- A nine-seat table drawn small: labels without the initial, the name in the text instead, so eight of them fit
+   round the table. That is a table under 896px wide or 435px high, which takes in every phone, either way up: a phone
+   on its side leaves the table at most 434px. ---- */
+@container he-table (max-width: 895px) or (max-height: 434px) {
+  [data-seats="9"] [data-slot="he-stage"] {
+    --chip-w: 100px;
+  }
+  [data-seats="9"] [data-slot="he-chip"] {
+    grid-template-columns: 0 minmax(0, 1fr);
+    gap: 0;
+    height: 36px;
+    padding: 0 8px;
+  }
+  /* The dealer badge sits where the initial was, so the text moves over for it, except while cards are shown there. */
+  [data-seats="9"] [data-slot="he-seat"]:not([data-shown]) [data-slot="he-chip"]:has(> [data-slot="he-dealer"]) {
+    padding-left: 20px;
+  }
+  [data-seats="9"] [data-slot="he-chip"] [data-slot="he-avatar"] {
+    visibility: hidden;
+  }
+  [data-seats="9"] [data-slot="he-chip"] [data-slot="he-who"] b {
+    display: inline;
+  }
+  /* Shown cards take the left of the label; the name and the hand still fit beside them, the position does not. */
+  [data-seats="9"] [data-shown] [data-slot="he-who"] span {
+    display: none;
+  }
+}
+
+/* The stage is the table at the scale it is drawn, 1280 design pixels across, so under 896px it is drawn at --u under
+   0.7. There the seats are too close for a bet between two labels, and 甲, 丙, 己 and 辛 put theirs beside their own.
+   Phones and the upright tablet place every bet themselves, below. As a container the stage is also what the banner's
+   cqw measures on a nine-seat table, so there the banner shrinks with the table. */
+[data-seats="9"] [data-slot="he-stage"] {
+  container: he-stage / inline-size;
+}
+@container he-stage (max-width: 895px) {
+  [data-seats="9"] [data-seat="1"],
+  [data-seats="9"] [data-seat="8"] {
+    --bx: 0px;
+    --by: -36px;
+  }
+  [data-seats="9"] [data-seat="3"] {
+    --bx: -92px;
+    --by: 0px;
+  }
+  [data-seats="9"] [data-seat="6"] {
+    --bx: 92px;
+    --by: 0px;
+  }
+}
+
 /* A tablet held upright: the table is as wide as the screen with height to spare, and at that width eight labels
    and their bets do not fit round the wide table. A nine-seat table stands taller there, its seats spread up and down. */
 @media (min-width: 621px) and (max-width: 899px) and (min-height: 760px) {
@@ -1648,34 +1700,6 @@
     left: calc(50% + var(--hole) * 0.91 + 46px);
   }
   [data-slot="he-me"] [data-slot="he-who"] b {
-    display: none;
-  }
-}
-
-/* ---- A nine-seat table on a phone, either way up: labels without the initial, the name in the text instead, so
-   eight of them fit round the table. ---- */
-@media (max-width: 620px), (max-height: 480px) {
-  [data-seats="9"] [data-slot="he-table"] {
-    --chip-w: 100px;
-  }
-  [data-seats="9"] [data-slot="he-chip"] {
-    grid-template-columns: 0 minmax(0, 1fr);
-    gap: 0;
-    height: 36px;
-    padding: 0 8px;
-  }
-  /* The dealer badge sits where the initial was, so the text moves over for it, except while cards are shown there. */
-  [data-seats="9"] [data-slot="he-seat"]:not([data-shown]) [data-slot="he-chip"]:has(> [data-slot="he-dealer"]) {
-    padding-left: 20px;
-  }
-  [data-seats="9"] [data-slot="he-chip"] [data-slot="he-avatar"] {
-    visibility: hidden;
-  }
-  [data-seats="9"] [data-slot="he-chip"] [data-slot="he-who"] b {
-    display: inline;
-  }
-  /* Shown cards take the left of the label; the name and the hand still fit beside them, the position does not. */
-  [data-seats="9"] [data-shown] [data-slot="he-who"] span {
     display: none;
   }
 }
