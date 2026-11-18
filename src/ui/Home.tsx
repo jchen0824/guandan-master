@@ -1,8 +1,9 @@
 import { Button } from "@ui-sdk/react/button"
 import { chips, newDeck } from "../holdem/cards"
-import { HERO, parseTableSave, stacksOver } from "../holdem/game"
+import { HERO } from "../holdem/game"
+import type { TableSave } from "../holdem/game"
 import { REPO_URL } from "./buildInfo"
-import { TABLE_KEY } from "./holdem/useHoldem"
+import { savedSize, savedTable } from "./holdem/storage"
 import { PlayingCard } from "./holdem/PlayingCard"
 
 // The GitHub mark, from GitHub's Octicons (MIT licence).
@@ -17,16 +18,10 @@ const EIGHTS = ["S", "H", "C", "D"].map((suit) => find(8, suit))
 const FLOP = [find(13, "S"), find(9, "H"), find(4, "H")]
 
 /** Where the player left the Texas Hold'em table, in words for its tile, or null when nothing was saved. */
-function holdemProgress(): string | null {
-  try {
-    const save = parseTableSave(localStorage.getItem(TABLE_KEY))
-    // A table that has ended starts afresh, so there is nothing to carry on from.
-    if (!save || stacksOver(save.stacks)) return null
-    const left = save.stacks.filter((stack) => stack > 0).length
-    return `上次打到第 ${save.handNumber} 手，你有 ${chips(save.stacks[HERO])} 筹码${left < 6 ? `，桌上还剩 ${left} 人` : ""}，进去接着打`
-  } catch {
-    return null
-  }
+function holdemProgress(save: TableSave | null): string | null {
+  if (!save) return null
+  const left = save.stacks.filter((stack) => stack > 0).length
+  return `上次打到第 ${save.handNumber} 手，你有 ${chips(save.stacks[HERO])} 筹码${left < save.stacks.length ? `，桌上还剩 ${left} 人` : ""}，进去接着打`
 }
 
 function hasUnfinishedMatch(): boolean {
@@ -39,6 +34,9 @@ function hasUnfinishedMatch(): boolean {
 
 /** The first screen: pick 掼蛋 or 德州扑克. */
 function Home({ onPick }: { onPick: (game: GameChoice) => void }) {
+  const save = savedTable()
+  const progress = holdemProgress(save)
+  const seats = save?.stacks.length ?? savedSize()
   return (
     <main data-slot="home">
       <header data-slot="home-top">
@@ -93,7 +91,7 @@ function Home({ onPick }: { onPick: (game: GameChoice) => void }) {
           <span data-slot="tile-badge">新增</span>
           <div data-slot="tile-body">
             <h2 id="home-holdem">德州扑克</h2>
-            <p data-slot="tile-facts">6 人 · 一副牌 · 无限注</p>
+            <p data-slot="tile-facts">{seats} 人 · 一副牌 · 无限注</p>
             <ul data-slot="tile-skills">
               <li>起手牌</li>
               <li>位置</li>
@@ -103,8 +101,8 @@ function Home({ onPick }: { onPick: (game: GameChoice) => void }) {
             <Button data-variant="enter" aria-label="进入德州扑克牌桌" onClick={() => onPick("holdem")}>
               进入牌桌
             </Button>
-            <p data-slot="tile-note" data-progress={holdemProgress() ? "" : undefined}>
-              {holdemProgress() ?? "和 5 个电脑对手打，从 2,000 筹码开始"}
+            <p data-slot="tile-note" data-progress={progress ? "" : undefined}>
+              {progress ?? `和 ${seats - 1} 个电脑对手打，从 2,000 筹码开始`}
             </p>
           </div>
         </section>

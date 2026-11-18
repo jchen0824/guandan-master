@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { botAction } from "./bot"
 import { advise, gradeChoice } from "./coach"
-import { HERO, SEATS, act, legalActions, newTable, resumeTable } from "./game"
+import { HERO, act, legalActions, newTable, resumeTable } from "./game"
 import type { Action, HoldemState } from "./game"
 import { bettorsAgainst, draws, equity, potOdds, shareOfPot } from "./odds"
 import { cards, rig, seeded, stacked } from "./testing"
@@ -63,7 +63,7 @@ describe("win rates and draws", () => {
 
   it("prices an all-in call against only the chips the caller can win", () => {
     const dealt = newTable(seeded(3))
-    const bigBlind = (dealt.button + 2) % SEATS
+    const bigBlind = (dealt.button + 2) % dealt.seats.length
     let state = act(stacked(dealt, { [bigBlind]: 100 }), dealt.toAct as number, { kind: "raise", to: 1000 })
     while (state.toAct !== bigBlind) state = act(state, state.toAct as number, { kind: "fold" })
     // 80 more to call. The caller can win their own 100, 100 of the raise and the small blind's 10.
@@ -244,7 +244,7 @@ describe("the coach", () => {
 
   it("raises the best starting hands and folds the worst ones from an early seat", () => {
     const dealt = newTable(seeded(3))
-    const early = { ...dealt, button: (HERO + 3) % 6, toAct: HERO, pending: [HERO, ...dealt.pending.filter((seat) => seat !== HERO)] }
+    const early = { ...dealt, button: (HERO + 3) % dealt.seats.length, toAct: HERO, pending: [HERO, ...dealt.pending.filter((seat) => seat !== HERO)] }
     const aces = advise(rig(early, { [HERO]: "AS AH" }, "2C 7D 9H 3S 4D"), seeded(5))
     expect(aces.title).toMatch(/^建议：加注到 \d+/)
     expect(aces.reason).toContain("顶尖的起手牌")
@@ -252,6 +252,16 @@ describe("the coach", () => {
     expect(junk.action).toEqual({ kind: "fold" })
     expect(junk.reason).toContain("枪口")
     expect(junk.reminder).toMatch(/在你后面还没行动/)
+  })
+
+  it("folds a playable hand from 枪口+1 at a nine-seat table, and says which seat that is", () => {
+    const dealt = newTable(seeded(3), 9)
+    const early = { ...dealt, button: (HERO + 9 - 4) % 9, toAct: HERO, pending: [HERO, ...dealt.pending.filter((seat) => seat !== HERO)] }
+    const advice = advise(rig(early, { [HERO]: "AS TD" }, "2C 7D 9H 3S 4D"), seeded(5))
+    expect(advice.action).toEqual({ kind: "fold" })
+    expect(advice.reason).toContain("你在枪口+1，后面还有好几个人没行动")
+    const late = advise(rig({ ...early, button: HERO }, { [HERO]: "AS TD" }, "2C 7D 9H 3S 4D"), seeded(5))
+    expect(late.action).toMatchObject({ kind: "raise" })
   })
 
   it("grades a choice against its own advice", () => {

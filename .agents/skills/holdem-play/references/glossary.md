@@ -8,7 +8,9 @@ The Chinese the player reads, what it means, and where it comes from. Use these 
 | --- | --- | --- |
 | 德州扑克 | Texas Hold'em | home page, top bar |
 | 牌桌教练 | the app's name on the home page and the Hold'em top bar | `ui/Home.tsx`, `Holdem.tsx` |
-| 你 甲 乙 丙 丁 戊 | the player and the five computer players | `SEAT_NAMES` |
+| 你 甲 乙 丙 丁 戊 己 庚 辛 | the player and the computer players: 甲 to 戊 at six seats, 甲 to 辛 at nine | `SEAT_NAMES` |
+| 牌桌人数 · 6 人桌 · 9 人桌 | the table size and the two tables, picked in 设置 | `Settings` in `Holdem.tsx`, home tile |
+| 电脑对手 | the computer players as a group, in 设置; never a count that assumes one size | `Settings` |
 | 筹码 | chips; always practice chips (练习筹码) | seat labels, rules |
 | 盲注 10/20 | the blinds | top bar |
 | 第 N 手 | hand number N | top bar |
@@ -29,7 +31,9 @@ The Chinese the player reads, what it means, and where it comes from. Use these 
 | 小盲 | small blind |
 | 大盲 | big blind |
 | 枪口 | under the gun, first to act before the flop |
+| 枪口+1 · 枪口+2 | the seats after 枪口, from eight and nine players in |
 | 中位 | middle position |
+| 劫位 | hijack, the seat two before the button, from seven players in (six-handed that seat is 中位) |
 | 关位 | cutoff, the seat before the button |
 | 后位 | late position (the button or 关位), in 设置 describing 进阶; the coach says 后面行动 |
 

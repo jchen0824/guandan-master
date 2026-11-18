@@ -245,11 +245,6 @@ button {
   font-weight: 400;
 }
 
-[data-slot="seat-me"] {
-  display: flex;
-  justify-content: center;
-}
-
 [data-slot="player"] {
   display: flex;
   flex-direction: column;

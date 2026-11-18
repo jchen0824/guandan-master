@@ -136,6 +136,75 @@ test("three hands played by the coach's advice keep every label clear of the oth
   }
 })
 
+test.describe("a nine-seat table", () => {
+  test("a fresh deal fits the screen with eight opponents", async ({ page }) => {
+    await openHoldem(page, { seats: 9 })
+    await expectLayoutToHold(page, "right after a nine-seat deal")
+    await expect(page.getByRole("region", { name: /，/ })).toHaveCount(8)
+    await expect(page.getByRole("complementary", { name: "教练" })).toBeVisible()
+  })
+
+  test("three hands played by the coach's advice keep every label clear of the others", async ({ page }) => {
+    await openHoldem(page, { seats: 9 })
+    for (let hand = 1; hand <= 3; hand++) {
+      await playHoldemHand(page, (when) => expectLayoutToHold(page, `at nine seats, in hand ${hand}, ${when}`))
+      await page.getByRole("button", { name: "下一手" }).click()
+      await expect(page.locator('[data-slot="he-hand"]')).toContainText(`第 ${hand + 1} 手`)
+    }
+  })
+
+  // 1280×500 and 800×600 draw the table at --u of about 0.62, where bets ran into labels and the top seats into the banner.
+  for (const [width, height] of [
+    [900, 800],
+    [1240, 800],
+    [1280, 550],
+    [1280, 500],
+    [800, 600],
+  ]) {
+    test(`a hand at ${width}×${height} keeps every label clear of the others`, async ({ page }, info) => {
+      test.skip(info.project.name !== "desktop-chromium", "one browser is enough for a size set by the test itself")
+      await page.setViewportSize({ width, height })
+      await openHoldem(page, { seats: 9 })
+      await playHoldemHand(page, (when) => expectLayoutToHold(page, `at nine seats, ${width}×${height}, ${when}`))
+    })
+  }
+
+  test("picking 9 人 in 设置 deals eight opponents, and a reload before the hand ends keeps nine", async ({ page }) => {
+    await openHoldem(page)
+    await page.getByRole("button", { name: "设置", exact: true }).click()
+    const dialog = page.getByRole("dialog", { name: "电脑玩家水平" })
+    await dialog.getByRole("radio", { name: "9 人", exact: true }).click()
+    await expect(dialog.getByRole("radio", { name: "9 人", exact: true })).toHaveAttribute("aria-checked", "true")
+    await expectLayoutToHold(page, "with 9 人 picked in 设置")
+    await dialog.getByRole("button", { name: /^确认：换成 9 人桌/ }).click()
+    await expect(page.getByRole("dialog")).toHaveCount(0)
+    await expect(page.getByRole("region", { name: /，/ })).toHaveCount(8)
+    await expectLayoutToHold(page, "after switching to nine seats")
+    await page.reload()
+    await expect(page.locator('[data-slot="he-hand"]')).toContainText("第 1 手")
+    await expect(page.getByRole("region", { name: /，/ })).toHaveCount(8)
+    await expect(page.getByRole("region", { name: /^辛，/ })).toHaveCount(1)
+    await expectLayoutToHold(page, "after a reload at a nine-seat table")
+  })
+
+  test("an exact deal gives 辛, the eighth opponent, the cards asked for, shown at the showdown", async ({ page }) => {
+    await openHoldem(page, { seats: 9 })
+    await dealHoldemExactly(page, { holes: { 0: "KH KD", 8: "AS AC" }, board: "2C 7S 9D 4H 3S" })
+    await expect(page.getByRole("list", { name: /^你的手牌：/ })).toHaveAttribute("aria-label", /红桃K/)
+    await expect(page.getByRole("list", { name: /^你的手牌：/ })).toHaveAttribute("aria-label", /方块K/)
+    for (let step = 0; step < 200 && !(await screen(page)).over; step++) {
+      if ((await screen(page)).myTurn) await page.getByRole("button", { name: /^(过牌|跟注)/ }).click()
+      else await waitForNextMove(page)
+    }
+    await expect(page.getByRole("list", { name: "这一手打到哪一步" }).locator("[aria-current]")).toHaveText("摊牌")
+    await expect(page.getByRole("list", { name: "公共牌：梅花2、黑桃7、方块9、红桃4、黑桃3" })).toBeVisible()
+    const xin = page.getByRole("region", { name: /^辛，/ }).locator('[data-slot="he-shown"]')
+    await expect(xin).toContainText("黑桃A")
+    await expect(xin).toContainText("梅花A")
+    await expectLayoutToHold(page, "at a nine-seat showdown")
+  })
+})
+
 test("a hand that reaches a showdown shows the winner and the cards that made the hand", async ({ page }) => {
   await openHoldem(page)
   let shown = 0

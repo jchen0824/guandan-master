@@ -15,6 +15,7 @@ interface GameScreen {
 /** Exact cards for a Texas Hold'em hand: hole cards by seat (0 is the player) such as "AH TD", and the board. */
 export interface HoldemDeal {
   button?: number
+  seats?: 6 | 9
   holes: Record<number, string>
   board: string
   seed?: number
@@ -49,7 +50,7 @@ export const SAVE_AFTER_DOUBLE_WIN = JSON.stringify({
 })
 
 /** Runs in the page before the app starts. It needs the page tools, so both go into the page as one script. */
-function prepare({ seed, save, view, game }: { seed: number; save?: string; view: string; game: string }) {
+function prepare({ seed, save, view, game, seats }: { seed: number; save?: string; view: string; game: string; seats?: number }) {
   window.guandanQa.seed(seed)
   if (game !== "home" && !sessionStorage.getItem("qa-game-used")) {
     localStorage.setItem("guandan.game", game)
@@ -62,6 +63,10 @@ function prepare({ seed, save, view, game }: { seed: number; save?: string; view
   if (save && !sessionStorage.getItem("qa-save-used")) {
     localStorage.setItem("guandan.match", save)
     sessionStorage.setItem("qa-save-used", "1")
+  }
+  if (seats && !sessionStorage.getItem("qa-seats-used")) {
+    localStorage.setItem("guandan.holdem.seats", String(seats))
+    sessionStorage.setItem("qa-seats-used", "1")
   }
 }
 
@@ -79,15 +84,15 @@ export async function openHome(page: Page, options: { seed?: number; save?: stri
 }
 
 /** Opens the Texas Hold'em table with a fixed deal and a clock the test controls. */
-export async function openHoldem(page: Page, options: { seed?: number } = {}) {
+export async function openHoldem(page: Page, options: { seed?: number; seats?: 6 | 9 } = {}) {
   await open(page, { ...options, game: "holdem" })
   await expect(page.getByRole("list", { name: /^你的手牌/ })).toBeVisible()
 }
 
-async function open(page: Page, options: { seed?: number; save?: string; view?: string; game: "guandan" | "holdem" | "home" }) {
+async function open(page: Page, options: { seed?: number; save?: string; view?: string; seats?: number; game: "guandan" | "holdem" | "home" }) {
   await page.clock.install()
   // One script, not two: Playwright does not promise the order in which separate init scripts run.
-  const settings = JSON.stringify({ seed: options.seed ?? 5, save: options.save, view: options.view ?? "2d", game: options.game })
+  const settings = JSON.stringify({ seed: options.seed ?? 5, save: options.save, view: options.view ?? "2d", game: options.game, seats: options.seats })
   await page.addInitScript({ content: `${PAGE_TOOLS}\n;(${prepare.toString()})(${settings});` })
   await page.goto("/")
 }

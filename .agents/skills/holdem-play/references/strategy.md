@@ -36,7 +36,7 @@ Where the coach is a bar (narrower than 1240px, or a phone on its side), the bar
 
 Shown only on the player's turn, with the coach on. The panel shows what just happened, the win rate a call needs, the player's own win rate (`shareOfPot`, 400 deals), after the flop the working above, the reason, and a reminder when players behind have still to act.
 
-**Before the flop** (`beforeTheFlop`), by tier and position. Late means the button or 关位; the blinds are 小盲 and 大盲. Heads-up the button is still played as late, but the coach says it acts first before the flop and last after it, since it is also the small blind.
+**Before the flop** (`beforeTheFlop`), by tier and the seat's group (`positionGroup`). Late means the button or 关位; the blinds are 小盲 and 大盲. At nine seats the three 枪口 seats are early and 劫位 is middle, so the coach advises them as it does 枪口 and 中位 at six: with nobody in yet, it folds a tier 1 hand from any of them. Heads-up the button is still played as late, but the coach says it acts first before the flop and last after it, since it is also the small blind.
 
 - Nobody has raised: tier 2–3 raises to three big blinds plus whatever the limpers put in; tier 1 raises to three big blinds from late position, checks in the big blind, calls in the small blind, and otherwise folds; tier 0 checks when it can and folds otherwise.
 - Someone has raised (the price is the call in big blinds): tier 3 re-raises to three times the bet; tier 2 calls up to 5 big blinds; tier 1 calls up to 3 big blinds from late position or the blinds; anything else folds, or checks when it can.
@@ -61,7 +61,7 @@ The note under a grade is the coach's reason for its own advice, so it must make
 
 ## The computer players (`botAction`)
 
-Each seat also has a fixed looseness (`LOOSENESS`): 乙 and 戊 play a little looser, 丁 a little tighter, so the five do not all play alike. The level from 设置 (`BotSkill`, kept under `guandan.holdem.skill`) applies to all five.
+Each seat also has a fixed looseness (`LOOSENESS`), so the computer players do not all play alike: 乙, 戊 and 辛 play a little looser, 丁 and 庚 a little tighter. Six-handed, only 甲 to 戊 sit. The level from 设置 (`BotSkill`, kept under `guandan.holdem.skill`) applies to all of them.
 
 | | 新手 `novice` | 普通 `basic` (default) | 进阶 `advanced` |
 | --- | --- | --- | --- |
@@ -72,7 +72,7 @@ Each seat also has a fixed looseness (`LOOSENESS`): 乙 and 戊 play a little lo
 | Bluffs against one or two players | never | sometimes (10%) | sometimes (10%) |
 | Raises a bet with | 90% | 80% | 75% |
 
-`npm run test:levels` keeps the order honest (numbers from November 2026): 普通 wins about 24 and 进阶 about 31 big blinds per 100 hands from 新手, played on the same cards both ways round; and in 600 real spots facing a bet, the wrong calls or folds were 新手 53, 普通 21, 进阶 2 of 508 clear ones. 进阶's edge over 普通 at the table is real but small (about 5 big blinds per 100 hands) and too noisy to assert, which is why the test also counts mistakes. When this measuring was first done, 进阶 bluffed three times as often and lost chips to 普通: more aggression is not more skill.
+`npm run test:levels` keeps the order honest at both table sizes (numbers from November 2026). At six seats 普通 wins about 24 and 进阶 about 31 big blinds per 100 hands from 新手, played on the same cards both ways round; and in 600 real spots facing a bet, the wrong calls or folds were 新手 53, 普通 21, 进阶 2 of 508 clear ones. At nine seats the edges are larger, about 41 and 50, and the wrong calls or folds were 新手 59, 普通 13, 进阶 0 of 529. The thresholds are the same at both sizes. 进阶's edge over 普通 at the table is real but small (about 5 big blinds per 100 hands) and too noisy to assert, which is why the test also counts mistakes. When this measuring was first done, 进阶 bluffed three times as often and lost chips to 普通: more aggression is not more skill.
 
 ## What the coach does not do
 

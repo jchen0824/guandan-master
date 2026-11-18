@@ -9,7 +9,7 @@ This trainer teaches beginners. A computer player that plays badly on purpose is
 
 ## The game in one paragraph
 
-Six seats: the player and five computer players (甲 乙 丙 丁 戊), no-limit, blinds 10/20, practice chips. Each player gets two cards of their own; five shared cards come face up in three steps (the flop, the turn, the river), with a round of betting before the flop and after each step. In a round you may fold, check when nobody has bet, call, or bet or raise. A hand ends when everyone else has folded, or at the showdown after the river, where the best five of each player's seven cards wins. Chips a player could not match go into side pots, which only the players who matched them can win.
+Six or nine seats, picked in 设置: the player and five computer players (甲 乙 丙 丁 戊), or eight (甲 to 辛). No-limit, blinds 10/20, practice chips. Each player gets two cards of their own; five shared cards come face up in three steps (the flop, the turn, the river), with a round of betting before the flop and after each step. In a round you may fold, check when nobody has bet, call, or bet or raise. A hand ends when everyone else has folded, or at the showdown after the river, where the best five of each player's seven cards wins. Chips a player could not match go into side pots, which only the players who matched them can win.
 
 Two things beginners get wrong, and the coach is built around them:
 
@@ -26,7 +26,7 @@ Two things beginners get wrong, and the coach is built around them:
 
 ## Things you must not break
 
-- **Seats.** 0 is the player (`HERO`), 1–5 are 甲 to 戊 (`SEAT_NAMES`). Positions are counted from the button: 庄位, 小盲, 大盲, 枪口, 中位, 关位 (`positionName`).
+- **Seats.** 0 is the player (`HERO`), 1–5 are 甲 to 戊 and, at nine, 6–8 are 己 庚 辛 (`SEAT_NAMES`). The table size is `seats.length` and is stored nowhere else; never write 6 or 9 into a rule. Positions are counted from the button among the seats still in, from one table in `game.ts`: six-handed 庄位, 小盲, 大盲, 枪口, 中位, 关位, and nine-handed 枪口+1, 枪口+2 and 劫位 as well (`positionName`). Strategy reads the group, early, middle, late or blinds (`positionGroup`), never the name.
 - **One way to move.** `act(state, seat, action)` is the only thing that changes a hand, and `legalActions(state)` says what is allowed. The screen, the computer players and the tests all go through them. Never let the UI work out what is legal on its own.
 - **No peeking.** The coach and the computer players see their own two cards, the board and the betting. A win rate deals the unknown cards at random from what that player cannot see (`odds.ts`), never from the other players' real cards.
 - **Deterministic.** Every function that needs chance takes an `rng`; tests pass `seeded(n)`. `Math.random()` is banned in `src/holdem` (`npm run check:conventions`).
