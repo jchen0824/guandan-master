@@ -38,8 +38,9 @@ interface View {
 const random = () => Math.random()
 
 /**
- * The table to open with: the hand after the last one played, or a new table. `seats` is the size picked on the home
- * page; a saved table of another size is not resumed. It comes from the page, not storage, which a browser may refuse.
+ * The table to open with: the hand being played when the player left, the hand after the last one played, or a new
+ * table. `seats` is the size picked on the home page; a saved table of another size is not resumed. It comes from the
+ * page, not storage, which a browser may refuse.
  */
 function opening(seats?: TableSize): HoldemState {
   const save = savedTable()
@@ -69,11 +70,9 @@ export function useHoldem(seats?: TableSize) {
     return () => clearTimeout(timer)
   }, [game, skill])
 
-  // Every hand that ends is saved, as on the 掼蛋 table, so the next visit carries on from the next hand.
-  useEffect(() => {
-    const save = toTableSave(game)
-    if (save) writeTable(save)
-  }, [game])
+  // Saved after every move and every deal, so leaving mid-hand and coming back carries on with the same cards, never
+  // a new deal. The coach's grades for the hand are not saved.
+  useEffect(() => writeTable(toTableSave(game)), [game])
 
   /** The computer players' level. It takes effect from their next move. */
   const setSkill = (next: BotSkill) => {

@@ -261,7 +261,7 @@ describe("the Texas Hold'em table", () => {
     const first = render(<Holdem onHome={() => {}} />)
     playHand()
     const saved = JSON.parse(localStorage.getItem("guandan.holdem.table") ?? "null")
-    expect(saved).toMatchObject({ version: 1, handNumber: 1 })
+    expect(saved).toMatchObject({ version: 2, handNumber: 1 })
     first.unmount()
 
     render(<Holdem onHome={() => {}} />)
@@ -275,7 +275,34 @@ describe("the Texas Hold'em table", () => {
     fireEvent.click(screen.getByRole("button", { name: "重新开始" }))
     fireEvent.click(screen.getByRole("button", { name: /^确认：所有人回到 2,000 筹码/ }))
     expect(document.querySelector('[data-slot="he-hand"]')?.textContent).toContain("第 1 手")
-    expect(localStorage.getItem("guandan.holdem.table")).toBeNull()
+    expect(JSON.parse(localStorage.getItem("guandan.holdem.table") ?? "null")).toMatchObject({ handNumber: 1, stacks: [2000, 2000, 2000, 2000, 2000, 2000] })
+  })
+
+  it("brings back the hand being played, with the same cards and board, when the player leaves and comes back", () => {
+    const first = render(<Holdem onHome={() => {}} />)
+    for (let step = 0; step < 20 && !(button("弃牌") && screen.queryByLabelText(/^公共牌：/)); step++) {
+      waitForButtons()
+      const call = action(/^(过牌|跟注)/)
+      if (!call) throw new Error("the hand ended before the flop")
+      if (!screen.queryByLabelText(/^公共牌：/)) fireEvent.click(call)
+    }
+    const table = () => ({
+      hand: document.querySelector('[data-slot="he-hand"]')?.textContent,
+      mine: screen.getByLabelText(/^你的手牌：/).getAttribute("aria-label"),
+      board: screen.getByLabelText(/^公共牌：/).getAttribute("aria-label"),
+      pot: screen.getByText("底池").textContent,
+    })
+    const left = table()
+    expect(left.board?.split("、")).toHaveLength(3)
+    // What the screen wrote to storage keeps the hand without naming a card.
+    const saved = localStorage.getItem("guandan.holdem.table") ?? ""
+    expect(saved).toMatch(/"order":"[0-9a-z]+"/)
+    expect(saved).not.toMatch(/"(deck|hole|board|cards?|suit|rank)"/)
+    first.unmount()
+
+    render(<Holdem onHome={() => {}} />)
+    expect(table()).toEqual(left)
+    expect(action(/^(过牌|跟注)/)).toBeTruthy()
   })
 
   it("shows a player who is out of chips as 出局, without cards, and plays on without them", () => {

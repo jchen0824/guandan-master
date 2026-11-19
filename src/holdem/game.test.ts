@@ -365,12 +365,10 @@ describe("players who run out of chips", () => {
 })
 
 describe("keeping the table between visits", () => {
-  it("saves a hand only once it has ended, and deals the same next hand from the save", () => {
-    const dealt = newTable(seeded(1))
-    expect(toTableSave(dealt)).toBeNull()
-    const ended = foldTo(dealt, -1)
+  it("saves a hand that has ended without its cards, and deals the same next hand from the save", () => {
+    const ended = foldTo(newTable(seeded(1)), -1)
     const save = toTableSave(ended, new Date("2026-11-17T00:00:00Z"))
-    expect(save).toEqual({ version: 1, savedAt: "2026-11-17T00:00:00.000Z", handNumber: 1, button: ended.button, stacks: ended.seats.map((seat) => seat.stack) })
+    expect(save).toEqual({ version: 2, savedAt: "2026-11-17T00:00:00.000Z", handNumber: 1, button: ended.button, stacks: ended.seats.map((seat) => seat.stack) })
 
     const read = parseTableSave(JSON.stringify(save))
     expect(read).toEqual(save)
@@ -381,10 +379,65 @@ describe("keeping the table between visits", () => {
     expect(resumed.button).toBe((ended.button + 1) % ended.seats.length)
   })
 
+  it("saves a hand being played and brings it back exactly as it was: cards, board, deck, bets and the seat to act", () => {
+    const starts = [newTable(seeded(3)), rig(newTable(seeded(4), 9), { [HERO]: "AH AS", 5: "KD KC" }, "QD 9S 4H 3C JD"), table([2000, 0, 2500, 1500, 2000, 2000], 3)]
+    for (const start of starts) {
+      let state = start
+      while (state.street === "preflop") state = act(state, state.toAct as number, legalActions(state).canCheck ? CHECK : CALL)
+      state = act(state, state.toAct as number, raise(60))
+      expect(state).toMatchObject({ street: "flop", currentBet: 60, result: null })
+
+      const save = toTableSave(state)
+      expect(save).toMatchObject({ version: 2, handNumber: start.handNumber, button: start.button, stacks: start.seats.map((seat) => seat.stack + seat.total) })
+      const read = parseTableSave(JSON.stringify(save))
+      expect(read).toEqual(save)
+      // The deal comes from the save, so no random number is drawn.
+      expect(resumeTable(read as NonNullable<typeof read>, () => Number.NaN)).toEqual(state)
+    }
+  })
+
+  it("keeps a hand in progress without naming a card, so browser storage shows no one's cards", () => {
+    let state = newTable(seeded(3))
+    while (state.street === "preflop") state = act(state, state.toAct as number, legalActions(state).canCheck ? CHECK : CALL)
+    const text = JSON.stringify(toTableSave(state))
+    expect(text).not.toMatch(/"(deck|hole|board|cards?)"/)
+    expect(text).toMatch(/"order":"[0-9a-z]+"/)
+    expect(resumeTable(parseTableSave(text) as NonNullable<ReturnType<typeof parseTableSave>>, seeded(9)).seats[HERO].hole).toEqual(state.seats[HERO].hole)
+  })
+
+  it("deals a saved hand afresh, from the stacks and button it started with, when the hand in the save does not hold together", () => {
+    let state = newTable(seeded(3))
+    while (state.street === "preflop") state = act(state, state.toAct as number, legalActions(state).canCheck ? CHECK : CALL)
+    const save = toTableSave(state)
+    const hand = save.hand as NonNullable<typeof save.hand>
+    const outButton = (save.button + 1) % 6
+    for (const bad of [
+      // Past the last of the 52! orders, not base 36, not text, or missing.
+      { ...save, hand: { ...hand, order: "z".repeat(60) } },
+      { ...save, hand: { ...hand, order: "NOT-A-DECK" } },
+      { ...save, hand: { ...hand, order: 12345 } },
+      { ...save, hand: { actions: hand.actions } },
+      { ...save, hand: { ...hand, actions: [...hand.actions, raise(5)] } },
+      { ...save, hand: { ...hand, actions: [...hand.actions, { kind: "shove" }] } },
+      // Folding everyone round ends the hand, and an ended hand is never saved with its cards.
+      { ...save, hand: { ...hand, actions: [...hand.actions, ...Array.from({ length: 9 }, () => FOLD)] } },
+      { ...save, button: outButton, stacks: save.stacks.map((stack, seat) => (seat === outButton ? 0 : stack)) },
+    ]) {
+      const read = parseTableSave(JSON.stringify(bad))
+      expect(read).toMatchObject({ handNumber: 1, hand: null })
+      const again = resumeTable(read as NonNullable<typeof read>, seeded(9))
+      expect(again).toMatchObject({ handNumber: 1, street: "preflop" })
+      expect(again.seats.map((seat) => seat.stack + seat.total)).toEqual(bad.stacks)
+      expect(again.log.every((entry) => entry.kind === "blind")).toBe(true)
+    }
+    // A table size that is not one is no save at all, with or without a hand.
+    expect(parseTableSave(JSON.stringify({ ...save, stacks: [...save.stacks, 2000] }))).toBeNull()
+  })
+
   it("ignores anything in storage that is not a save this version wrote", () => {
     const good = { version: 1, savedAt: "", handNumber: 3, button: 2, stacks: [2000, 2000, 2000, 2000, 2000, 2000] }
     expect(parseTableSave(JSON.stringify(good))).toEqual(good)
-    for (const bad of [null, "", "not json", "{}", JSON.stringify({ ...good, version: 2 }), JSON.stringify({ ...good, stacks: [2000] }), JSON.stringify({ ...good, button: 6 }), JSON.stringify({ ...good, stacks: [-1, 2000, 2000, 2000, 2000, 2000] }), JSON.stringify({ ...good, handNumber: 0 })]) {
+    for (const bad of [null, "", "not json", "{}", JSON.stringify({ ...good, version: 3 }), JSON.stringify({ ...good, stacks: [2000] }), JSON.stringify({ ...good, button: 6 }), JSON.stringify({ ...good, stacks: [-1, 2000, 2000, 2000, 2000, 2000] }), JSON.stringify({ ...good, handNumber: 0 })]) {
       expect(parseTableSave(bad)).toBeNull()
     }
   })

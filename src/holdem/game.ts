@@ -122,19 +122,24 @@ function newStreet(seat: Seat): Seat {
   return { ...seat, bet: 0 }
 }
 
-function deal(stacks: number[], button: number, handNumber: number, rng: () => number): HoldemState {
+/** The seats still in, clockwise from the small blind, which is where the cards start. */
+function dealingOrder(seats: readonly Pick<Seat, "out">[], button: number): number[] {
+  const playing = clockwise(button, seats.length).filter((seat) => !seats[seat].out)
+  // Heads-up, the button posts the small blind and acts first before the flop.
+  return playing.length === 2 ? playing : [...playing.slice(1), playing[0]]
+}
+
+/** Deals a hand with the cards coming off `deck` in its order. */
+function deal(stacks: readonly number[], button: number, handNumber: number, deck: readonly Card[]): HoldemState {
   if (stacks.filter((stack) => stack > 0).length < 2) throw new Error("这一桌已经结束。")
-  const deck = shuffle(newDeck(), rng)
   // A seat with no chips is out: no cards, no blinds, no turn. The button is always on a seat still in.
   const seats: Seat[] = stacks.map((stack) => ({ stack, hole: [], folded: stack === 0, out: stack === 0, allIn: false, bet: 0, total: 0 }))
   const size = stacks.length
-  const playing = clockwise(button, size).filter((seat) => !seats[seat].out)
-  // Heads-up, the button posts the small blind and acts first before the flop.
-  const smallBlind = playing.length === 2 ? playing[0] : playing[1]
-  const bigBlind = playing.length === 2 ? playing[1] : playing[2]
+  const order = dealingOrder(seats, button)
+  const [smallBlind, bigBlind] = order
   let next = 0
   for (let round = 0; round < 2; round++) {
-    for (const seat of clockwise(smallBlind, size).filter((other) => !seats[other].out)) seats[seat] = { ...seats[seat], hole: [...seats[seat].hole, deck[next++]] }
+    for (const seat of order) seats[seat] = { ...seats[seat], hole: [...seats[seat].hole, deck[next++]] }
   }
   const log: LogEntry[] = []
   for (const [seat, amount] of [
@@ -177,7 +182,7 @@ export function newTable(rng: () => number, size: TableSize = 6): HoldemState {
     Array.from({ length: size }, () => STARTING_STACK),
     Math.floor(rng() * size),
     1,
-    rng,
+    shuffle(newDeck(), rng),
   )
 }
 
@@ -192,7 +197,7 @@ export function tableSize(state: HoldemState): TableSize {
  */
 export function nextHand(state: HoldemState, rng: () => number): HoldemState {
   const stacks = state.seats.map((seat) => seat.stack)
-  return deal(stacks, nextIn(stacks, state.button), state.handNumber + 1, rng)
+  return deal(stacks, nextIn(stacks, state.button), state.handNumber + 1, shuffle(newDeck(), rng))
 }
 
 /** How the table ended for the player: out of chips, or the only one left with any. Null while it goes on. */
@@ -213,30 +218,123 @@ export function knockedOut(state: HoldemState): number[] {
 }
 
 /**
- * What is kept between visits: the stacks, the button and the hand number at the end of a hand. No cards are
- * kept, so a hand left halfway is dealt afresh, from the stacks it started with.
+ * A hand being played, as a save keeps it: the order of the deck it was dealt from, written as one number (`order`),
+ * and every action after the blinds. The save names no card, so browser storage shows no one's cards.
+ */
+export interface SavedHand {
+  order: string
+  actions: Action[]
+}
+
+/**
+ * What is kept between visits. Between hands: the stacks, the button and the number of the hand that ended. During a
+ * hand: the stacks it started with, its button and number, and the hand itself, so a visit carries on with the same
+ * cards rather than dealing new ones. `hand` is null when a hand was being played but its save could not be read: that
+ * hand is then dealt afresh. Version 1 saves were only made between hands.
  */
 export interface TableSave {
-  version: 1
+  version: 1 | 2
   savedAt: string
   handNumber: number
   button: number
   stacks: number[]
+  hand?: SavedHand | null
 }
 
-/** The save for a hand that has ended, or null while it is still being played. */
-export function toTableSave(state: HoldemState, now: Date = new Date()): TableSave | null {
-  if (state.result === null) return null
-  return { version: 1, savedAt: now.toISOString(), handNumber: state.handNumber, button: state.button, stacks: state.seats.map((seat) => seat.stack) }
+const CARDS = newDeck()
+
+/** The cards in the order `deal` took them: two rounds of hole cards from the small blind, then the board, then the rest. */
+function dealtDeck(state: HoldemState): Card[] {
+  const order = dealingOrder(state.seats, state.button)
+  return [...order.map((seat) => state.seats[seat].hole[0]), ...order.map((seat) => state.seats[seat].hole[1]), ...state.board, ...state.deck]
 }
 
-/** A save read back from storage, or null when there is none or it is not one this version wrote. */
+/**
+ * The deck's order as one number: its rank among the 52! orders (a Lehmer code), in base 36. Reading the cards back
+ * takes this code, not a glance at storage.
+ */
+function orderNumber(deck: readonly Card[]): string {
+  const rest = CARDS.map((card) => card.id)
+  let rank = BigInt(0)
+  for (const card of deck) {
+    const at = rest.indexOf(card.id)
+    rank = rank * BigInt(rest.length) + BigInt(at)
+    rest.splice(at, 1)
+  }
+  return rank.toString(36)
+}
+
+/** The deck an `orderNumber` stands for, or null when the text is not one. */
+function deckOf(order: unknown): Card[] | null {
+  if (typeof order !== "string" || !/^[0-9a-z]{1,60}$/.test(order)) return null
+  let rank = BigInt(0)
+  for (const digit of order) rank = rank * BigInt(36) + BigInt(parseInt(digit, 36))
+  const picks: number[] = []
+  for (let left = 1; left <= CARDS.length; left++) {
+    picks.unshift(Number(rank % BigInt(left)))
+    rank /= BigInt(left)
+  }
+  if (rank !== BigInt(0)) return null
+  const rest = CARDS.slice()
+  return picks.map((at) => rest.splice(at, 1)[0])
+}
+
+function actionOf(entry: LogEntry): Action[] {
+  if (entry.kind === "blind") return []
+  if (entry.kind === "bet" || entry.kind === "raise") return [{ kind: "raise", to: entry.to }]
+  return [{ kind: entry.kind }]
+}
+
+/** The save for the table as it stands, between hands or during one. */
+export function toTableSave(state: HoldemState, now: Date = new Date()): TableSave {
+  const table = { version: 2 as const, savedAt: now.toISOString(), handNumber: state.handNumber, button: state.button }
+  if (state.result) return { ...table, stacks: state.seats.map((seat) => seat.stack) }
+  return {
+    ...table,
+    stacks: state.seats.map((seat) => seat.stack + seat.total),
+    hand: { order: orderNumber(dealtDeck(state)), actions: state.log.flatMap(actionOf) },
+  }
+}
+
+function isAction(data: unknown): data is Action {
+  if (typeof data !== "object" || data === null || !("kind" in data)) return false
+  if (data.kind === "raise") return "to" in data && Number.isInteger(data.to)
+  return data.kind === "fold" || data.kind === "check" || data.kind === "call"
+}
+
+/**
+ * The saved hand dealt again from its deck and played through its actions by the rules, or null when it is not a
+ * hand still being played: an order that is not a number of a deck, a button on a seat that is out, an action the
+ * rules refuse, or a hand that ends.
+ */
+function replay(save: Omit<TableSave, "hand">, hand: unknown): HoldemState | null {
+  if (typeof hand !== "object" || hand === null || !("order" in hand) || !("actions" in hand)) return null
+  const deck = deckOf(hand.order)
+  const { actions } = hand
+  if (!deck || !Array.isArray(actions) || !actions.every(isAction)) return null
+  if (save.stacks[save.button] === 0) return null
+  try {
+    let state = deal(save.stacks, save.button, save.handNumber, deck)
+    for (const action of actions) {
+      if (state.toAct === null) return null
+      state = act(state, state.toAct, action)
+    }
+    return state.result === null ? state : null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * A save read back from storage, or null when there is none or it is not one this version can read. A hand in the
+ * save that does not replay by the rules comes back as `hand: null`, so the table is kept and that hand dealt afresh.
+ */
 export function parseTableSave(text: string | null): TableSave | null {
   if (!text) return null
   try {
     const data = JSON.parse(text)
     const valid =
-      data?.version === 1 &&
+      (data?.version === 1 || data?.version === 2) &&
       typeof data.savedAt === "string" &&
       Number.isInteger(data.handNumber) &&
       data.handNumber >= 1 &&
@@ -246,15 +344,22 @@ export function parseTableSave(text: string | null): TableSave | null {
       data.button < data.stacks.length &&
       TABLE_SIZES.some((size) => size === data.stacks.length) &&
       data.stacks.every((stack: unknown) => Number.isInteger(stack) && (stack as number) >= 0)
-    return valid ? { version: 1, savedAt: data.savedAt, handNumber: data.handNumber, button: data.button, stacks: data.stacks } : null
+    if (!valid) return null
+    const table: TableSave = { version: data.version, savedAt: data.savedAt, handNumber: data.handNumber, button: data.button, stacks: data.stacks }
+    if (data.version === 1 || data.hand === undefined) return table
+    return { ...table, hand: replay(table, data.hand) ? { order: data.hand.order, actions: data.hand.actions } : null }
   } catch {
     return null
   }
 }
 
-/** The next hand after a saved one, as `nextHand` would have dealt it. */
+/** The hand a save was taken in, as it stood; or, for a save between hands, the next hand as `nextHand` would deal it. */
 export function resumeTable(save: TableSave, rng: () => number): HoldemState {
-  return deal(save.stacks, nextIn(save.stacks, save.button), save.handNumber + 1, rng)
+  if (save.hand === undefined) return deal(save.stacks, nextIn(save.stacks, save.button), save.handNumber + 1, shuffle(newDeck(), rng))
+  const hand = save.hand && replay(save, save.hand)
+  if (hand) return hand
+  const button = save.stacks[save.button] > 0 ? save.button : nextIn(save.stacks, save.button)
+  return deal(save.stacks, button, save.handNumber, shuffle(newDeck(), rng))
 }
 
 /** What the seat to act may do. The raise fields are null when it cannot raise. */

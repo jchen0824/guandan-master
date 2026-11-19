@@ -160,7 +160,7 @@ describe("the home page", () => {
     fireEvent.click(screen.getByRole("button", { name: "开一张 9 人桌" }))
     expect(document.querySelectorAll('[data-slot="he-seat"]')).toHaveLength(8)
     expect(document.querySelector('[data-slot="he-hand"]')?.textContent).toContain("第 1 手")
-    expect(localStorage.getItem("guandan.holdem.table")).toBeNull()
+    expect(JSON.parse(localStorage.getItem("guandan.holdem.table") ?? "null")).toMatchObject({ handNumber: 1, stacks: Array.from({ length: 9 }, () => 2000) })
     expect(localStorage.getItem("guandan.holdem.seats")).toBe("9")
   })
 

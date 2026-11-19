@@ -437,7 +437,7 @@ function Settings({ skill, onSkill, size, onRestart }: { skill: BotSkill; onSkil
         </Field>
         <Field>
           <FieldLabel>存档</FieldLabel>
-          <FieldDescription>每打完一手，全桌的筹码都会保存在这个浏览器里，下次打开从下一手接着打。没打完的一手不保存。</FieldDescription>
+          <FieldDescription>全桌的筹码和正在打的这一手都保存在这个浏览器里。下次打开从离开的地方接着打，牌不会重发。</FieldDescription>
           {pickedSize !== null ? (
             <DialogClose data-variant="danger" action={() => onRestart(pickedSize)}>
               确认：换成 {pickedSize} 人桌，所有人回到 2,000 筹码，从第 1 手开始
