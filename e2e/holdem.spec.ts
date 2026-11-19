@@ -233,9 +233,36 @@ test("a hand played is kept: a reload carries on from the next hand, and the hom
   await playHoldemHand(page)
   await page.reload()
   await expect(page.locator('[data-slot="he-hand"]')).toContainText("第 2 手")
+  // The second hand has been dealt, and it is saved as soon as it is.
   await page.getByRole("button", { name: /牌桌教练/ }).click()
-  await expect(page.getByText(/^上次打到第 1 手，你有 [\d,]+ 筹码，进去接着打$/)).toBeVisible()
+  await expect(page.getByText(/^上次打到第 2 手，你有 [\d,]+ 筹码，进去接着打$/)).toBeVisible()
   await expectLayoutToHold(page, "on the home page with a saved table")
+})
+
+test("a hand left halfway comes back as it was, from the home page or a reload: the same cards, board and hand", async ({ page }) => {
+  await openHoldem(page)
+  await dealHoldemExactly(page, { holes: { 0: "AH KH" }, board: "QD 9S 4H 3C JD" })
+  await callDownTo(page, 3)
+  const table = async () => ({
+    hand: await page.locator('[data-slot="he-hand"]').textContent(),
+    mine: await page.getByRole("list", { name: /^你的手牌：/ }).getAttribute("aria-label"),
+    board: await page.getByRole("list", { name: /^公共牌：/ }).getAttribute("aria-label"),
+    pot: await page.locator('[data-slot="he-pot"]').textContent(),
+  })
+  const left = await table()
+  expect(left).toMatchObject({ mine: "你的手牌：红桃A、红桃K", board: "公共牌：方块Q、黑桃9、红桃4" })
+
+  await page.getByRole("button", { name: /牌桌教练/ }).click()
+  await expect(page.getByText(/^上次打到第 1 手，你有 2,000 筹码，进去接着打$/)).toBeVisible()
+  await page.getByRole("button", { name: "进入德州扑克牌桌" }).click()
+  await expect(page.getByRole("list", { name: /^公共牌：/ })).toBeVisible()
+  expect(await table()).toEqual(left)
+
+  await page.reload()
+  await expect(page.getByRole("list", { name: /^公共牌：/ })).toBeVisible()
+  expect(await table()).toEqual(left)
+  await expect(page.getByRole("button", { name: "弃牌", exact: true })).toBeVisible()
+  await expectLayoutToHold(page, "after coming back to a hand left halfway")
 })
 
 test("the home page picks nine seats before the table opens: eight opponents, and the choice is kept", async ({ page }) => {

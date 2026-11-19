@@ -24,7 +24,7 @@ export function savedSize(): TableSize {
   }
 }
 
-/** Keeps the table between hands. Storage is optional: the game goes on without it. */
+/** Keeps the table between visits. Storage is optional: the game goes on without it. */
 export function writeTable(save: TableSave): void {
   try {
     localStorage.setItem(TABLE_KEY, JSON.stringify(save))
