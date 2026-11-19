@@ -1241,15 +1241,17 @@
     align-items: center;
     justify-content: center;
   }
+  /* Centred with margins, not a transform: the 怎么算的 dialog sits inside the bar, and a transformed ancestor makes a
+     fixed element measure from it instead of the screen wherever a browser does not open the dialog in the top layer. */
   [data-slot="he-coach"] {
-    left: 50%;
-    right: auto;
+    left: 0;
+    right: 0;
     top: 2px;
     width: min(100% - 16px, 720px);
     max-height: calc(var(--coach) - 6px);
+    margin-inline: auto;
     padding: 5px 12px;
     font-size: 12px;
-    transform: translateX(-50%);
   }
   [data-slot="he-coach"] h3,
   [data-slot="he-coach"] p {
@@ -1845,9 +1847,10 @@
     top: auto;
     bottom: 8px;
     width: min(300px, 36%);
+    right: auto;
     max-height: calc(50cqh + 22 * var(--u) - 33px);
+    margin-inline: 0;
     padding: 6px 10px 28px;
-    transform: none;
   }
   [data-slot="he-controls"] {
     position: absolute;

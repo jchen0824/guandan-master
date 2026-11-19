@@ -165,7 +165,7 @@ function ReviewDialog({ decisions }: { decisions: Decision[] }) {
         看复盘
       </DialogTrigger>
       <DialogBackdrop />
-      <DialogContent>
+      <DialogContent initialFocus="content">
         <DialogTitle>这一手的复盘</DialogTitle>
         <DialogDescription>你做了 {decisions.length} 个决定。教练在每一步会怎么打，写在下面。</DialogDescription>
         <Review decisions={decisions} />
@@ -265,7 +265,7 @@ function WorkingDialog({ advice }: { advice: Advice }) {
         怎么算的
       </DialogTrigger>
       <DialogBackdrop />
-      <DialogContent>
+      <DialogContent initialFocus="content">
         <DialogTitle>教练是怎么算的</DialogTitle>
         <div data-slot="he-working">
           <Working advice={advice} />
@@ -342,7 +342,7 @@ function Rules() {
     <Dialog>
       <DialogTrigger data-variant="text">规则</DialogTrigger>
       <DialogBackdrop />
-      <DialogContent>
+      <DialogContent initialFocus="content">
         <DialogTitle>德州扑克怎么打</DialogTitle>
         <DialogDescription>每人两张自己的牌，桌上五张公共牌。用这七张里最好的五张比大小。</DialogDescription>
         <ul data-slot="rules-list">

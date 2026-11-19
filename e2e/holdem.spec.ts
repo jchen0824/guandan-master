@@ -330,6 +330,24 @@ test("the coach's working after the flop fits, and a narrow screen opens all of 
     const dialog = page.getByRole("dialog", { name: "教练是怎么算的" })
     await expect(dialog.getByText("你的牌", { exact: true })).toBeVisible()
     await expectLayoutToHold(page, "with the working open")
+    // Opening focuses the dialog itself, not 知道了 at its end: some Safari versions scroll a focused button into view,
+    // which opened a long working at its last lines with the first ones out of reach.
+    await expect(dialog).toBeFocused()
+    // An ancestor with a transform, filter, perspective or containment would make the dialog's fixed position measure
+    // from that box instead of the screen, which some Safari versions do even in the top layer: the dialog then sat
+    // over the coach bar near the top of the page with its first lines above the screen.
+    const capturing = await dialog.evaluate((el) => {
+      const found: string[] = []
+      for (let up = el.parentElement; up; up = up.parentElement) {
+        const css = getComputedStyle(up)
+        const captures =
+          css.transform !== "none" || css.filter !== "none" || css.perspective !== "none" || css.backdropFilter !== "none" ||
+          /paint|layout|strict|content/.test(css.contain) || /transform|filter|perspective/.test(css.willChange)
+        if (captures) found.push(up.dataset.slot ?? up.tagName)
+      }
+      return found
+    })
+    expect(capturing, "ancestors of the working dialog that capture a fixed element").toEqual([])
     await dialog.getByRole("button", { name: "知道了" }).click()
     await expect(page.getByRole("dialog")).toHaveCount(0)
   } else {
