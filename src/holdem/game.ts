@@ -217,9 +217,12 @@ export function knockedOut(state: HoldemState): number[] {
   return state.result ? state.seats.flatMap((seat, index) => (!seat.out && seat.stack === 0 ? [index] : [])) : []
 }
 
-/** A hand being played, as a save keeps it: the deck in the order it was dealt from, and every action after the blinds. */
+/**
+ * A hand being played, as a save keeps it: the order of the deck it was dealt from, written as one number (`order`),
+ * and every action after the blinds. The save names no card, so browser storage shows no one's cards.
+ */
 export interface SavedHand {
-  deck: number[]
+  order: string
   actions: Action[]
 }
 
@@ -246,6 +249,36 @@ function dealtDeck(state: HoldemState): Card[] {
   return [...order.map((seat) => state.seats[seat].hole[0]), ...order.map((seat) => state.seats[seat].hole[1]), ...state.board, ...state.deck]
 }
 
+/**
+ * The deck's order as one number: its rank among the 52! orders (a Lehmer code), in base 36. Reading the cards back
+ * takes this code, not a glance at storage.
+ */
+function orderNumber(deck: readonly Card[]): string {
+  const rest = CARDS.map((card) => card.id)
+  let rank = BigInt(0)
+  for (const card of deck) {
+    const at = rest.indexOf(card.id)
+    rank = rank * BigInt(rest.length) + BigInt(at)
+    rest.splice(at, 1)
+  }
+  return rank.toString(36)
+}
+
+/** The deck an `orderNumber` stands for, or null when the text is not one. */
+function deckOf(order: unknown): Card[] | null {
+  if (typeof order !== "string" || !/^[0-9a-z]{1,60}$/.test(order)) return null
+  let rank = BigInt(0)
+  for (const digit of order) rank = rank * BigInt(36) + BigInt(parseInt(digit, 36))
+  const picks: number[] = []
+  for (let left = 1; left <= CARDS.length; left++) {
+    picks.unshift(Number(rank % BigInt(left)))
+    rank /= BigInt(left)
+  }
+  if (rank !== BigInt(0)) return null
+  const rest = CARDS.slice()
+  return picks.map((at) => rest.splice(at, 1)[0])
+}
+
 function actionOf(entry: LogEntry): Action[] {
   if (entry.kind === "blind") return []
   if (entry.kind === "bet" || entry.kind === "raise") return [{ kind: "raise", to: entry.to }]
@@ -259,7 +292,7 @@ export function toTableSave(state: HoldemState, now: Date = new Date()): TableSa
   return {
     ...table,
     stacks: state.seats.map((seat) => seat.stack + seat.total),
-    hand: { deck: dealtDeck(state).map((card) => card.id), actions: state.log.flatMap(actionOf) },
+    hand: { order: orderNumber(dealtDeck(state)), actions: state.log.flatMap(actionOf) },
   }
 }
 
@@ -271,17 +304,17 @@ function isAction(data: unknown): data is Action {
 
 /**
  * The saved hand dealt again from its deck and played through its actions by the rules, or null when it is not a
- * hand still being played: a deck that is not the 52 cards once each, a button on a seat that is out, an action the
+ * hand still being played: an order that is not a number of a deck, a button on a seat that is out, an action the
  * rules refuse, or a hand that ends.
  */
 function replay(save: Omit<TableSave, "hand">, hand: unknown): HoldemState | null {
-  if (typeof hand !== "object" || hand === null || !("deck" in hand) || !("actions" in hand)) return null
-  const { deck, actions } = hand
-  if (!Array.isArray(deck) || deck.length !== CARDS.length || !Array.isArray(actions) || !actions.every(isAction)) return null
-  if (!deck.every((id) => Number.isInteger(id) && id >= 0 && id < CARDS.length) || new Set(deck).size !== CARDS.length) return null
+  if (typeof hand !== "object" || hand === null || !("order" in hand) || !("actions" in hand)) return null
+  const deck = deckOf(hand.order)
+  const { actions } = hand
+  if (!deck || !Array.isArray(actions) || !actions.every(isAction)) return null
   if (save.stacks[save.button] === 0) return null
   try {
-    let state = deal(save.stacks, save.button, save.handNumber, deck.map((id: number) => CARDS[id]))
+    let state = deal(save.stacks, save.button, save.handNumber, deck)
     for (const action of actions) {
       if (state.toAct === null) return null
       state = act(state, state.toAct, action)
@@ -314,7 +347,7 @@ export function parseTableSave(text: string | null): TableSave | null {
     if (!valid) return null
     const table: TableSave = { version: data.version, savedAt: data.savedAt, handNumber: data.handNumber, button: data.button, stacks: data.stacks }
     if (data.version === 1 || data.hand === undefined) return table
-    return { ...table, hand: replay(table, data.hand) ? { deck: data.hand.deck, actions: data.hand.actions } : null }
+    return { ...table, hand: replay(table, data.hand) ? { order: data.hand.order, actions: data.hand.actions } : null }
   } catch {
     return null
   }

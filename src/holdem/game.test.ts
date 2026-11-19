@@ -396,6 +396,15 @@ describe("keeping the table between visits", () => {
     }
   })
 
+  it("keeps a hand in progress without naming a card, so browser storage shows no one's cards", () => {
+    let state = newTable(seeded(3))
+    while (state.street === "preflop") state = act(state, state.toAct as number, legalActions(state).canCheck ? CHECK : CALL)
+    const text = JSON.stringify(toTableSave(state))
+    expect(text).not.toMatch(/"(deck|hole|board|cards?)"/)
+    expect(text).toMatch(/"order":"[0-9a-z]+"/)
+    expect(resumeTable(parseTableSave(text) as NonNullable<ReturnType<typeof parseTableSave>>, seeded(9)).seats[HERO].hole).toEqual(state.seats[HERO].hole)
+  })
+
   it("deals a saved hand afresh, from the stacks and button it started with, when the hand in the save does not hold together", () => {
     let state = newTable(seeded(3))
     while (state.street === "preflop") state = act(state, state.toAct as number, legalActions(state).canCheck ? CHECK : CALL)
@@ -403,10 +412,11 @@ describe("keeping the table between visits", () => {
     const hand = save.hand as NonNullable<typeof save.hand>
     const outButton = (save.button + 1) % 6
     for (const bad of [
-      { ...save, hand: { ...hand, deck: [hand.deck[1], ...hand.deck.slice(1)] } },
-      { ...save, hand: { ...hand, deck: hand.deck.slice(1) } },
-      { ...save, hand: { ...hand, deck: [52, ...hand.deck.slice(1)] } },
-      { ...save, hand: { ...hand, deck: "not a deck" } },
+      // Past the last of the 52! orders, not base 36, not text, or missing.
+      { ...save, hand: { ...hand, order: "z".repeat(60) } },
+      { ...save, hand: { ...hand, order: "NOT-A-DECK" } },
+      { ...save, hand: { ...hand, order: 12345 } },
+      { ...save, hand: { actions: hand.actions } },
       { ...save, hand: { ...hand, actions: [...hand.actions, raise(5)] } },
       { ...save, hand: { ...hand, actions: [...hand.actions, { kind: "shove" }] } },
       // Folding everyone round ends the hand, and an ended hand is never saved with its cards.
