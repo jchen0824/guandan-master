@@ -2,6 +2,14 @@
 
 What changed in each release of 掼蛋教练. The newest release is first. Versions follow [Semantic Versioning](https://semver.org/): the middle number rises for a new feature, the last for a fix. How to cut a release is in [CONTRIBUTING.md](CONTRIBUTING.md#releases).
 
+## [0.5.1] - 2026-11-19
+
+Pick the Texas Hold'em table size on the home page.
+
+### Added
+
+- The 德州扑克 tile on the home page has the same 6 人 / 9 人 choice as 牌桌人数 in 设置, so you can pick the table size before sitting down. If a table of the other size is waiting, the tile says it will not be kept and the button reads 开一张 9 人桌; nothing is given up until you press it.
+
 ## [0.5.0] - 2026-11-18
 
 Texas Hold'em at a nine-seat table.
