@@ -2,6 +2,12 @@
 
 What changed in each release of 掼蛋教练. The newest release is first. Versions follow [Semantic Versioning](https://semver.org/): the middle number rises for a new feature, the last for a fix. How to cut a release is in [CONTRIBUTING.md](CONTRIBUTING.md#releases).
 
+## [0.5.2] - 2026-11-19
+
+### Fixed
+
+- On a phone, the Hold'em coach's 怎么算的 dialog could open with its first lines above the screen. It now opens centred, from its title, and the long dialogs (怎么算的, 规则, 看复盘) start at the top.
+
 ## [0.5.1] - 2026-11-19
 
 Pick the Texas Hold'em table size on the home page.
