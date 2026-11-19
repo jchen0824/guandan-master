@@ -294,6 +294,10 @@ describe("the Texas Hold'em table", () => {
     })
     const left = table()
     expect(left.board?.split("、")).toHaveLength(3)
+    // What the screen wrote to storage keeps the hand without naming a card.
+    const saved = localStorage.getItem("guandan.holdem.table") ?? ""
+    expect(saved).toMatch(/"order":"[0-9a-z]+"/)
+    expect(saved).not.toMatch(/"(deck|hole|board|cards?|suit|rank)"/)
     first.unmount()
 
     render(<Holdem onHome={() => {}} />)

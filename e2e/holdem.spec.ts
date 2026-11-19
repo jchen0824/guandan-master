@@ -251,6 +251,10 @@ test("a hand left halfway comes back as it was, from the home page or a reload: 
   })
   const left = await table()
   expect(left).toMatchObject({ mine: "你的手牌：红桃A、红桃K", board: "公共牌：方块Q、黑桃9、红桃4" })
+  // Browser storage keeps the hand as a number and the actions, naming no one's cards.
+  const saved = (await page.evaluate(() => localStorage.getItem("guandan.holdem.table"))) ?? ""
+  expect(saved).toMatch(/"order":"[0-9a-z]+"/)
+  expect(saved).not.toMatch(/"(deck|hole|board|cards?|suit|rank)"/)
 
   await page.getByRole("button", { name: /牌桌教练/ }).click()
   await expect(page.getByText(/^上次打到第 1 手，你有 2,000 筹码，进去接着打$/)).toBeVisible()
