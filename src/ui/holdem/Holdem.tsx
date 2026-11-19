@@ -458,8 +458,9 @@ function Settings({ skill, onSkill, size, onRestart }: { skill: BotSkill; onSkil
   )
 }
 
-function Holdem({ onHome }: { onHome: () => void }) {
-  const { game, size, advice, decisions, notice, skill, setSkill, choose, deal, restart } = useHoldem()
+/** `seats` is the table size picked on the home page, when the player came from there. */
+function Holdem({ onHome, seats }: { onHome: () => void; seats?: TableSize }) {
+  const { game, size, advice, decisions, notice, skill, setSkill, choose, deal, restart } = useHoldem(seats)
   const [coachOn, setCoachOn] = useSaved("guandan.holdem.coach", true)
   const hero = game.seats[HERO]
   const opponents = game.seats.flatMap((_, seat) => (seat === HERO ? [] : [seat]))

@@ -238,6 +238,56 @@ test("a hand played is kept: a reload carries on from the next hand, and the hom
   await expectLayoutToHold(page, "on the home page with a saved table")
 })
 
+test("the home page picks nine seats before the table opens: eight opponents, and the choice is kept", async ({ page }) => {
+  await openHome(page)
+  const picker = page.getByRole("radiogroup", { name: "牌桌人数" })
+  await expect(picker.getByRole("radio", { name: "6 人", exact: true })).toHaveAttribute("aria-checked", "true")
+  await expectLayoutToHold(page, "on the home page before picking a size")
+  await picker.getByRole("radio", { name: "9 人", exact: true }).click()
+  await expect(picker.getByRole("radio", { name: "9 人", exact: true })).toHaveAttribute("aria-checked", "true")
+  await expectLayoutToHold(page, "on the home page with 9 人 picked")
+  const enter = page.getByRole("button", { name: "进入德州扑克牌桌" })
+  await enter.scrollIntoViewIfNeeded()
+  await enter.click()
+  await expect(page.getByRole("region", { name: /，/ })).toHaveCount(8)
+  await page.getByRole("button", { name: /牌桌教练/ }).click()
+  await expect(page.getByRole("radiogroup", { name: "牌桌人数" }).getByRole("radio", { name: "9 人", exact: true })).toHaveAttribute("aria-checked", "true")
+})
+
+test("the home page opens the size picked even when the browser refuses to store it", async ({ page }) => {
+  await openHome(page)
+  await page.evaluate(() => {
+    const refuse = () => {
+      throw new DOMException("The quota has been exceeded.", "QuotaExceededError")
+    }
+    Storage.prototype.setItem = refuse
+    Storage.prototype.removeItem = refuse
+  })
+  await page.getByRole("radiogroup", { name: "牌桌人数" }).getByRole("radio", { name: "9 人", exact: true }).click()
+  const enter = page.getByRole("button", { name: "进入德州扑克牌桌" })
+  await enter.scrollIntoViewIfNeeded()
+  await enter.click()
+  await expect(page.getByRole("region", { name: /，/ })).toHaveCount(8)
+})
+
+test("with a table in progress, the home page warns before a different size replaces it", async ({ page }) => {
+  await openHoldem(page)
+  await playHoldemHand(page)
+  await page.getByRole("button", { name: /牌桌教练/ }).click()
+  const picker = page.getByRole("radiogroup", { name: "牌桌人数" })
+  await picker.getByRole("radio", { name: "9 人", exact: true }).click()
+  await expect(page.getByText(/^上次的 6 人桌打到第 1 手。换成 9 人桌会从第 1 手重新开始，上次的进度不保留$/)).toBeVisible()
+  await expectLayoutToHold(page, "on the home page with a switch to nine seats waiting")
+  await picker.getByRole("radio", { name: "6 人", exact: true }).click()
+  await expect(page.getByRole("button", { name: "进入德州扑克牌桌" })).toBeVisible()
+  await picker.getByRole("radio", { name: "9 人", exact: true }).click()
+  const open = page.getByRole("button", { name: "开一张 9 人桌" })
+  await open.scrollIntoViewIfNeeded()
+  await open.click()
+  await expect(page.locator('[data-slot="he-hand"]')).toContainText("第 1 手")
+  await expect(page.getByRole("region", { name: /，/ })).toHaveCount(8)
+})
+
 test("the rules and the review of a hand open in dialogs that fit", async ({ page }) => {
   await openHoldem(page)
   await page.getByRole("button", { name: "规则", exact: true }).click()

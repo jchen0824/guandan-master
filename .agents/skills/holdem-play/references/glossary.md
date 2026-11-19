@@ -9,7 +9,7 @@ The Chinese the player reads, what it means, and where it comes from. Use these 
 | 德州扑克 | Texas Hold'em | home page, top bar |
 | 牌桌教练 | the app's name on the home page and the Hold'em top bar | `ui/Home.tsx`, `Holdem.tsx` |
 | 你 甲 乙 丙 丁 戊 己 庚 辛 | the player and the computer players: 甲 to 戊 at six seats, 甲 to 辛 at nine | `SEAT_NAMES` |
-| 牌桌人数 · 6 人桌 · 9 人桌 | the table size and the two tables, picked in 设置 | `Settings` in `Holdem.tsx`, home tile |
+| 牌桌人数 · 6 人桌 · 9 人桌 · 开一张 9 人桌 | the table size and the two tables, picked on the home tile or in 设置 | `HoldemTile` in `Home.tsx`, `Settings` in `Holdem.tsx` |
 | 电脑对手 | the computer players as a group, in 设置; never a count that assumes one size | `Settings` |
 | 筹码 | chips; always practice chips (练习筹码) | seat labels, rules |
 | 盲注 10/20 | the blinds | top bar |
