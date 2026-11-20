@@ -2,6 +2,18 @@
 
 What changed in each release of 掼蛋教练. The newest release is first. Versions follow [Semantic Versioning](https://semver.org/): the middle number rises for a new feature, the last for a fix. How to cut a release is in [CONTRIBUTING.md](CONTRIBUTING.md#releases).
 
+## [0.6.0] - 2026-11-21
+
+Set the exact Hold'em bet on any screen, and a hand left halfway comes back as it was.
+
+### Added
+
+- The 加注到 slider is on every screen, phones held upright included: drag it to bet or raise any amount from the minimum to all-in, with the amount beside it, or tap one of the five size buttons to jump there.
+
+### Fixed
+
+- Leaving the Texas Hold'em table mid-hand and coming back no longer deals that hand again: it comes back with the same cards, board, bets and turn, so leaving cannot buy a better hand or a second look at a board. The browser keeps the hand without naming anyone's cards.
+
 ## [0.5.2] - 2026-11-19
 
 ### Fixed
