@@ -1143,11 +1143,45 @@
   white-space: nowrap;
 }
 
+[data-slot="he-slider"] b {
+  min-width: 48px;
+  text-align: right;
+  color: var(--cream);
+  font: 600 17px / 1 var(--digits);
+}
+
+/* The browser's own thumb is 16px in Chrome, too small to drag with a finger. */
 [data-slot="he-slider"] input {
   flex: 1;
   min-width: 0;
+  height: 44px;
+  margin: 0;
+  appearance: none;
+  background: none;
+}
+
+[data-slot="he-slider"] input::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 3px;
+  background: rgb(255 255 255 / 0.2);
+}
+
+[data-slot="he-slider"] input::-webkit-slider-thumb {
+  appearance: none;
+  width: 24px;
   height: 24px;
-  accent-color: var(--brass);
+  margin-top: -12px;
+  border: 3px solid var(--brass);
+  border-radius: 50%;
+  background: var(--cream);
+}
+
+[data-slot="he-slider"] input::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  border: 3px solid var(--brass);
+  border-radius: 50%;
+  background: var(--cream);
 }
 
 [data-slot="he-buttons"] [data-variant] {
@@ -1654,15 +1688,12 @@
     left: calc(50% + var(--hole) * 0.91 + 36px);
     bottom: calc(100% + 28px);
   }
-  /* Always as tall as its two rows, so the table does not change size between turns. */
+  /* Always as tall as its three rows, so the table does not change size between turns. */
   [data-slot="he-actions"] {
     justify-self: stretch;
     width: auto;
-    min-height: 100px;
+    min-height: 154px;
     justify-content: flex-end;
-  }
-  [data-slot="he-slider"] {
-    display: none;
   }
   [data-slot="holdem"] [data-slot="button"][data-variant="size"] {
     min-height: 44px;
@@ -1672,11 +1703,37 @@
   }
 }
 
-/* A short upright phone: smaller cards in hand, and the bar says only what to do and why. A window from 621px to 739px
-   wide counts as short up to 680px high: below that, full-size cards in hand cover the pot of a nine-seat table. */
-@media (max-width: 620px) and (max-height: 620px), (min-width: 621px) and (max-width: 739px) and (min-height: 481px) and (max-height: 680px) {
+/* A short upright phone, or a window under 740px wide, up to 740px high: smaller cards in hand, and the bar says only what
+   to do and why. Below that height, the three rows of buttons leave too little table for full-size cards in hand. */
+@media (max-width: 620px) and (max-height: 740px), (max-width: 739px) and (min-height: 481px) and (max-height: 740px) {
   [data-slot="he-table"] {
     --coach: 78px;
+  }
+  [data-slot="he-actions"] {
+    gap: 4px;
+    min-height: 140px;
+  }
+  [data-slot="he-buttons"] [data-variant] {
+    min-height: 44px;
+  }
+  /* The slider's row takes height from the table. Six seats are drawn smaller to keep the two nearest the player clear of
+     the player's label. Nine cannot be, or the seats down each side run into each other, so the two nearest move up and
+     the board moves up to leave the pot room above the player's cards. */
+  [data-seats="6"] [data-slot="he-table"] {
+    --sh: 470;
+  }
+  [data-seats="9"] [data-slot="he-table"] {
+    --board-y: 190;
+    --pot-y: 278;
+  }
+  [data-seats="9"] [data-seat="1"],
+  [data-seats="9"] [data-seat="8"] {
+    --y: 312;
+  }
+  /* The bets beside the second seats down each side move down, clear of the far seats' bets. */
+  [data-seats="9"] [data-seat="3"],
+  [data-seats="9"] [data-seat="6"] {
+    --by: 8px;
   }
   [data-slot="he-controls"] {
     --hole: min(56px, 36.5vw - 68px);
@@ -1933,8 +1990,9 @@
     padding: 0 2px;
     font-size: 11px;
   }
-  [data-slot="he-slider"] input {
-    height: 28px;
+  /* The raise button right under it says the amount. */
+  [data-slot="he-slider"] b {
+    display: none;
   }
   [data-slot="he-buttons"] {
     flex-direction: column;

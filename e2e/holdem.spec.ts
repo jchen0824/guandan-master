@@ -65,30 +65,31 @@ for (const view of ["2d", "3d"] as const) {
   })
 }
 
-test("a raise of any size can be chosen, the minimum and all-in included", async ({ page }) => {
+test("the slider sets a raise of any size on every screen, and the raise bets that amount", async ({ page }) => {
   await openHoldem(page)
   // The raise button, not the 全下 size button, which has the same words.
   const raise = page.locator('[data-slot="he-buttons"] [data-variant="raise"]')
-  await expect(raise).toBeVisible()
   const slider = page.getByRole("slider")
-  // A phone on its side has only the slider; an upright phone only the size buttons; a wide screen both.
-  if (await slider.isVisible()) {
-    // The slider says the amount it is set to; the raise button must say the same at both ends.
+  await expect(slider).toBeInViewport({ ratio: 1 })
+  expect((await slider.boundingBox())!.height, "the slider is tall enough to drag with a finger").toBeGreaterThanOrEqual(44)
+  await slider.focus()
+  await page.keyboard.press("End")
+  const most = (await slider.getAttribute("aria-valuetext")) ?? ""
+  await expect(raise).toHaveText(`全下 ${most}`)
+  await page.keyboard.press("Home")
+  const least = (await slider.getAttribute("aria-valuetext")) ?? ""
+  await expect(raise).toHaveText(new RegExp(`^(加注到|下注) ${least}$`))
+  // A phone on its side has no room for the size buttons; where they are, picking one moves the slider.
+  const sizes = page.getByRole("group", { name: /多少$/ })
+  if (await sizes.isVisible()) {
+    await sizes.getByRole("button", { name: /^全下/ }).click()
+    await expect(slider).toHaveAttribute("aria-valuetext", most)
     await slider.focus()
-    for (const key of ["End", "Home"]) {
-      await page.keyboard.press(key)
-      const amount = (await slider.getAttribute("aria-valuetext")) ?? ""
-      await expect(raise).toHaveText(new RegExp(`${amount}$`))
-    }
-  } else {
-    const sizes = page.getByRole("group", { name: /多少$/ })
-    for (const name of ["全下", "最小"]) {
-      const size = sizes.getByRole("button", { name: new RegExp(`^${name}`) })
-      await size.click()
-      await expect(raise).toHaveText(new RegExp(`${(await size.locator("b").innerText()).replace(/,/g, ",")}$`))
-    }
+    await page.keyboard.press("Home")
   }
   await expectLayoutToHold(page, "with a raise size picked")
+  await raise.click()
+  await expect(page.locator('[data-slot="he-controls"] > [data-slot="he-bet"]')).toHaveText(least)
 })
 
 // The four test sizes have no tablet and no short desktop window. These are where seat labels ran into each
@@ -386,15 +387,10 @@ test("the coach's working after the flop fits, and a narrow screen opens all of 
   }
 })
 
-/** Raises all-in, from the slider or the size buttons, whichever this screen has. */
+/** Raises all-in with the slider. */
 async function allIn(page: Page) {
-  const slider = page.getByRole("slider")
-  if (await slider.isVisible()) {
-    await slider.focus()
-    await page.keyboard.press("End")
-  } else {
-    await page.getByRole("group", { name: /多少$/ }).getByRole("button", { name: /^全下/ }).click()
-  }
+  await page.getByRole("slider").focus()
+  await page.keyboard.press("End")
   await page.locator('[data-slot="he-buttons"] [data-variant="raise"]').click()
 }
 

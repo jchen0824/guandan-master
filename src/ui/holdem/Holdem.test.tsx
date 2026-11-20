@@ -131,7 +131,7 @@ describe("the Texas Hold'em table", () => {
     expect(within(screen.getByLabelText("牌桌动态")).getByRole("status").textContent).toMatch(/赢得|平分底池/)
   })
 
-  it("sets the raise to exactly all-in at the far end of the slider, and to the minimum at the near end", () => {
+  it("sets the raise to exactly all-in at the far end of the slider, and to the minimum at the near end, and shows it beside the slider", () => {
     render(<Holdem onHome={() => {}} />)
     waitForButtons()
     const slider = screen.getByRole("slider")
@@ -143,6 +143,7 @@ describe("the Texas Hold'em table", () => {
       fireEvent.change(slider, { target: { value: end } })
       const amount = sizes.getByRole("button", { name: new RegExp(`^${preset}`) }).querySelector("b")?.textContent ?? ""
       expect(slider.getAttribute("aria-valuetext")).toBe(amount)
+      expect(slider.closest("label")?.querySelector("b")?.textContent, "the amount beside the slider").toBe(amount)
       // At the far end the raise button says 全下; at the near end 下注 or 加注到.
       const label = preset === "全下" ? "全下" : "(下注|加注到)"
       expect(action(new RegExp(`^${label} ${amount}$`))).toBeTruthy()
