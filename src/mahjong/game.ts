@@ -264,6 +264,17 @@ export function isFuriten(player: Player): boolean {
   return player.passed || player.locked || waitsOf(player).some((kind) => player.river.some((discard) => discard.tile.kind === kind))
 }
 
+/**
+ * 食替: the kinds a seat may not discard right after calling `kind`. Never the tile just called, and after a 吃
+ * that makes the run starting at `low`, not the tile at the other end of the same run either.
+ */
+function barredAfter(kind: Kind, low: Kind | null): Kind[] {
+  const barred = [kind]
+  if (low !== null && kind === low && indexOf(low) <= 5) barred.push(low + 3)
+  if (low !== null && kind === low + 2 && indexOf(low) >= 1) barred.push(low - 1)
+  return barred
+}
+
 function claims(state: MahjongState, seat: number, tile: Tile, from: number, kakan: boolean): { options: Action[]; waiting: boolean } {
   const player = state.players[seat]
   const options: Action[] = []
@@ -271,12 +282,18 @@ function claims(state: MahjongState, seat: number, tile: Tile, from: number, kak
   if (waiting && !isFuriten(player) && handValue(state, seat, { tile, chankan: kakan })) options.push({ type: "ron" })
   if (!kakan && player.riichi === 0 && state.wall.length > 0) {
     const counts = countKinds(player.hand)
-    if (counts[tile.kind] >= 2) options.push({ type: "pon" })
+    // A call that would leave nothing the seat may discard is not offered.
+    const leavesDiscard = (used: Kind[], low: Kind | null) => {
+      const barred = barredAfter(tile.kind, low)
+      return counts.some((count, kind) => count - used.filter((taken) => taken === kind).length > 0 && !barred.includes(kind))
+    }
+    if (counts[tile.kind] >= 2 && leavesDiscard([tile.kind, tile.kind], null)) options.push({ type: "pon" })
     if (counts[tile.kind] >= 3 && state.kans < 4) options.push({ type: "kan" })
     if (seat === (from + 1) % 4 && !isHonor(tile.kind)) {
       for (let low = tile.kind - 2; low <= tile.kind; low++) {
         if (low < 0 || suitOf(low) !== suitOf(tile.kind) || indexOf(low) > 6) continue
-        if ([low, low + 1, low + 2].every((kind) => kind === tile.kind || counts[kind] > 0)) options.push({ type: "chi", low })
+        const used = [low, low + 1, low + 2].filter((kind) => kind !== tile.kind)
+        if (used.every((kind) => counts[kind] > 0) && leavesDiscard(used, low)) options.push({ type: "chi", low })
       }
     }
   }
@@ -391,11 +408,7 @@ function call(state: MahjongState, seat: number, action: Action, pending: Pendin
   if (action.type !== "chi") throw new Error("not a call")
   const { low } = action
   const taken = [low, low + 1, low + 2].filter((kind) => kind !== tile.kind).map((kind) => without(hand, kind, 1).taken[0])
-  // 食替: not the tile just called, nor the one at the other end of the same run.
-  const forbidden = [tile.kind]
-  if (tile.kind === low && indexOf(low) <= 5) forbidden.push(low + 3)
-  if (tile.kind === low + 2 && indexOf(low) >= 1) forbidden.push(low - 1)
-  return { ...meld("chi", taken, hand.filter((held) => !taken.includes(held))), ...turn, forbidden }
+  return { ...meld("chi", taken, hand.filter((held) => !taken.includes(held))), ...turn, forbidden: barredAfter(tile.kind, low) }
 }
 
 function resolve(state: MahjongState, pending: Pending): MahjongState {
@@ -465,10 +478,8 @@ function turnActions(state: MahjongState, seat: number): Action[] {
     })
   }
   const riichi = riichiDiscards(state, player)
-  // A hand of nothing but forbidden tiles may discard any of them, or it could not move.
-  const free = player.hand.some((tile) => !state.forbidden.includes(tile.kind))
   for (const tile of player.hand) {
-    if (free && state.forbidden.includes(tile.kind)) continue
+    if (state.forbidden.includes(tile.kind)) continue
     actions.push({ type: "discard", tile: tile.id })
     if (riichi.has(tile.kind)) actions.push({ type: "discard", tile: tile.id, riichi: true })
   }

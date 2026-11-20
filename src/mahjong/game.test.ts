@@ -151,6 +151,16 @@ describe("鸣牌", () => {
     expect(state.players[1].melds[0].tiles.map((tile) => tile.kind)).toEqual(kinds("345m"))
   })
 
+  it("does not offer a 吃 that would leave only the swap discards", () => {
+    const dealt = rig(matchWithDealer(0), { hands: { 0: `${JUNK}1m`, 1: "2344m222p444p666s", 2: "7m58p39s11223344z", 3: "79m8p39s55566677z" } })
+    const all = dealt.players[1].hand
+    const melds = kinds("2p4p6s").map((kind) => ({ type: "pon" as const, tiles: all.filter((tile) => tile.kind === kind), from: 0 }))
+    const open = Object.assign({}, dealt.players[1], { hand: all.filter((tile) => tile.kind < 9), melds })
+    const state = discard({ ...dealt, players: dealt.players.map((player, seat) => (seat === 1 ? open : player)) }, "1m")
+    expect(state).toMatchObject({ phase: "turn", turn: 1 })
+    expect(state.players[1].melds).toHaveLength(3)
+  })
+
   it("turns a new 宝牌 indicator and draws from the dead wall after a 暗杠", () => {
     let state = rig(matchWithDealer(0), { hands: { 0: "1111m258p369s1234z" }, rinshan: "5z" })
     state = act(state, 0, { type: "ankan", kind: 0 })
