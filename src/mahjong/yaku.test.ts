@@ -47,6 +47,11 @@ describe("役", () => {
     expect(win("456m789p234s55s", "5s", { called: [pon("2m")], dora: 3 })).toBeNull()
   })
 
+  it("refuses tiles that divide into sets but are not a whole hand", () => {
+    expect(win("11m", "1m")).toBeNull()
+    expect(win("111m222p33z", "3z", { called: [pon("7z")] })).toBeNull()
+  })
+
   it("lets an open hand win on 役牌", () => {
     const value = win("456m789p234s55s", "5s", { called: [pon("7z")], dora: 1 })
     expect(names(value)).toEqual(["役牌 中", "宝牌"])

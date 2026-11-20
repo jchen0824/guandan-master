@@ -242,6 +242,8 @@ function everyReading(input: WinInput): Found[] {
   }))
   const found: Found[] = []
   for (const reading of readings(input.counts)) {
+    // Fewer than four sets with the calls is not a finished hand, however neatly its tiles divide.
+    if (reading.sets.length + called.length !== 4) continue
     const build = (finished: number) =>
       reading.sets.map((set, i) => ({ ...set, quad: false, open: !set.run && i === finished && !input.tsumo })).concat(called)
     if (reading.pair === input.winKind) found.push(readStandard(input, build(-1), reading.pair, "pair", closed))
