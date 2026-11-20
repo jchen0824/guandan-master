@@ -311,6 +311,7 @@ function Actions({ game, advice, coached, onChoose }: { game: HoldemState; advic
               aria-valuetext={chips(amount)}
               onChange={(event) => setSize({ name: "", to: options.steps[Number(event.target.value)] })}
             />
+            <b aria-hidden="true">{chips(amount)}</b>
           </label>
         </>
       ) : null}
