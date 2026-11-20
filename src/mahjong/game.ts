@@ -155,7 +155,8 @@ function without(hand: Tile[], kind: Kind, count: number): { taken: Tile[]; rest
 function draw(state: MahjongState, seat: number): MahjongState {
   const tile = state.wall[state.wall.length - 1]
   const hand = [...state.players[seat].hand, tile].sort(byKind)
-  return { ...withPlayer(state, seat, { hand }), wall: state.wall.slice(0, -1), phase: "turn", turn: seat, drawn: tile, rinshan: false, forbidden: [] }
+  // 同巡振听 lasts until the seat draws again, so a call in between does not lift it.
+  return { ...withPlayer(state, seat, { hand, passed: false }), wall: state.wall.slice(0, -1), phase: "turn", turn: seat, drawn: tile, rinshan: false, forbidden: [] }
 }
 
 type Match = Pick<MahjongState, "length" | "round" | "dealer" | "firstDealer" | "honba" | "sticks">
@@ -319,7 +320,7 @@ function kanDraw(state: MahjongState, seat: number): MahjongState {
   const tile = state.dead[state.kans]
   const hand = [...state.players[seat].hand, tile].sort(byKind)
   return {
-    ...withPlayer(state, seat, { hand }),
+    ...withPlayer(state, seat, { hand, passed: false }),
     wall: state.wall.slice(1),
     kans: state.kans + 1,
     indicators: state.indicators + 1,
@@ -343,13 +344,17 @@ function finishKakan(state: MahjongState, seat: number, tile: Tile): MahjongStat
   return kanDraw(withPlayer(interrupted(state), seat, { melds }), seat)
 }
 
+/** The abortive draw that a discard nobody won on brings, whether or not someone wants to call it. */
+function endedBy(state: MahjongState): string | null {
+  if (state.players.every((player) => player.riichi > 0)) return "四家立直"
+  const oneOwner = state.players.some((player) => player.melds.filter((meld) => KAN_TYPES.has(meld.type)).length === 4)
+  return state.kans === 4 && !oneOwner ? "四杠散了" : null
+}
+
 function afterDiscard(state: MahjongState, from: number): MahjongState {
   const first = state.players.map((player) => player.river[0]?.tile.kind)
   const winds = state.uninterrupted && state.players.every((player) => player.river.length === 1)
   if (winds && isHonor(first[0]) && first[0] < EAST + 4 && first.every((kind) => kind === first[0])) return abort(state, "四风连打")
-  if (state.players.every((player) => player.riichi > 0)) return abort(state, "四家立直")
-  const oneOwner = state.players.some((player) => player.melds.filter((meld) => KAN_TYPES.has(meld.type)).length === 4)
-  if (state.kans === 4 && !oneOwner) return abort(state, "四杠散了")
   if (state.wall.length === 0) return exhaust(state)
   return draw(state, (from + 1) % 4)
 }
@@ -397,6 +402,8 @@ function resolve(state: MahjongState, pending: Pending): MahjongState {
   if (winners.length > 0) return finishWin(state, winners, { tile: pending.tile, from: pending.from, chankan: pending.kakan })
   const next = letGo(state, pending)
   if (pending.kakan) return finishKakan(next, pending.from, pending.tile)
+  const reason = endedBy(next)
+  if (reason) return abort(next, reason)
   const wants = (types: Action["type"][]) => order.find((seat) => types.includes(pending.answers[seat]?.type ?? "pass"))
   const taker = wants(["pon", "kan"]) ?? wants(["chi"])
   const answer = taker === undefined ? null : pending.answers[taker]
@@ -518,7 +525,7 @@ export function act(state: MahjongState, seat: number, action: Action): MahjongS
       const river = [...player.river, { tile, riichi: declared, tsumogiri: logged.drawn?.id === tile.id, called: false }]
       const riichi = declared ? (logged.uninterrupted && player.river.length === 0 ? 2 : 1) : player.riichi
       const hand = player.hand.filter((held) => held.id !== tile.id)
-      return offer(withPlayer(logged, seat, { hand, river, riichi, ippatsu: declared, passed: false }), tile, seat, false)
+      return offer(withPlayer(logged, seat, { hand, river, riichi, ippatsu: declared }), tile, seat, false)
     }
     default:
       throw new Error("not this seat's turn")

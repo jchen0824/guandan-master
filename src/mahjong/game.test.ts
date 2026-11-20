@@ -81,6 +81,20 @@ describe("振听", () => {
     expect(state.players[2].passed).toBe(false)
   })
 
+  it("keeps a seat barred when it calls before it has drawn again", () => {
+    let state = rig(matchWithDealer(0), {
+      hands: { 0: `${JUNK}5s`, 1: JUNK, 2: "222m345p67s777z88s", 3: "147m258p39s7s1234z" },
+      draws: "8s 9m",
+      indicator: "1z",
+    })
+    state = answer(discard(state, "5s"))
+    state = answer(discard(state, "8s"), { 2: { type: "pon" } })
+    state = answer(discard(state, "6s"))
+    state = discard(state, "7s")
+    expect(state.players[2].passed).toBe(true)
+    expect(types(state, 2)).not.toContain("ron")
+  })
+
   it("bars a seat that has discarded one of its own waits", () => {
     let state = rig(matchWithDealer(0), { hands: { 0: `${READY}5s`, 1: `${JUNK}`, 2: JUNK, 3: JUNK }, draws: "8s", indicator: "1z" })
     state = answer(discard(state, "5s"))
@@ -183,6 +197,19 @@ describe("流局", () => {
     const state = rig(matchWithDealer(0), { hands: { 0: `${JUNK}5z` } })
     const tile = state.players[0].hand[0].id
     expect(act(state, 0, { tile, type: "discard" }).players[0].river).toHaveLength(1)
+  })
+
+  it("ends the hand after a fourth 杠 by a second player even when the next discard is called", () => {
+    let state = rig(matchWithDealer(0), {
+      hands: { 0: "1111m2222m3333m56z", 1: "4444m258p369s123z", 2: "258p369s147s11z23z", 3: "789m258p369s6677z" },
+      draws: "9s",
+      rinshan: "1z 2z 3z 4z",
+    })
+    for (let kind = 0; kind < 3; kind++) state = act(state, 0, { type: "ankan", kind })
+    state = answer(discard(state, "5z"))
+    state = discard(act(state, 1, { type: "ankan", kind: 3 }), "1z")
+    expect(types(state, 2)).toEqual(["pon", "pass"])
+    expect(act(state, 2, { type: "pon" }).result).toMatchObject({ kind: "abort", reason: "四杠散了" })
   })
 
   it("offers 九种九牌 on the first draw", () => {
