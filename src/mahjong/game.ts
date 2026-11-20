@@ -235,6 +235,8 @@ export function handValue(state: MahjongState, seat: number, ron: { tile: Tile; 
     ippatsu: player.ippatsu,
     rinshan: !ron && state.rinshan,
     chankan: ron?.chankan ?? false,
+    // The discard after a 杠 that used up the wall is still the last discard, so 河底捞鱼 counts on it;
+    // only 海底摸月 is lost to a replacement draw.
     lastTile: state.wall.length === 0,
     firstTurn: !ron && state.uninterrupted && player.river.length === 0,
     dealer: seat === state.dealer,
