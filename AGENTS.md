@@ -69,7 +69,7 @@ Without that install, read the same skill at `node_modules/@ui-sdk/core/skills/u
 
 ## Architecture
 
-Two layers. `src/engine` and `src/holdem` are pure TypeScript with no React or DOM; `src/ui`, `src/App.tsx` and `src/Root.tsx` render them. `src/Root.tsx` is the whole app: the home page (`ui/Home.tsx`), or the game the player picked, kept under `guandan.game` so a reload returns to the same table. Both tables have a ‹ button at the left of the top bar that returns to the home page; on the 掼蛋 table it is in `[data-slot="top-left"]` with the scores and, on the 3D table, the brand, and 设置 has the same thing as 回到首页. Lint fails if the engine imports from the UI, React or ui-sdk, or touches `window`, `document` or `localStorage`.
+Two layers. `src/engine`, `src/holdem` and `src/mahjong` are pure TypeScript with no React or DOM; `src/ui`, `src/App.tsx` and `src/Root.tsx` render them. `src/Root.tsx` is the whole app: the home page (`ui/Home.tsx`), or the game the player picked, kept under `guandan.game` so a reload returns to the same table. Both tables have a ‹ button at the left of the top bar that returns to the home page; on the 掼蛋 table it is in `[data-slot="top-left"]` with the scores and, on the 3D table, the brand, and 设置 has the same thing as 回到首页. Lint fails if `src/engine` or `src/mahjong` imports from the UI, React or ui-sdk, or touches `window`, `document` or `localStorage`.
 
 ### Texas Hold'em engine (`src/holdem`)
 
@@ -85,6 +85,19 @@ The rules for the second game, 德州扑克: six or nine seats, no-limit, blinds
 - `lastWhere()` in `game.ts` stands in for `findLast`, which older phone browsers lack.
 
 Single test: `npx vitest run src/holdem/game.test.ts -t "side pot"`.
+
+### Riichi mahjong engine (`src/mahjong`)
+
+The rules for a third game, 日本麻将 (riichi mahjong): four seats, 136 tiles, no red fives, 25,000 points each, one round (东风战) or two (半庄战). It is pure TypeScript like the other two engines and takes its randomness as an `rng` parameter. It has no screen yet, so the app does not import it. One file per concern, each with its tests beside it:
+
+- `tiles.ts`: a tile is `{ id, kind }`, and a kind is a number from 0 to 33: 万 0-8, 筒 9-17, 索 18-26, 东南西北 27-30, 白发中 31-33. Most functions take a hand as 34 counts (`countKinds`). `doraOf()` turns an indicator into the 宝牌.
+- `shanten.ts`: `shanten()` is the number of tiles a hand is from 听牌 (0 is 听牌, -1 a finished hand), by four sets and a pair, 七对子 or 国士无双. `usefulKinds()` lists the 进张 and `waits()` the tiles a hand wins on. Each suit's answer is worked out once and kept, which is what makes a few hundred calls per decision cheap.
+- `yaku.ts`, `score.ts`: `valueOf()` reads a finished hand every way it can be read, as sets and by which set the winning tile finished, and keeps the dearest: its 役, 番, 符 and basic points, or null when it has no 役. `payments()` says who pays what, 本场 included.
+- `game.ts`: the table. `act(state, seat, action)` is the only way a hand moves on, and `legalActions(state, seat)` says what a seat may do; `toAct(state)` lists the seats with something to decide. A hand is in one of three phases: `turn` (one seat discards, declares a 杠 or wins by 自摸), `call` (a discard, or a tile added to a 碰, waits for every seat that may claim it; 荣和 beats 碰 and 杠, which beat 吃) and `over`. It handles 立直 and 一发, 振听, 食替, the four abortive draws, the 不听罚符 and when the match ends. `nextHand` deals the hand after a finished one. The state keeps the deal's `seed` and every action, which is enough to replay a hand.
+- `bot.ts`: one computer player for now. It discards toward the lowest 向听 and the most 进张 (`discardChoices`), declares 立直 when it can, and calls only 役牌. It sees its own hand, the 牌河, the calls and the indicators (`visibleCounts`); a test deals the hidden tiles again and fails if its choice changes.
+- `testing.ts`: helpers for the tests. `kinds("123m55p7z")` reads tile names, `rig()` deals chosen hands, draws and indicators, and `matchWithDealer()` starts a match with a known dealer. Not for the app.
+
+Single test: `npx vitest run src/mahjong/game.test.ts -t "振听"`.
 
 ### Engine (`src/engine`)
 
