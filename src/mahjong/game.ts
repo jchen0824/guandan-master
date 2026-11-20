@@ -242,9 +242,18 @@ export function handValue(state: MahjongState, seat: number, ron: { tile: Tile; 
   })
 }
 
+/**
+ * The tiles that finish these concealed tiles, beside the seat's calls. A tile the seat already holds all four of
+ * is not one: a hand that could only win on a fifth copy is not 听牌.
+ */
+function winningKinds(concealed: readonly Tile[], melds: readonly Meld[]): Kind[] {
+  const held = countKinds([...concealed, ...melds.flatMap((meld) => meld.tiles)])
+  return waits(countKinds(concealed), melds.length).filter((kind) => held[kind] < 4)
+}
+
 /** The tiles a seat is waiting for, when it is not its turn. */
 export function waitsOf(player: Player): Kind[] {
-  return waits(countKinds(player.hand), player.melds.length)
+  return winningKinds(player.hand, player.melds)
 }
 
 /** 振听: the seat may not win on a discard, because it discarded one of its waits or let one go by. */
@@ -276,7 +285,8 @@ function end(state: MahjongState, result: HandResult, renchan: boolean): Mahjong
   const players = state.players.map((player, seat) => ({ ...player, points: player.points + result.deltas[seat] }))
   const leads = players.every((player, seat) => seat === state.dealer || player.points < players[state.dealer].points)
   const lastHand = state.round === state.length - 1 && handNumber(state) === 3
-  const over = players.some((player) => player.points < 0) || (lastHand && (!renchan || leads))
+  // An abortive draw always repeats the hand, even the last one with the dealer ahead.
+  const over = players.some((player) => player.points < 0) || (lastHand && (!renchan || (leads && result.kind !== "abort")))
   return { ...state, players, phase: "over", pending: null, result, renchan, over, sticks: result.kind === "win" ? 0 : state.sticks }
 }
 
@@ -297,7 +307,7 @@ function finishWin(state: MahjongState, winners: number[], ron: { tile: Tile; fr
 }
 
 function exhaust(state: MahjongState): MahjongState {
-  const tenpai = state.players.map((player) => shanten(countKinds(player.hand), player.melds.length) === 0)
+  const tenpai = state.players.map((player) => waitsOf(player).length > 0)
   const ready = tenpai.filter(Boolean).length
   const split = ready > 0 && ready < 4
   const deltas = tenpai.map((is) => (split ? (is ? NOTEN_PENALTY / ready : -NOTEN_PENALTY / (4 - ready)) : 0))
@@ -410,14 +420,11 @@ function offer(state: MahjongState, tile: Tile, from: number, kakan: boolean): M
 function riichiDiscards(state: MahjongState, player: Player): Set<Kind> {
   const closed = player.melds.every((meld) => meld.type === "ankan")
   if (!closed || player.riichi > 0 || player.points < RIICHI_STICK || state.wall.length < 4 || !state.drawn) return new Set()
-  const counts = countKinds(player.hand)
+  const kinds = [...new Set(player.hand.map((tile) => tile.kind))]
   return new Set(
-    counts.flatMap((count, kind) => {
-      if (count === 0) return []
-      counts[kind]--
-      const ready = shanten(counts, player.melds.length) === 0
-      counts[kind]++
-      return ready ? [kind] : []
+    kinds.filter((kind) => {
+      const gone = player.hand.find((tile) => tile.kind === kind)
+      return winningKinds(player.hand.filter((tile) => tile !== gone), player.melds).length > 0
     }),
   )
 }
@@ -473,7 +480,12 @@ export function legalActions(state: MahjongState, seat: number): Action[] {
   return state.phase === "turn" ? turnActions(state, seat) : (state.pending?.options[seat] ?? [])
 }
 
-const keyOf = (action: Action) => Object.values(action).filter((value) => value !== undefined).join(" ")
+/** One string per move, whatever order the action's fields were written in. */
+function keyOf(action: Action): string {
+  if (action.type === "discard") return `discard ${action.tile}${action.riichi ? " riichi" : ""}`
+  if (action.type === "ankan" || action.type === "kakan") return `${action.type} ${action.kind}`
+  return action.type === "chi" ? `chi ${action.low}` : action.type
+}
 
 /** The table after the seat's action. Throws when the action is not legal. */
 export function act(state: MahjongState, seat: number, action: Action): MahjongState {

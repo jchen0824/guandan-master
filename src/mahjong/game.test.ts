@@ -101,6 +101,13 @@ describe("立直", () => {
     expect(legalActions(state, 0)).toEqual([{ type: "discard", tile: state.drawn?.id }])
   })
 
+  it("is not offered to a hand that could only win on a fifth copy of a tile", () => {
+    const state = rig(matchWithDealer(0), { hands: { 0: "1111m222p333s444z5z" } })
+    const declared = legalActions(state, 0).flatMap((action) => (action.type === "discard" && action.riichi ? [action.tile >> 2] : []))
+    // Discarding a 一万 leaves a real wait on 白. Discarding 白 would leave only a fifth 一万 to wait for.
+    expect([...new Set(declared)]).toEqual(kinds("1m"))
+  })
+
   it("is not offered with an open hand or when the hand is not 听牌", () => {
     const state = rig(matchWithDealer(0), { hands: { 0: `${JUNK}5z` } })
     expect(legalActions(state, 0).some((action) => action.type === "discard" && action.riichi)).toBe(false)
@@ -161,6 +168,21 @@ describe("流局", () => {
     for (let seat = 0; seat < 4; seat++) state = discard(state, "1z")
     expect(state.result).toMatchObject({ kind: "abort", reason: "四风连打" })
     expect(state.renchan).toBe(true)
+  })
+
+  it("repeats the last hand after an abortive draw, even with the dealer ahead", () => {
+    const last = { ...matchWithDealer(0), firstDealer: 1 }
+    const state = rig(last, { hands: { 0: "19m19p19s1234z258m5z" } })
+    const ahead = { ...state, players: state.players.map((player, seat) => Object.assign({}, player, { points: seat === 0 ? 40000 : 20000 })) }
+    const done = act(ahead, 0, { type: "abort" })
+    expect([handName(ahead), done.over, done.renchan]).toEqual(["东四局", false, true])
+    expect(nextHand(done, seeded(1))).toMatchObject({ dealer: 0, honba: 1 })
+  })
+
+  it("takes an action whatever order its fields are written in", () => {
+    const state = rig(matchWithDealer(0), { hands: { 0: `${JUNK}5z` } })
+    const tile = state.players[0].hand[0].id
+    expect(act(state, 0, { tile, type: "discard" }).players[0].river).toHaveLength(1)
   })
 
   it("offers 九种九牌 on the first draw", () => {
