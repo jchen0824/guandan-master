@@ -159,7 +159,7 @@
     const result = all('[data-slot="mj-result"]')[0]
     // The result of a hand lies over the table on purpose, so the table under it is not checked against it.
     const onTable = result ? [] : all('[data-slot="mj-river"], [data-slot="mj-centre"], [data-slot="mj-grid"] [data-slot="mj-melds"], [data-slot="mj-wall-side"]')
-    const labels = [...all('[data-slot="mj-top"] > *, [data-slot="mj-status"], [data-slot="mj-actions"] > *, [data-slot="mj-hand"], [data-slot="mj-mine"] [data-slot="mj-melds"]'), ...onTable]
+    const labels = [...all('[data-slot="mj-top"] > *, [data-slot="mj-coach"], [data-slot="mj-status"], [data-slot="mj-actions"] > *, [data-slot="mj-hand"], [data-slot="mj-mine"] [data-slot="mj-melds"]'), ...onTable]
     if (result) mustBeOnScreen(result, "the result of the hand")
     for (const el of labels) mustBeOnScreen(el, `the label ${name(el)}`)
     labels.forEach((a, i) => {

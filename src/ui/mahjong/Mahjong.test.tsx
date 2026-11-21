@@ -158,6 +158,42 @@ describe("the mahjong table", () => {
     expect(river("你")).toHaveLength(0)
   })
 
+  it("shows the coach's pick and reason on the player's turn, and marks that tile", () => {
+    render(<Mahjong onHome={() => {}} />)
+    untilMyDiscard()
+    const coach = screen.getByLabelText("教练")
+    const pick = coach.getAttribute("data-pick") ?? ""
+    expect(pick).toMatch(/^([一二三四五六七八九][万筒索]|[东南西北白发中])$/)
+    expect(coach.textContent).toContain(`打${pick}`)
+    expect(within(coach).getByRole("list", { name: "教练比较的三种打法" }).textContent).toMatch(/向听|听牌/)
+    expect(within(hand()).getAllByRole("button", { name: pick }).some((tile) => tile.hasAttribute("data-coach"))).toBe(true)
+    fireEvent.click(within(coach).getByRole("button", { name: "怎么算的" }))
+    expect(within(screen.getByRole("dialog")).getByRole("list", { name: "每一种打法" }).children.length).toBeGreaterThan(3)
+  })
+
+  it("turns the coach off from the top bar, and remembers it", () => {
+    const first = render(<Mahjong onHome={() => {}} />)
+    untilMyDiscard()
+    fireEvent.click(screen.getByRole("button", { name: "教练" }))
+    expect(screen.queryByLabelText("教练")).toBeNull()
+    expect(document.querySelectorAll("[data-coach], [data-safety]")).toHaveLength(0)
+    expect(localStorage.getItem("guandan.mahjong.coach")).toBe("0")
+    first.unmount()
+    render(<Mahjong onHome={() => {}} />)
+    expect(screen.queryByLabelText("教练")).toBeNull()
+    expect(screen.getByRole("button", { name: "教练" }).getAttribute("aria-pressed")).toBe("false")
+  })
+
+  it("sets the computer players' level in 设置 and remembers it", () => {
+    render(<Mahjong onHome={() => {}} />)
+    fireEvent.click(screen.getByRole("button", { name: "设置" }))
+    const dialog = within(screen.getByRole("dialog"))
+    expect(dialog.getByRole("radio", { name: "普通" }).getAttribute("aria-checked")).toBe("true")
+    fireEvent.click(dialog.getByRole("radio", { name: "进阶" }))
+    expect(localStorage.getItem("guandan.mahjong.skill")).toBe("advanced")
+    expect(screen.getByRole("dialog").textContent).toContain("和教练的打法一样")
+  })
+
   it("goes home from the button at the left of the top bar", () => {
     const onHome = vi.fn<() => void>()
     render(<Mahjong onHome={onHome} />)
