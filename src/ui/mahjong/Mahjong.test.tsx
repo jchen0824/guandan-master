@@ -194,6 +194,40 @@ describe("the mahjong table", () => {
     expect(screen.getByRole("dialog").textContent).toContain("和教练的打法一样")
   })
 
+  it("explains the rules one section at a time, with tiles to show what the words mean", () => {
+    render(<Mahjong onHome={() => {}} />)
+    fireEvent.click(screen.getByRole("button", { name: "规则" }))
+    const rules = screen.getByRole("dialog")
+    const heading = (name: string) => within(rules).getByRole("button", { name })
+    // The first section is open and shows a winning hand as tiles, named for a screen reader.
+    expect(heading("和牌是什么样子").getAttribute("aria-expanded")).toBe("true")
+    within(rules).getByRole("img", { name: "一万二万三万" })
+    within(rules).getByRole("img", { name: "白白白" })
+    // A closed section's tiles are not shown.
+    expect(within(rules).queryByRole("img", { name: "九万一万" })).toBeNull()
+    // Opening another section closes the first, so the dialog stays about one screen tall.
+    fireEvent.click(heading("宝牌"))
+    expect(heading("宝牌").getAttribute("aria-expanded")).toBe("true")
+    expect(heading("和牌是什么样子").getAttribute("aria-expanded")).toBe("false")
+    within(rules).getByRole("img", { name: "九万一万" })
+    expect(within(rules).getAllByRole("button").map((each) => each.textContent)).toEqual([
+      "和牌是什么样子",
+      "顺子、刻子、对子",
+      "牌",
+      "吃、碰、杠",
+      "役：和牌至少要有一个",
+      "立直",
+      "自摸和荣和",
+      "振听：不能荣和的时候",
+      "宝牌",
+      "流局和坐庄",
+      "一场比赛",
+      "知道了",
+    ])
+    // The rules no longer say what 一索 looks like; the tiles show it.
+    expect(rules.textContent).not.toContain("鸟")
+  })
+
   it("goes home from the button at the left of the top bar", () => {
     const onHome = vi.fn<() => void>()
     render(<Mahjong onHome={onHome} />)

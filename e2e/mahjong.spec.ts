@@ -224,6 +224,23 @@ test("the coach leaves out a 进张 whose four tiles are all on the table", asyn
   await expect(page.getByRole("dialog").getByRole("listitem").first()).toContainText("进张 11 种 33 张")
 })
 
+test("every section of the rules opens on the screen, with its example tiles drawn", async ({ page }) => {
+  await openMahjong(page)
+  await page.getByRole("button", { name: "规则", exact: true }).click()
+  const rules = page.getByRole("dialog")
+  const headings = rules.locator('[data-slot="accordion-trigger"]')
+  await expect(headings).toHaveCount(11)
+  for (const heading of await headings.all()) {
+    const name = (await heading.textContent()) ?? ""
+    if ((await heading.getAttribute("aria-expanded")) !== "true") await heading.click()
+    await expect(heading).toHaveAttribute("aria-expanded", "true")
+    await expectLayoutToHold(page, `with the rules open at ${name}`)
+    // A section's pictures start loading when it opens, so give them time: one that never loads still fails.
+    const broken = () => rules.evaluate((dialog) => [...dialog.querySelectorAll("img")].filter((img) => img.checkVisibility() && (!img.complete || img.naturalWidth === 0)).length)
+    await expect.poll(broken, { message: `tile pictures that did not load in ${name}` }).toBe(0)
+  }
+})
+
 test("the rules and the settings fit on the screen", async ({ page }) => {
   await openMahjong(page)
   for (const name of ["规则", "设置"]) {

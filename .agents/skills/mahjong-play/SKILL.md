@@ -55,5 +55,5 @@ Four seats: the player (你, seat 0) and three computer players (下家, 对家,
 
 1. Write the position as a test beside the code with the helpers in `testing.ts`: `rig(state, { hands: { 0: "123m456p…" }, draws: "5s" })` deals chosen tiles, `matchWithDealer(0)` fixes the dealer, `kinds("5s")` reads a tile name. Assert the action and that the Chinese `reason` names the right idea.
 2. For a change to `bot.ts`, `coach.ts` or `efficiency.ts`, run `npm run test:levels` and put its numbers in the pull request.
-3. If you changed what is legal, update this file and the 规则 dialog (`Rules` in `src/ui/mahjong/Mahjong.tsx`) together.
+3. If you changed what is legal, update this file and the 规则 dialog (`RULES` in `src/ui/mahjong/Mahjong.tsx`) together. The dialog is eleven short sections in an accordion, one open at a time, so a phone shows it in about one screen. Keep each section to a few short sentences, and show tiles where they say more than words: `<Example groups={[["123m"], ["55p", "对子"]]} />` draws tiles written as digits and a suit letter (m 万, p 筒, s 索, z 东南西北白发中 as 1 to 7), each group with an optional word under it.
 4. Run `npm run check`, and `npm run test:e2e` if the screen shows something new.
