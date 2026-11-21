@@ -38,6 +38,32 @@ describe("教练", () => {
     expect([safety[kinds("7m")[0]], safety[kinds("4m")[0]], safety[kinds("5p")[0]]]).toEqual(["safe", "danger", "danger"])
   })
 
+  it("does not call a tile safe when every tile in hand is dangerous", () => {
+    // 八万 in the 牌河 makes nothing here a 现物 or a 筋, and no honour has been seen twice.
+    const advice = advise(withRiichi(rig(matchWithDealer(0), { hands: { 0: "147m258p369s12345z" } }), 2, "8m"))
+    expect(advice).toMatchObject({ kind: "discard", stance: "defend" })
+    const picked = advice?.kind === "discard" ? advice.options[0] : null
+    expect(picked?.safety).toBe("danger")
+    expect(advice?.reason).not.toContain("安全，")
+    expect(advice?.reason).not.toContain("相对安全")
+    expect(advice?.reason).toContain("找不到更安全的牌，这张也有危险")
+  })
+
+  it("does not count a 进张 whose four tiles are all in sight", () => {
+    // Without 东 the hand waits on 五索 and 八索. All four 五索 are in 下家's 牌河, so only 八索 can still come: two
+    // of them. Two 东 are there as well, which keeps a wait on the last 东 from being the better one.
+    const dealt = rig(matchWithDealer(0), { hands: { 0: "234567m345p67s88s1z" } })
+    const [five, east] = kinds("5s1z")
+    const gone = [five * 4, five * 4 + 1, five * 4 + 2, five * 4 + 3, east * 4 + 2, east * 4 + 3]
+    const river = gone.map((id) => ({ tile: { id, kind: id >> 2 }, riichi: false, tsumogiri: false, called: false }))
+    const state = { ...dealt, players: dealt.players.map((player, i) => (i === 1 ? Object.assign({}, player, { river }) : player)) }
+    const advice = advise(state)
+    expect(advice).toMatchObject({ kind: "discard", pick: kinds("1z")[0] })
+    expect(advice?.reason).toContain("听牌，等 1 种 2 张")
+    const picked = advice?.kind === "discard" ? advice.options[0] : null
+    expect(picked?.useful).toEqual(kinds("8s"))
+  })
+
   it("keeps attacking against a 立直 when its own hand is 听牌", () => {
     const state = withRiichi(rig(matchWithDealer(0), { hands: { 0: "234567m345p67s88s1z" } }), 2, "9p")
     expect(advise(state)).toMatchObject({ stance: "attack", pick: kinds("1z")[0] })

@@ -79,7 +79,14 @@ function discardAdvice(state: MahjongState, seat: number): Advice {
   if (defend) {
     const safest = options.slice().sort((a, b) => risk(a) - risk(b) || a.shanten - b.shanten || b.left - a.left)[0]
     const rest = options.filter((option) => option !== safest)
-    const why = safest.safety === "safe" ? `${who}打过或放过这张，是现物，绝对不会放铳` : safest.safety ? `它是${SAFETY_NAMES[safest.safety]}，相对安全` : ""
+    const why =
+      safest.safety === "safe"
+        ? `${who}打过或放过这张，是现物，绝对不会放铳`
+        : safest.safety === "danger"
+          ? "手里没有现物、筋或熟字牌，找不到更安全的牌，这张也有危险"
+          : safest.safety
+            ? `它是${SAFETY_NAMES[safest.safety]}，相对安全`
+            : ""
     return {
       kind: "discard",
       pick: safest.kind,

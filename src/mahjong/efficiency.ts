@@ -19,7 +19,7 @@ export interface DiscardChoice {
   kind: Kind
   /** 向听 after the discard. */
   shanten: number
-  /** 进张: the kinds that improve the hand afterwards, and how many of those tiles are not yet in sight. */
+  /** 进张: the kinds that improve the hand afterwards and are not all in sight, and how many of those tiles are left. */
   useful: Kind[]
   left: number
 }
@@ -36,7 +36,8 @@ export function discardChoices(state: MahjongState, seat: number): DiscardChoice
   const choices = counts.flatMap((count, kind): DiscardChoice[] => {
     if (count === 0) return []
     counts[kind]--
-    const useful = usefulKinds(counts, called)
+    // A kind whose four tiles are all in sight can no longer come, so it is not counted as 进张.
+    const useful = usefulKinds(counts, called).filter((k) => seen[k] < 4)
     const choice = { kind, shanten: shanten(counts, called), useful, left: useful.reduce((sum, k) => sum + 4 - seen[k], 0) }
     counts[kind]++
     return [choice]

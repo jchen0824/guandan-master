@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test"
-import { MAHJONG_SAVE_MANY_CALLS, MAHJONG_SAVE_THREE_INDICATORS, dealMahjongExactly, expectLayoutToHold, openHome, openMahjong, playMahjongHand, playMahjongMove, screen, waitForNextMove } from "./helpers"
+import { MAHJONG_SAVE_EXHAUSTED_WAIT, MAHJONG_SAVE_MANY_CALLS, MAHJONG_SAVE_NO_SAFE_TILE, MAHJONG_SAVE_THREE_INDICATORS, dealMahjongExactly, expectLayoutToHold, openHome, openMahjong, playMahjongHand, playMahjongMove, screen, waitForNextMove } from "./helpers"
 
 // The rules of mahjong are tested in src/mahjong. These tests ask what the other two games' tests ask:
 // on a real browser at this screen size, can a player see and reach everything?
@@ -157,6 +157,26 @@ test("the coach says what to discard, its working fits the screen, and it can be
   await page.getByRole("button", { name: "教练", exact: true }).click()
   await expect(coach).toHaveCount(0)
   await expectLayoutToHold(page, "with the coach off")
+})
+
+test("the coach does not call its discard safe when no tile in hand is", async ({ page }) => {
+  await openMahjong(page, { save: MAHJONG_SAVE_NO_SAFE_TILE })
+  const coach = page.getByRole("complementary", { name: "教练" })
+  await expect(coach).toHaveAttribute("data-stance", "defend")
+  const say = coach.locator('[data-slot="mj-say"]')
+  await expect(say).toContainText("找不到更安全的牌，这张也有危险")
+  await expect(say).not.toContainText("相对安全")
+  await expectLayoutToHold(page, "with the coach defending with a dangerous tile")
+})
+
+test("the coach leaves out a 进张 whose four tiles are all on the table", async ({ page }) => {
+  await openMahjong(page, { save: MAHJONG_SAVE_EXHAUSTED_WAIT })
+  const coach = page.getByRole("complementary", { name: "教练" })
+  // Twelve kinds would bring this hand nearer, but every tile of one of them has been discarded.
+  await expect(coach.locator('[data-slot="mj-say"]')).toContainText("进张 11 种 33 张")
+  // A phone's bar has no room for the list of options, so the count is read where every size shows it.
+  await coach.getByRole("button", { name: "怎么算的", exact: true }).click()
+  await expect(page.getByRole("dialog").getByRole("listitem").first()).toContainText("进张 11 种 33 张")
 })
 
 test("the rules and the settings fit on the screen", async ({ page }) => {
