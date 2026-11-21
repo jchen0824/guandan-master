@@ -122,7 +122,8 @@
   "overrides": [
     {
       "files": [
-        "src/engine/**"
+        "src/engine/**",
+        "src/mahjong/**"
       ],
       "rules": {
         "no-restricted-imports": [
