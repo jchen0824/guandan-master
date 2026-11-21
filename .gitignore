@@ -27,3 +27,6 @@ dist-ssr
 # Playwright
 test-results
 playwright-report
+
+# Proofs from the verify skill
+verify-out

@@ -57,6 +57,7 @@ A skill is a folder of instructions under `.agents/skills/`. If your agent does 
 | Riichi mahjong rules, computer players, coach advice, the mahjong 规则 dialog, or Chinese wording about mahjong play (`src/mahjong`, `ui/mahjong`) | [.agents/skills/mahjong-play/SKILL.md](.agents/skills/mahjong-play/SKILL.md) |
 | Anything under `src/ui`, `src/App.tsx`, `src/Root.tsx`, `src/index.css`, `src/holdem.css` or `src/mahjong.css` | [.agents/skills/guandan-ui/SKILL.md](.agents/skills/guandan-ui/SKILL.md), then the `ui-sdk` skill it points to |
 | Checking a screen change, reproducing a layout bug, or a failing browser test | [.agents/skills/browser-qa/SKILL.md](.agents/skills/browser-qa/SKILL.md) |
+| Proving a change in real Mobile Safari (the iOS Simulator on a Mac) before calling a screen change done | [.agents/skills/verify/SKILL.md](.agents/skills/verify/SKILL.md) |
 
 The skills above live in this repo, so a fresh clone already has them. The `ui-sdk` skill belongs to the ui-sdk project and is set up per machine:
 
@@ -168,6 +169,7 @@ Suppressing a lint rule needs a reason on the same line: `// oxlint-disable-next
 - Use `slice().sort()` rather than `toSorted()` and similar ES2023 array methods: older phone browsers and in-app webviews lack them and nothing polyfills them.
 - `legalPlays` re-reads any play that uses a wild card through `classify`, so its reported rank matches what `play` will record. Keep that when adding patterns.
 - Agreed rule variants: three failed attempts at A drop a team to level 2; return tribute must be a 10 or lower; after a double tribute the payer of the larger card leads (clockwise on a tie); a resisted tribute (抗贡) means the previous winner leads. The full rules are in the guandan-play skill.
+- On a Mac, look at a screen change in Mobile Safari with the verify skill before you push: `node .agents/skills/verify/verify.mjs launch`, then `open`, `press` and `proof`. Playwright's WebKit is not Safari, and no automated check reads a picture for a wrong colour.
 - Check a UI change at about 375×550, 852×300 and 1280×720, on both tables if it touches something they share (the hand, buttons, tools, top bar or dialogs). When testing in a browser, open the dev server as `http://qa.localhost:<port>` instead of `localhost`: it is the same server with separate storage, so test saves and settings do not leak into a real session.
 - UI tests start with `// @vitest-environment jsdom` on the first line. Engine tests run in plain Node and must stay that way.
 - Browser tests live in `e2e/` and run under Playwright against the production build. `e2e/page-tools.js` holds the layout probe; the browser-qa skill uses the same file for hands-on checks, so change it in one place.
