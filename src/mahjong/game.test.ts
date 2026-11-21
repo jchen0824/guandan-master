@@ -281,6 +281,18 @@ describe("一场比赛", () => {
     expect(parseSave(JSON.stringify({ ...toSave(newMatch(seeded(1))), dealer: 7 }))).toBeNull()
   })
 
+  it("plays legally at every level", () => {
+    for (const skill of ["novice", "basic", "advanced"] as const) {
+      const rng = seeded(21)
+      let state = newMatch(rng)
+      for (let step = 0; step < 3000 && state.phase !== "over"; step++) {
+        const seat = toAct(state)[0]
+        state = act(state, seat, botAction(state, seat, rng, skill))
+      }
+      expect(state.result, `${skill} finishes a hand`).not.toBeNull()
+    }
+  })
+
   it("decides without looking at hidden tiles", () => {
     const rng = seeded(5)
     let state = newMatch(rng)
@@ -293,8 +305,8 @@ describe("一场比赛", () => {
       const players = state.players.map((player, i) => (i === seat ? player : { ...player, hand: hidden.splice(0, player.hand.length).sort(byKind) }))
       const wall = hidden.splice(0, state.wall.length)
       const dead = state.dead.map((tile, i) => (i < 4 || i >= 4 + state.indicators ? hidden.splice(0, 1)[0] : tile))
-      const action = botAction(state, seat, seeded(step))
-      const blind = botAction({ ...state, players, wall, dead }, seat, seeded(step))
+      const action = botAction(state, seat, seeded(step), "advanced")
+      const blind = botAction({ ...state, players, wall, dead }, seat, seeded(step), "advanced")
       if (state.phase === "turn" && JSON.stringify(blind) !== JSON.stringify(action)) changed.push(step)
       state = act(state, seat, action)
     }

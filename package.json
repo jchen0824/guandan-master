@@ -24,7 +24,7 @@
     "screenshots:accept": "node scripts/accept-screenshots.mjs",
     "test:e2e:install": "playwright install chromium webkit",
     "bench": "VITE_BENCH=1 vitest run src/engine/benchmark.test.ts --reporter=verbose",
-    "test:levels": "VITE_LEVELS=1 vitest run src/holdem/levels.test.ts --reporter=verbose",
+    "test:levels": "VITE_LEVELS=1 vitest run src/holdem/levels.test.ts src/mahjong/levels.test.ts --reporter=verbose",
     "check:conventions": "node scripts/check-conventions.mjs",
     "check:bundle": "node scripts/check-bundle.mjs",
     "check:commits": "node scripts/check-commits.mjs",

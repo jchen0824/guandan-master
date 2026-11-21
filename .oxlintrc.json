@@ -18,7 +18,8 @@
   },
   "ignorePatterns": [
     "dist",
-    "node_modules"
+    "node_modules",
+    ".claude"
   ],
   "rules": {
     "eqeqeq": "error",
@@ -200,7 +201,8 @@
     {
       "files": [
         "src/engine/benchmark.test.ts",
-        "src/holdem/levels.test.ts"
+        "src/holdem/levels.test.ts",
+        "src/mahjong/levels.test.ts"
       ],
       "rules": {
         "no-console": "off",
@@ -226,6 +228,16 @@
         "unicorn/consistent-function-scoping": "off",
         "typescript/no-non-null-assertion": "off",
         "no-underscore-dangle": "off"
+      }
+    },
+    {
+      "files": [
+        ".agents/skills/**/*.mjs"
+      ],
+      "rules": {
+        "no-console": "off",
+        "no-await-in-loop": "off",
+        "unicorn/consistent-function-scoping": "off"
       }
     }
   ]

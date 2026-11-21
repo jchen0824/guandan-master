@@ -92,4 +92,6 @@ Say what you ran and what you saw, not that it "looks fine":
 
 For the 3D table, do not judge WebKit from a screenshot: Playwright's WebKit paints every 3D scene flat in one. Record a video with `recordVideo` and look at a frame from it.
 
-The closest thing to an iPhone is the `ios-safari` check on a pull request (`.github/workflows/ios-simulator.yml`). It runs Mobile Safari in Apple's iOS Simulator and keeps a screenshot in the run's `ios-simulator` artifact. Download it with `gh run download <run id> -n ios-simulator` and look at it when a change touches the 3D table. To add a check there, report the element's box from `e2e/ios/driver.js` and test its pixels in `e2e/ios/check-shot.mjs`.
+On a Mac, the [verify skill](../verify/SKILL.md) opens any screen in Mobile Safari in the iOS Simulator and saves a screenshot with the page's own layout report. Use it for the hands-on pass on a phone screen.
+
+In CI, the closest thing to an iPhone is the `ios-safari` check on a pull request (`.github/workflows/ios-simulator.yml`). It runs Mobile Safari in Apple's iOS Simulator and keeps a screenshot in the run's `ios-simulator` artifact. Download it with `gh run download <run id> -n ios-simulator` and look at it when a change touches the 3D table. To add a check there, report the element's box from `e2e/ios/driver.js` and test its pixels in `e2e/ios/check-shot.mjs`.
