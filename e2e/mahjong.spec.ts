@@ -230,6 +230,9 @@ test("every section of the rules opens on the screen, with its example tiles dra
   const rules = page.getByRole("dialog")
   const headings = rules.locator('[data-slot="accordion-trigger"]')
   await expect(headings).toHaveCount(11)
+  // The first section also names the two winning shapes that are not four sets and a pair.
+  await expect(rules).toContainText("七对子")
+  await expect(rules).toContainText("国士无双")
   for (const heading of await headings.all()) {
     const name = (await heading.textContent()) ?? ""
     if ((await heading.getAttribute("aria-expanded")) !== "true") await heading.click()

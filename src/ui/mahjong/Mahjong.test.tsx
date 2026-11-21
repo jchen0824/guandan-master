@@ -203,6 +203,9 @@ describe("the mahjong table", () => {
     expect(heading("和牌是什么样子").getAttribute("aria-expanded")).toBe("true")
     within(rules).getByRole("img", { name: "一万二万三万" })
     within(rules).getByRole("img", { name: "白白白" })
+    // The two shapes that are not four sets and a pair are winning hands too, and the coach plans for them.
+    expect(rules.textContent).toContain("七对子")
+    expect(rules.textContent).toContain("国士无双")
     // A closed section's tiles are not shown.
     expect(within(rules).queryByRole("img", { name: "九万一万" })).toBeNull()
     // Opening another section closes the first, so the dialog stays about one screen tall.
