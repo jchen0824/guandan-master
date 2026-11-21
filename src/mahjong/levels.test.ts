@@ -42,6 +42,7 @@ describe.skipIf(!import.meta.env.VITE_LEVELS)("the mahjong computer player level
       const won = play(strong, weak, true) + play(strong, weak, false)
       console.log(`${strong} against ${weak}: ${won > 0 ? "+" : ""}${won} points over ${2 * HANDS} hands`)
       expect(won).toBeGreaterThan(20000)
-    })
+      // About fifteen seconds on a laptop and nearer thirty on a CI runner.
+    }, 120_000)
   }
 })

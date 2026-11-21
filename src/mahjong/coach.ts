@@ -110,7 +110,8 @@ function answerAdvice(state: MahjongState, seat: number, legal: Action[]): Advic
   const valued = isDragon(kind) || kind === seatWind(state, seat) || kind === EAST + state.round
   const pon = legal.find((action) => action.type === "pon")
   if (pon && valued) return { kind: "answer", pick: pon, reason: `${kindName(kind)}是役牌，碰了就有役，以后吃碰也能和。` }
-  return { kind: "answer", pick: { type: "pass" }, reason: "先不鸣牌：鸣了就不能立直，手里又没有别的役，会和不了。" }
+  // The coach only ever calls 役牌. That is a rule for beginners, not a claim that this hand could not win open.
+  return { kind: "answer", pick: { type: "pass" }, reason: "先不鸣牌：鸣了就不能立直，之后要另外有役才能和。教练只建议碰役牌，其他的牌先留着门前清。" }
 }
 
 /** What the coach would do for the seat now, or null when the seat has nothing to decide. */

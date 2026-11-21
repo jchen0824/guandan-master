@@ -54,6 +54,9 @@ describe("教练", () => {
     const pass = advise(act(chi, 0, { type: "discard", tile: five ? five.id : -1 }), 1)
     expect(pass).toMatchObject({ kind: "answer", pick: { type: "pass" } })
     expect(pass?.reason).toContain("鸣了就不能立直")
+    // The pass is a rule for beginners. The reason must not claim the hand has no 役, which the coach does not check.
+    expect(pass?.reason).not.toMatch(/没有别的役|和不了/)
+    expect(pass?.reason).toContain("教练只建议碰役牌")
   })
 
   it("has nothing to say when it is not the seat's turn", () => {

@@ -31,7 +31,7 @@ Four seats: the player (你, seat 0) and three computer players (下家, 对家,
 - **立直.** Advised when the hand is closed and 听牌 and at least one winning tile is not in sight.
 - **Safety against a 立直.** `safe` (现物): in that seat's 牌河, or discarded by anyone since it declared. `suji` (筋): a number tile whose neighbours three away are safe on every side it has. `honor` (熟字牌): an honour seen twice or more. `danger`: anything else. With several seats in 立直 a tile is as dangerous as its worst case.
 - **攻 or 守.** With a 立直 on the table the coach attacks when its hand is 听牌, or one away and its best discard is not `danger`; otherwise it defends with the safest tile, breaking ties by what keeps the hand nearest.
-- **Answers.** It takes a win; it calls 碰 on 役牌 (白 发 中, the round wind, the seat wind); it lets everything else go and says why: a call gives up 立直, and a hand with no 役 cannot win.
+- **Answers.** It takes a win; it calls 碰 on 役牌 (白 发 中, the round wind, the seat wind); it lets everything else go and says why: a call gives up 立直, and an open hand then needs a 役 of its own. This is a rule for beginners. The coach does not check whether the hand could still win open (断幺九, a 役牌 already called), so its words must not say that it could not.
 - **The coach tells the truth.** The `reason` must name the rule that decided the advice, with numbers that match the options shown beside it.
 
 ## The computer players
