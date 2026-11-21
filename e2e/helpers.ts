@@ -49,6 +49,12 @@ export const SAVE_AFTER_DOUBLE_WIN = JSON.stringify({
   result: { order: [0, 2, 1, 3], winnerTeam: 0, gain: 3, levelsBefore: [2, 2], levelsAfter: [5, 2], notes: [], matchWinner: null },
 })
 
+/**
+ * A mahjong hand saved on the player's turn after two of their own 杠 and another seat's 立直: three 宝牌 indicators
+ * and a stick on the table, which is as much as the top bar has to hold. Found by playing seeds until one came up.
+ */
+export const MAHJONG_SAVE_THREE_INDICATORS = readFileSync(fileURLToPath(new URL("./fixtures/mahjong-three-indicators.json", import.meta.url)), "utf8").trim()
+
 /** Runs in the page before the app starts. It needs the page tools, so both go into the page as one script. */
 function prepare({ seed, save, view, game, seats }: { seed: number; save?: string; view: string; game: string; seats?: number }) {
   window.guandanQa.seed(seed)
@@ -61,7 +67,7 @@ function prepare({ seed, save, view, game, seats }: { seed: number; save?: strin
     sessionStorage.setItem("qa-view-used", "1")
   }
   if (save && !sessionStorage.getItem("qa-save-used")) {
-    localStorage.setItem("guandan.match", save)
+    localStorage.setItem(game === "mahjong" ? "guandan.mahjong.match" : "guandan.match", save)
     sessionStorage.setItem("qa-save-used", "1")
   }
   if (seats && !sessionStorage.getItem("qa-seats-used")) {
@@ -90,7 +96,7 @@ export async function openHoldem(page: Page, options: { seed?: number; seats?: 6
 }
 
 /** Opens the mahjong table with a fixed deal and a clock the test controls. */
-export async function openMahjong(page: Page, options: { seed?: number } = {}) {
+export async function openMahjong(page: Page, options: { seed?: number; save?: string } = {}) {
   await open(page, { ...options, game: "mahjong" })
   await expect(page.getByRole("list", { name: /^你的手牌/ })).toBeVisible()
 }

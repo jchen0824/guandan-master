@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test"
-import { dealMahjongExactly, expectLayoutToHold, openHome, openMahjong, playMahjongHand, playMahjongMove, screen, waitForNextMove } from "./helpers"
+import { MAHJONG_SAVE_THREE_INDICATORS, dealMahjongExactly, expectLayoutToHold, openHome, openMahjong, playMahjongHand, playMahjongMove, screen, waitForNextMove } from "./helpers"
 
 // The rules of mahjong are tested in src/mahjong. These tests ask what the other two games' tests ask:
 // on a real browser at this screen size, can a player see and reach everything?
@@ -68,6 +68,25 @@ test("a tile lifts on the first tap and is discarded by 打出", async ({ page }
   await discard.click()
   await expect(mine).toHaveCount(before + 1)
   await expect(hand).toHaveCount(tiles - 1)
+})
+
+test("the top bar holds up to five 宝牌 indicators and a 立直 stick without pushing 设置 off the screen", async ({ page }) => {
+  await openMahjong(page, { save: MAHJONG_SAVE_THREE_INDICATORS })
+  const indicators = page.getByRole("group", { name: /^宝牌指示牌：/ }).getByRole("img")
+  await expect(indicators).toHaveCount(3)
+  await expect(page.locator('[data-slot="mj-round"]')).toContainText("供托")
+  await expect(page.getByRole("button", { name: "设置", exact: true })).toBeInViewport({ ratio: 1 })
+  await expectLayoutToHold(page, "with three indicators and a stick on the table")
+  // Five indicators need four 杠 in one hand, which no saved hand here has. The bar is given two more of the same
+  // tiles to stand in for them: what is checked is the room in the bar, not the rules.
+  await page.evaluate(() => {
+    const bar = document.querySelector('[data-slot="mj-dora"]')
+    const tile = bar?.querySelector('[data-slot="mj-tile"]')
+    if (bar && tile) bar.append(tile.cloneNode(true), tile.cloneNode(true))
+  })
+  await expect(indicators).toHaveCount(5)
+  await expect(page.getByRole("button", { name: "设置", exact: true })).toBeInViewport({ ratio: 1 })
+  await expectLayoutToHold(page, "with five indicators and a stick on the table")
 })
 
 test("the rules and the settings fit on the screen", async ({ page }) => {

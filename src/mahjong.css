@@ -115,6 +115,29 @@
   font-size: 13px;
 }
 
+/* A 杠 adds an indicator, up to five. They are the one thing in the bar that gives way, so the rest stays on screen. */
+[data-slot="mj-dora"] {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+[data-slot="mj-dora"] > span:first-child,
+[data-slot="mj-round"],
+[data-slot="mj-menu"],
+[data-slot="mj-top"] > [data-slot="button"] {
+  flex: none;
+}
+[data-slot="mj-dora"] [data-slot="mj-tile"] {
+  flex: 0 1 var(--tw);
+  min-width: 0;
+  width: auto;
+  height: auto;
+  aspect-ratio: 3 / 4;
+}
+[data-slot="mj-dora"] [data-slot="mj-face"] {
+  width: 100%;
+  height: 100%;
+}
+
 [data-slot="mj-menu"] {
   display: flex;
   align-items: center;
