@@ -827,9 +827,11 @@
   [data-slot="mj-river"][data-seat="3"] {
     rotate: 90deg;
   }
-  /* The corners left for the opponents' calls are now as wide as a band is deep. */
+  /* The corners left for the opponents' calls are now as wide as a band is deep. A call of three tiles takes more
+     than half that width, so each call has a row of its own, and four rows of tiles a third taller than wide, with
+     three gaps between them, must fit the corner's height. */
   [data-slot="mj-grid"] [data-slot="mj-melds"] {
-    --tw: calc(var(--band-h) / 5.2);
+    --tw: calc((var(--band-h) - 12px) / 5.4);
   }
 }
 

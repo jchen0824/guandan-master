@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test"
 import type { Page } from "@playwright/test"
-import { MAHJONG_SAVE_EXHAUSTED_WAIT, MAHJONG_SAVE_MANY_CALLS, MAHJONG_SAVE_NO_SAFE_TILE, MAHJONG_SAVE_THREE_INDICATORS, dealMahjongExactly, expectLayoutToHold, openHome, openMahjong, playMahjongHand, playMahjongMove, screen, waitForNextMove } from "./helpers"
+import { MAHJONG_SAVE_EXHAUSTED_WAIT, MAHJONG_SAVE_FOUR_CALLS, MAHJONG_SAVE_MANY_CALLS, MAHJONG_SAVE_NO_SAFE_TILE, MAHJONG_SAVE_THREE_INDICATORS, dealMahjongExactly, expectLayoutToHold, openHome, openMahjong, playMahjongHand, playMahjongMove, screen, waitForNextMove } from "./helpers"
 
 // The rules of mahjong are tested in src/mahjong. These tests ask what the other two games' tests ask:
 // on a real browser at this screen size, can a player see and reach everything?
@@ -140,7 +140,7 @@ function offTheFelt(page: Page, felt: Felt) {
     const top = box.top + box.height / 2 - high / 2
     const inset = (y: number) => f.insetTop + ((f.insetBottom - f.insetTop) * ((y - top) / high - f.top)) / (f.bottom - f.top)
     const problems: string[] = []
-    for (const el of document.querySelectorAll('[data-slot="mj-wall-side"], [data-slot="mj-river"]')) {
+    for (const el of document.querySelectorAll('[data-slot="mj-wall-side"], [data-slot="mj-river"], [data-slot="mj-grid"] [data-slot="mj-melds"]')) {
       const r = el.getBoundingClientRect()
       const name = el.getAttribute("aria-label") ?? el.getAttribute("data-side") ?? ""
       if (r.top < top + f.top * high - 2 || r.bottom > top + f.bottom * high + 2) problems.push(`${name} is above or below the felt`)
@@ -239,6 +239,27 @@ test("an upright phone lays the 牌河 out square, with the side seats' discards
   expect(Math.abs(shape.grid.wide - shape.grid.high), `the 牌河 is ${Math.round(shape.grid.wide)}×${Math.round(shape.grid.high)}`).toBeLessThan(shape.grid.wide * 0.1)
   expect([shape.left, shape.right], "上家's 牌河 turns a quarter clockwise, 下家's a quarter the other way").toEqual(["90deg", "-90deg"])
   await expectLayoutToHold(page, "with the square 牌河")
+})
+
+test("on an upright phone an opponent's four calls fit in their corner of the 牌河", async ({ page }, info) => {
+  test.skip(info.project.name !== "desktop-chromium", "one browser is enough for a rule of the stylesheet")
+  for (const size of [{ width: 393, height: 745 }, { width: 360, height: 740 }, { width: 430, height: 932 }]) {
+    await page.setViewportSize(size)
+    await openMahjong(page, { save: MAHJONG_SAVE_FOUR_CALLS })
+    const calls = page.locator('[data-slot="mj-grid"] [data-slot="mj-melds"]').filter({ has: page.locator('[data-slot="mj-meld"]:nth-child(4)') })
+    await expect(calls).toHaveCount(1)
+    const fits = await calls.evaluate((corner) => {
+      const box = corner.getBoundingClientRect()
+      const cell = corner.parentElement?.getBoundingClientRect()
+      const grid = getComputedStyle(corner.parentElement ?? corner)
+      const [, , side] = grid.gridTemplateColumns.split(" ").map(Number.parseFloat)
+      return { tall: Math.round(box.height), wide: Math.round(box.width), corner: Math.round(side), inGrid: cell ? box.top >= cell.top - 1 && box.bottom <= cell.bottom + 1 : false }
+    })
+    expect(fits.tall, `four calls are ${fits.tall}px tall in a corner ${fits.corner}px square at ${size.width}×${size.height}`).toBeLessThanOrEqual(fits.corner + 1)
+    expect(fits.wide, `four calls are ${fits.wide}px wide at ${size.width}×${size.height}`).toBeLessThanOrEqual(fits.corner + 1)
+    expect(await offTheFelt(page, UPRIGHT), `what is off the felt at ${size.width}×${size.height}`).toEqual([])
+    await expectLayoutToHold(page, `with four calls in a corner at ${size.width}×${size.height}`)
+  }
 })
 
 test("the rules and the settings fit on the screen", async ({ page }) => {
