@@ -200,7 +200,8 @@
     {
       "files": [
         "src/engine/benchmark.test.ts",
-        "src/holdem/levels.test.ts"
+        "src/holdem/levels.test.ts",
+        "src/mahjong/levels.test.ts"
       ],
       "rules": {
         "no-console": "off",

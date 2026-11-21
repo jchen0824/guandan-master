@@ -3,10 +3,14 @@ import { Dialog, DialogBackdrop, DialogClose, DialogContent, DialogDescription, 
 import { Field, FieldDescription, FieldLabel } from "@ui-sdk/react/field"
 import { SegmentedControl, SegmentedControlItem } from "@ui-sdk/react/segmented-control"
 import { useState } from "react"
+import type { BotSkill } from "../../mahjong/bot"
+import { SAFETY_NAMES, advise, shantenName } from "../../mahjong/coach"
+import type { Advice, DiscardOption } from "../../mahjong/coach"
 import { HERO, MATCH_LENGTHS, SEAT_NAMES, handName, indicatorTiles } from "../../mahjong/game"
 import type { Action, MahjongState, MatchLength, Meld, Win } from "../../mahjong/game"
 import { byKind, kindName, points } from "../../mahjong/tiles"
 import type { Kind, Tile } from "../../mahjong/tiles"
+import { useSaved } from "../useSaved"
 import { useMahjong } from "./useMahjong"
 import { actionLabel, ranking, resultTitle, signed, statusLine, tileImage, windOf, winTitle, worthLine, yakuLine } from "./words"
 
@@ -118,6 +122,7 @@ function Centre({ game }: { game: MahjongState }) {
           data-slot="mj-seat"
           data-seat={seat}
           data-dealer={seat === game.dealer ? "" : undefined}
+          data-riichi={player.riichi > 0 ? "" : undefined}
           data-active={game.phase === "turn" && game.turn === seat ? "" : undefined}
           aria-label={`${SEAT_NAMES[seat]}，${windOf(game, seat)}家，${points(player.points)} 点${player.riichi > 0 ? "，已立直" : ""}`}
         >
@@ -216,7 +221,7 @@ function Rules() {
   )
 }
 
-function Settings({ length, onRestart }: { length: MatchLength; onRestart: (length: MatchLength) => void }) {
+function Settings({ length, onRestart, skill, onSkill }: { length: MatchLength; onRestart: (length: MatchLength) => void; skill: BotSkill; onSkill: (skill: BotSkill) => void }) {
   const [picked, setPicked] = useState<MatchLength | null>(null)
   const [confirming, setConfirming] = useState(false)
   return (
@@ -232,6 +237,17 @@ function Settings({ length, onRestart }: { length: MatchLength; onRestart: (leng
       <DialogContent>
         <DialogTitle>比赛设置</DialogTitle>
         <DialogDescription>换比赛长度或重新开始，都会从东一局、每人 25,000 点重新打。</DialogDescription>
+        <Field>
+          <FieldLabel>电脑对手</FieldLabel>
+          <SegmentedControl value={skill} onValueChange={(level) => level && onSkill(level as BotSkill)}>
+            {LEVELS.map(([level, name]) => (
+              <SegmentedControlItem key={level} value={level}>
+                {name}
+              </SegmentedControlItem>
+            ))}
+          </SegmentedControl>
+          <FieldDescription>{LEVEL_NOTES[skill]} 从他们的下一步开始生效，教练的建议不受影响。</FieldDescription>
+        </Field>
         <Field>
           <FieldLabel>比赛长度</FieldLabel>
           <SegmentedControl
@@ -274,8 +290,101 @@ function Settings({ length, onRestart }: { length: MatchLength; onRestart: (leng
   )
 }
 
+const LEVELS: [BotSkill, string][] = [
+  ["novice", "新手"],
+  ["basic", "普通"],
+  ["advanced", "进阶"],
+]
+const LEVEL_NOTES: Record<BotSkill, string> = {
+  novice: "只看离听牌还差几张，不数进张；能碰就碰，常常碰到没有役；从不防守。适合先熟悉规则。",
+  basic: "按最快听牌的打法出牌，只碰役牌，听牌就立直，但别人立直了也不防守。",
+  advanced: "和教练的打法一样：平时走最快的路，别人立直而自己离听牌还远时，改打安全牌。",
+}
+
+function Option({ option }: { option: DiscardOption }) {
+  return (
+    <li>
+      <span data-slot="mj-tile">
+        <Face kind={option.kind} />
+      </span>
+      <b>打{kindName(option.kind)}</b>
+      {option.safety ? (
+        <span data-slot="mj-safety" data-safety={option.safety}>
+          {SAFETY_NAMES[option.safety]}
+        </span>
+      ) : null}
+      <span>
+        {shantenName(option.shanten)} · 进张 {option.useful.length} 种 {option.left} 张
+      </span>
+    </li>
+  )
+}
+
+/** Every discard the coach weighed, and what its words mean. */
+function Working({ options }: { options: DiscardOption[] }) {
+  return (
+    <Dialog>
+      <DialogTrigger data-variant="text" data-how="">
+        怎么算的
+      </DialogTrigger>
+      <DialogBackdrop />
+      <DialogContent initialFocus="content">
+        <DialogTitle>教练是怎么算的</DialogTitle>
+        <DialogDescription>每一种能打的牌，打完以后手牌离听牌还差几张、有多少张牌能让它更近。排在最前的是教练的选择。</DialogDescription>
+        <ul data-slot="mj-options" aria-label="每一种打法">
+          {options.map((option) => (
+            <Option key={option.kind} option={option} />
+          ))}
+        </ul>
+        <ul data-slot="rules-list">
+          <li>
+            <b>向听</b>：离听牌还差几张。听牌是只差一张就和；一向听是再来一张有用的牌就听牌。
+          </li>
+          <li>
+            <b>进张</b>：能让手牌更近一步的牌。种数越多、剩的张数越多，越容易摸到。已经看得见的牌不算在内。
+          </li>
+          <li>
+            <b>现物</b>：立直的人自己打过的牌，或者他立直以后别人打出来他没和的牌。他不能荣和这些牌，绝对安全。
+          </li>
+          <li>
+            <b>筋</b>：比如他打过四万，那么一万和七万不会是他两面听的牌，相对安全，但不是绝对。
+          </li>
+          <li>
+            <b>熟字牌</b>：已经看见两张以上的字牌，别人很难用它和。<b>危险</b>：没有任何线索的牌。
+          </li>
+        </ul>
+        <DialogClose data-variant="play">知道了</DialogClose>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+/** The coach: what it would do now and why. Tests read its pick from `data-pick`. */
+function Coach({ advice }: { advice: Advice | null }) {
+  const discard = advice?.kind === "discard" ? advice : null
+  return (
+    <aside data-slot="mj-coach" data-stance={discard?.stance} data-pick={advice?.kind === "discard" ? kindName(advice.pick) : advice ? actionLabel(advice.pick) : undefined} aria-label="教练">
+      <h2>
+        教练{discard ? <span data-slot="mj-stance">{discard.stance === "defend" ? "守" : "攻"}</span> : null}
+      </h2>
+      <p data-slot="mj-say">{advice ? advice.reason : "等别人出牌。轮到你时，我会告诉你打哪张、为什么。"}</p>
+      {discard ? (
+        <>
+          <ul data-slot="mj-options" aria-label="教练比较的三种打法">
+            {discard.options.slice(0, 3).map((option) => (
+              <Option key={option.kind} option={option} />
+            ))}
+          </ul>
+          <Working options={discard.options} />
+        </>
+      ) : null}
+    </aside>
+  )
+}
+
 /** The player's tiles. One tap lifts a tile, a second tap on it discards it; 打出 and 立直 act on the lifted one. */
-function Hand({ game, legal, picked, onPick }: { game: MahjongState; legal: Action[]; picked: number | null; onPick: (tile: Tile) => void }) {
+function Hand({ game, legal, picked, onPick, advice }: { game: MahjongState; legal: Action[]; picked: number | null; onPick: (tile: Tile) => void; advice: Advice | null }) {
+  const safetyOf = (kind: Kind) => (advice?.kind === "discard" ? advice.options.find((option) => option.kind === kind)?.safety : undefined)
   const { hand } = game.players[HERO]
   const drawn = game.phase === "turn" && game.turn === HERO ? game.drawn : null
   const shown = [...hand.filter((tile) => tile.id !== drawn?.id).sort(byKind), ...(drawn ? [drawn] : [])]
@@ -291,6 +400,8 @@ function Hand({ game, legal, picked, onPick }: { game: MahjongState; legal: Acti
             aria-pressed={picked === tile.id}
             disabled={!discards.some((action) => action.tile === tile.id)}
             data-ready={discards.some((action) => action.tile === tile.id && action.riichi) ? "" : undefined}
+            data-coach={advice?.kind === "discard" && advice.pick === tile.kind ? "" : undefined}
+            data-safety={safetyOf(tile.kind) ?? undefined}
             onClick={() => onPick(tile)}
           >
             <Face kind={tile.kind} />
@@ -302,7 +413,8 @@ function Hand({ game, legal, picked, onPick }: { game: MahjongState; legal: Acti
 }
 
 function Mahjong({ onHome }: { onHome: () => void }) {
-  const { game, legal, choose, deal, restart } = useMahjong()
+  const { game, legal, skill, setSkill, choose, deal, restart } = useMahjong()
+  const [coachOn, setCoachOn] = useSaved("guandan.mahjong.coach", true)
   // The lifted tile belongs to one moment of the hand: once anything happens, nothing is lifted.
   const [lifted, setLifted] = useState<{ tile: number; at: number } | null>(null)
   const picked = lifted && lifted.at === game.actions.length ? lifted.tile : null
@@ -313,13 +425,14 @@ function Mahjong({ onHome }: { onHome: () => void }) {
   const lastDiscard = game.actions.reduce<number | null>((found, entry) => (entry.action.type === "discard" ? entry.action.tile : found), null)
   const last = game.result ? null : lastDiscard
   const long = game.players.some((player) => player.river.length > 18)
+  const advice = coachOn && !game.result ? advise(game) : null
   const pick = (tile: Tile) => {
     if (picked === tile.id && plain) choose(plain)
     else setLifted({ tile: tile.id, at: game.actions.length })
   }
 
   return (
-    <main data-slot="mahjong" data-over={game.result ? "" : undefined} data-long={long ? "" : undefined}>
+    <main data-slot="mahjong" data-over={game.result ? "" : undefined} data-long={long ? "" : undefined} data-coach-on={coachOn ? "" : undefined}>
       <header data-slot="mj-top">
         <Button data-variant="text" data-home="" aria-label="回到首页" onClick={onHome}>
           <span aria-hidden="true">‹</span>
@@ -336,11 +449,15 @@ function Mahjong({ onHome }: { onHome: () => void }) {
           ))}
         </span>
         <div data-slot="mj-menu">
+          <Button data-variant="coach" aria-pressed={coachOn} onClick={() => setCoachOn(!coachOn)}>
+            教练
+          </Button>
           <Rules />
-          <Settings length={game.length} onRestart={restart} />
+          <Settings length={game.length} onRestart={restart} skill={skill} onSkill={setSkill} />
         </div>
       </header>
 
+      {coachOn ? <Coach advice={advice} /> : null}
       <div data-slot="mj-table">
         <div data-slot="mj-ring">
         <Walls game={game} />
@@ -393,7 +510,7 @@ function Mahjong({ onHome }: { onHome: () => void }) {
           )}
         </div>
         <div data-slot="mj-mine">
-          <Hand game={game} legal={legal} picked={picked} onPick={pick} />
+          <Hand game={game} legal={legal} picked={picked} onPick={pick} advice={advice} />
           <Melds game={game} seat={HERO} />
         </div>
       </footer>

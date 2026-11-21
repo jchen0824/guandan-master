@@ -139,6 +139,26 @@ test("the wall and the 牌河 stay on the felt of the table picture at any shape
   }
 })
 
+test("the coach says what to discard, its working fits the screen, and it can be turned off", async ({ page }) => {
+  await openMahjong(page)
+  await dealMahjongExactly(page, 3)
+  for (let step = 0; step < 40 && (await page.locator('[data-slot="mj-actions"]').getByRole("button", { name: "打出", exact: true }).count()) === 0; step++) {
+    if ((await screen(page)).myTurn) await playMahjongMove(page)
+    else await waitForNextMove(page)
+  }
+  const coach = page.getByRole("complementary", { name: "教练" })
+  await expect(coach).toHaveAttribute("data-pick", /.+/)
+  await expect(coach).toBeInViewport({ ratio: 1 })
+  await expectLayoutToHold(page, "with the coach's advice showing")
+  await coach.getByRole("button", { name: "怎么算的", exact: true }).click()
+  await expect(page.getByRole("dialog")).toBeVisible()
+  await expectLayoutToHold(page, "with the coach's working open")
+  await page.getByRole("dialog").getByRole("button", { name: "知道了", exact: true }).click()
+  await page.getByRole("button", { name: "教练", exact: true }).click()
+  await expect(coach).toHaveCount(0)
+  await expectLayoutToHold(page, "with the coach off")
+})
+
 test("the rules and the settings fit on the screen", async ({ page }) => {
   await openMahjong(page)
   for (const name of ["规则", "设置"]) {

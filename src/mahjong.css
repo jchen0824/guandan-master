@@ -429,6 +429,11 @@
   font-weight: 700;
 }
 
+/* A small centre panel has no room for the word, so a seat in 立直 gets a brass wind badge there. */
+[data-slot="mj-seat"][data-riichi] [data-slot="mj-wind"] {
+  box-shadow: 0 0 0 1.5px var(--brass);
+}
+
 /* A low table draws small tiles and so a small centre panel: it keeps the wind and the points, as on a phone, and
    leaves out the names, which where a seat sits already says. A phone on its side has a wide panel and keeps them. */
 @media (min-height: 481px) {
@@ -439,7 +444,8 @@
     [data-slot="mj-seat"] {
       gap: 2px;
     }
-    [data-slot="mj-name"] {
+    [data-slot="mj-name"],
+    [data-slot="mj-riichi"] {
       display: none;
     }
   }
@@ -728,7 +734,8 @@
     gap: 2px;
   }
   /* Where a seat sits says who it is, so a small panel keeps the wind and the points. */
-  [data-slot="mj-name"] {
+  [data-slot="mj-name"],
+  [data-slot="mj-riichi"] {
     display: none;
   }
   [data-slot="mj-controls"] {
@@ -876,5 +883,217 @@
   }
   [data-slot="mj-result"] h2 {
     font-size: 15px;
+  }
+}
+
+/* ---- The coach: a panel right of the table on a wide screen, a bar over the table elsewhere ---- */
+[data-slot="mahjong"] [data-slot][data-variant="coach"] {
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 0.28);
+  background: var(--hud);
+  color: var(--cream);
+  font-size: 13px;
+  font-weight: 700;
+}
+[data-slot="mahjong"] [data-slot][data-variant="coach"][aria-pressed="true"] {
+  border-color: var(--brass);
+  color: var(--brass);
+}
+[data-slot="mj-coach"] {
+  --tw: 22px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--hud);
+  font-size: 14px;
+  line-height: 1.5;
+  z-index: 2;
+}
+[data-slot="mj-coach"] h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--cream-soft);
+}
+[data-slot="mj-stance"] {
+  padding: 0 8px;
+  border-radius: 9px;
+  background: #1f5e3d;
+  color: #fff;
+  font-size: 12px;
+}
+[data-slot="mj-coach"][data-stance="defend"] [data-slot="mj-stance"] {
+  background: #7a2727;
+}
+[data-slot="mj-say"] {
+  font-size: 15px;
+}
+[data-slot="mj-options"] {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+  color: var(--cream-soft);
+}
+[data-slot="mj-options"] li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+[data-slot="mj-options"] b {
+  color: var(--cream);
+}
+[data-slot="mj-safety"] {
+  padding: 0 6px;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 12px;
+}
+[data-slot="mj-safety"][data-safety="safe"] {
+  background: #1f5e3d;
+}
+[data-slot="mj-safety"][data-safety="suji"],
+[data-slot="mj-safety"][data-safety="honor"] {
+  background: #6b5514;
+}
+[data-slot="mj-safety"][data-safety="danger"] {
+  background: #7a2727;
+}
+[data-slot="mj-coach"] > [data-how] {
+  align-self: flex-start;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 13px;
+}
+/* What the coach marks on the player's own tiles: its pick, and how safe each tile is against a 立直. */
+[data-slot="mj-hand"] [data-slot="mj-tile"] {
+  position: relative;
+}
+[data-slot="mj-hand"] [data-slot="mj-tile"][data-coach]::after {
+  content: "教练";
+  position: absolute;
+  left: 50%;
+  top: calc(var(--hw) * -0.42);
+  transform: translateX(-50%);
+  padding: 0 5px;
+  border-radius: 6px;
+  background: var(--brass);
+  color: var(--brass-ink);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+[data-slot="mj-hand"] [data-slot="mj-tile"][data-safety]::before {
+  content: "";
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  bottom: calc(var(--hw) * -0.1);
+  height: 4px;
+  border-radius: 2px;
+  background: #b5403a;
+}
+[data-slot="mj-hand"] [data-slot="mj-tile"][data-safety="safe"]::before {
+  background: #35c27a;
+}
+[data-slot="mj-hand"] [data-slot="mj-tile"][data-safety="suji"]::before,
+[data-slot="mj-hand"] [data-slot="mj-tile"][data-safety="honor"]::before {
+  background: #e0b93b;
+}
+
+
+/* On a wide screen the coach takes a column, and the buttons go back to a row of their own under the table:
+   there is no room beside a narrower table for a column of them. */
+@media (min-width: 1240px) and (min-height: 481px) {
+  [data-slot="mahjong"][data-coach-on] {
+    grid-template-columns: minmax(0, 1fr) 300px;
+  }
+  [data-coach-on] > [data-slot="mj-top"] {
+    grid-column: 1 / 3;
+  }
+  [data-coach-on] > [data-slot="mj-coach"] {
+    grid-column: 2;
+    grid-row: 2 / 4;
+    margin: 10px;
+    overflow-y: auto;
+  }
+  [data-coach-on] > [data-slot="mj-table"],
+  [data-coach-on] > [data-slot="mj-controls"] {
+    grid-column: 1;
+  }
+  [data-coach-on] > [data-slot="mj-controls"] {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "status actions"
+      "mine mine";
+  }
+  [data-coach-on] [data-slot="mj-status"] {
+    text-align: left;
+  }
+  [data-coach-on] [data-slot="mj-actions"] {
+    position: static;
+    max-width: 45vw;
+    min-height: 46px;
+  }
+}
+/* Narrower screens and upright phones: a bar between the top bar and the table, with the sentence and 怎么算的. */
+@media (max-width: 1239px) and (min-height: 481px) {
+  [data-slot="mahjong"][data-coach-on] {
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+  }
+  [data-coach-on] > [data-slot="mj-coach"] {
+    flex-direction: row;
+    align-items: center;
+    margin: 0 6px 6px;
+    padding: 6px 12px;
+    gap: 10px;
+  }
+  [data-slot="mj-coach"] > [data-slot="mj-options"],
+  [data-slot="mj-coach"] > h2 {
+    display: none;
+  }
+  [data-slot="mj-coach"] > [data-slot="mj-say"] {
+    flex: 1;
+    font-size: 13px;
+  }
+  [data-slot="mj-coach"] > [data-how] {
+    flex: none;
+    align-self: center;
+  }
+}
+/* A phone on its side: the coach's sentence takes the place of the status line, left of the table. */
+@media (max-height: 480px) {
+  [data-coach-on] > [data-slot="mj-coach"] {
+    grid-column: 1;
+    grid-row: 2;
+    align-self: center;
+    margin: 0 4px 0 8px;
+    padding: 6px 8px;
+    gap: 4px;
+    max-height: 100%;
+    overflow-y: auto;
+  }
+  [data-slot="mj-coach"] > [data-slot="mj-options"],
+  [data-slot="mj-coach"] > h2 {
+    display: none;
+  }
+  [data-slot="mj-coach"] > [data-slot="mj-say"] {
+    font-size: 12px;
+  }
+  [data-coach-on] [data-slot="mj-status"] {
+    visibility: hidden;
   }
 }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
-import { botAction } from "../../mahjong/bot"
+import { BOT_SKILLS, botAction } from "../../mahjong/bot"
+import type { BotSkill } from "../../mahjong/bot"
 import { HERO, act, legalActions, newMatch, nextHand, resumeMatch, toAct, toSave } from "../../mahjong/game"
 import type { Action, MahjongState, MatchLength } from "../../mahjong/game"
 import { savedLength, savedMatch, startOver, writeMatch } from "./storage"
@@ -8,7 +9,17 @@ import { savedLength, savedMatch, startOver, writeMatch } from "./storage"
 const BOT_DELAY = 800
 const CALL_DELAY = 300
 
+const SKILL_KEY = "guandan.mahjong.skill"
 const random = () => Math.random()
+
+function savedSkill(): BotSkill {
+  try {
+    const saved = localStorage.getItem(SKILL_KEY)
+    return BOT_SKILLS.find((skill) => skill === saved) ?? "basic"
+  } catch {
+    return "basic"
+  }
+}
 
 /** The table to open with: the hand being played when the player left, or a new match. */
 function opening(): MahjongState {
@@ -24,10 +35,10 @@ function opening(): MahjongState {
 }
 
 /** The move the table makes without the player, if any: a computer player's, or the player's own discard after 立直. */
-function nextMove(game: MahjongState): { delay: number; move: () => MahjongState } | null {
+function nextMove(game: MahjongState, skill: BotSkill): { delay: number; move: () => MahjongState } | null {
   const waiting = toAct(game)
   const bot = waiting.find((seat) => seat !== HERO)
-  if (bot !== undefined) return { delay: game.phase === "call" ? CALL_DELAY : BOT_DELAY, move: () => act(game, bot, botAction(game, bot, random)) }
+  if (bot !== undefined) return { delay: game.phase === "call" ? CALL_DELAY : BOT_DELAY, move: () => act(game, bot, botAction(game, bot, random, skill)) }
   const legal = waiting.includes(HERO) ? legalActions(game, HERO) : []
   const only = legal.length === 1 && legal[0].type === "discard" ? legal[0] : null
   return only && game.players[HERO].riichi > 0 ? { delay: BOT_DELAY, move: () => act(game, HERO, only) } : null
@@ -36,13 +47,14 @@ function nextMove(game: MahjongState): { delay: number; move: () => MahjongState
 /** The mahjong table as the screen needs it: the hand, what the player may do, and the computer players moving on a timer. */
 export function useMahjong() {
   const [game, setGame] = useState<MahjongState>(opening)
+  const [skill, setSkillState] = useState<BotSkill>(savedSkill)
 
   useEffect(() => {
-    const next = nextMove(game)
+    const next = nextMove(game, skill)
     if (!next) return
     const timer = setTimeout(() => setGame((now) => (now === game ? next.move() : now)), next.delay)
     return () => clearTimeout(timer)
-  }, [game])
+  }, [game, skill])
 
   // Saved after every move and every deal, so leaving mid-hand and coming back carries on with the same tiles.
   useEffect(() => writeMatch(toSave(game)), [game])
@@ -64,5 +76,15 @@ export function useMahjong() {
     setGame(newMatch(random, length))
   }
 
-  return { game, legal: legalActions(game, HERO), choose, deal, restart }
+  /** The computer players' level. It takes effect from their next move. */
+  const setSkill = (next: BotSkill) => {
+    setSkillState(next)
+    try {
+      localStorage.setItem(SKILL_KEY, next)
+    } catch {
+      return
+    }
+  }
+
+  return { game, legal: legalActions(game, HERO), skill, setSkill, choose, deal, restart }
 }
