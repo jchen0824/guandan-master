@@ -58,9 +58,21 @@
   const name = (el) => el.getAttribute("aria-label") || el.textContent.trim().slice(0, 12) || el.dataset.slot || el.tagName
 
   const holdem = () => document.querySelector('[data-slot="holdem"]')
+  const mahjong = () => document.querySelector('[data-slot="mahjong"]')
 
   /** Where the game is, read from the screen the way a player would. */
   function state() {
+    if (mahjong()) {
+      return {
+        over: button("下一局") !== null || button("再开一场") !== null,
+        // The player has something to press: a tile to discard, or an answer to someone's discard.
+        myTurn: all('[data-slot="mj-actions"] button').length > 0 && button("下一局") === null && button("再开一场") === null,
+        mustReturn: false,
+        cards: all('[data-slot="mj-hand"] [data-slot="mj-tile"]').length,
+        selected: all('[data-slot="mj-hand"] [aria-pressed="true"]').length,
+        dialog: all('[data-slot="dialog-content"]').length > 0,
+      }
+    }
     if (holdem()) {
       return {
         // At the end of a table there is 再开一桌 instead of 下一手.
@@ -84,6 +96,10 @@
 
   /** Changes whenever any seat plays, passes or finishes. Used to wait for a move to land. */
   function signature() {
+    if (mahjong()) {
+      const tiles = all('[data-slot="mj-table"] [data-slot="mj-tile"], [data-slot="mj-mine"] [data-slot="mj-tile"]').map((el) => el.getAttribute("aria-label")).join("")
+      return [tiles, ...all('[data-slot="mj-centre"], [data-slot="mj-controls"] p, [data-slot="mj-actions"], [data-slot="mj-result"]').map((el) => el.textContent)].join("|")
+    }
     if (holdem()) return all('[data-slot="he-table"], [data-slot="he-controls"], [data-slot="he-streets"] [aria-current]').map((el) => el.textContent).join("|")
     const seats = all('[data-slot="player"], [data-slot="me-chip"]').map((el) => el.textContent + (el.dataset.active ?? "-"))
     const plays = all('[data-slot="play-zone"]').map((el) => el.textContent)
@@ -130,6 +146,51 @@
     for (const el of all('[data-slot="holdem"] button')) mustBeReachable(el, `the ${name(el)} button`)
     const table = all('[data-slot="he-stage"]')[0]
     if (table && box(table).height < 180) problems.push(`the table is squeezed to ${Math.round(box(table).height)}px high`)
+    return problems
+  }
+
+  /**
+   * The mahjong table. The four 牌河, the centre panel and the calls each have a box of their own round the table,
+   * so every pair is checked, and every tile must stay inside the box of the 牌河 it lies in.
+   */
+  function mahjongProblems(mustBeOnScreen, mustBeReachable) {
+    const problems = []
+    const cross = (a, b) => Math.min(a.right, b.right) - Math.max(a.left, b.left) > 3 && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 3
+    const result = all('[data-slot="mj-result"]')[0]
+    // The result of a hand lies over the table on purpose, so the table under it is not checked against it.
+    const onTable = result ? [] : all('[data-slot="mj-river"], [data-slot="mj-centre"], [data-slot="mj-grid"] [data-slot="mj-melds"], [data-slot="mj-wall-side"]')
+    const labels = [...all('[data-slot="mj-top"] > *, [data-slot="mj-status"], [data-slot="mj-actions"] > *, [data-slot="mj-hand"], [data-slot="mj-mine"] [data-slot="mj-melds"]'), ...onTable]
+    if (result) mustBeOnScreen(result, "the result of the hand")
+    for (const el of labels) mustBeOnScreen(el, `the label ${name(el)}`)
+    labels.forEach((a, i) => {
+      for (const b of labels.slice(i + 1)) {
+        if (!a.contains(b) && !b.contains(a) && cross(box(a), box(b))) problems.push(`the label ${name(a)} overlaps ${name(b)}`)
+      }
+    })
+    for (const river of all('[data-slot="mj-river"], [data-slot="mj-grid"] [data-slot="mj-melds"]')) {
+      const r = box(river)
+      for (const tile of all('[data-slot="mj-tile"]', river)) {
+        const t = box(tile)
+        if (t.left < r.left - SLACK || t.right > r.right + SLACK || t.top < r.top - SLACK || t.bottom > r.bottom + SLACK) {
+          problems.push(`the tile ${name(tile)} sticks out of ${name(river)}`)
+          break
+        }
+      }
+    }
+    for (const el of all('[data-slot="mj-seat"]')) {
+      for (const other of all('[data-slot="mj-seat"], [data-slot="mj-wall"] > *').filter((it) => it !== el)) {
+        if (cross(box(el), box(other))) problems.push(`in the centre panel ${name(el)} overlaps ${name(other)}`)
+      }
+      const panel = box(el.parentElement)
+      if (box(el).left < panel.left - SLACK || box(el).right > panel.right + SLACK) problems.push(`${name(el)} sticks out of the centre panel`)
+    }
+    for (const el of all('[data-slot="mj-hand"] [data-slot="mj-tile"]')) mustBeOnScreen(el, `the tile ${name(el)} in hand`)
+    for (const el of all('[data-slot="mj-status"], [data-slot="mj-round"]')) {
+      if (el.scrollWidth > el.clientWidth + 1) problems.push(`the text of ${name(el)} is cut off`)
+    }
+    for (const el of all('[data-slot="mahjong"] button:not(:disabled)')) mustBeReachable(el, `the ${name(el)} button`)
+    const table = all('[data-slot="mj-grid"]')[0]
+    if (table && box(table).height < 150) problems.push(`the table is squeezed to ${Math.round(box(table).height)}px high`)
     return problems
   }
 
@@ -183,6 +244,7 @@
     }
 
     if (holdem()) return [...new Set([...problems, ...holdemProblems(mustBeOnScreen, mustBeReachable)])]
+    if (mahjong()) return [...new Set([...problems, ...mahjongProblems(mustBeOnScreen, mustBeReachable)])]
 
     const drawer = all('[data-slot="coach"]')[0]
     if (drawer && width <= 1000) {

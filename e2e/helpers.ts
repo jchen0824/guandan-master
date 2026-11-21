@@ -49,6 +49,15 @@ export const SAVE_AFTER_DOUBLE_WIN = JSON.stringify({
   result: { order: [0, 2, 1, 3], winnerTeam: 0, gain: 3, levelsBefore: [2, 2], levelsAfter: [5, 2], notes: [], matchWinner: null },
 })
 
+/**
+ * A mahjong hand saved on the player's turn after two of their own 杠 and another seat's 立直: three 宝牌 indicators
+ * and a stick on the table, which is as much as the top bar has to hold. Found by playing seeds until one came up.
+ */
+export const MAHJONG_SAVE_THREE_INDICATORS = readFileSync(fileURLToPath(new URL("./fixtures/mahjong-three-indicators.json", import.meta.url)), "utf8").trim()
+
+/** A mahjong hand saved where 上家's discard offers the player 碰, three different 吃 and 过: five buttons at once. */
+export const MAHJONG_SAVE_MANY_CALLS = readFileSync(fileURLToPath(new URL("./fixtures/mahjong-many-calls.json", import.meta.url)), "utf8").trim()
+
 /** Runs in the page before the app starts. It needs the page tools, so both go into the page as one script. */
 function prepare({ seed, save, view, game, seats }: { seed: number; save?: string; view: string; game: string; seats?: number }) {
   window.guandanQa.seed(seed)
@@ -61,7 +70,7 @@ function prepare({ seed, save, view, game, seats }: { seed: number; save?: strin
     sessionStorage.setItem("qa-view-used", "1")
   }
   if (save && !sessionStorage.getItem("qa-save-used")) {
-    localStorage.setItem("guandan.match", save)
+    localStorage.setItem(game === "mahjong" ? "guandan.mahjong.match" : "guandan.match", save)
     sessionStorage.setItem("qa-save-used", "1")
   }
   if (seats && !sessionStorage.getItem("qa-seats-used")) {
@@ -89,7 +98,13 @@ export async function openHoldem(page: Page, options: { seed?: number; seats?: 6
   await expect(page.getByRole("list", { name: /^你的手牌/ })).toBeVisible()
 }
 
-async function open(page: Page, options: { seed?: number; save?: string; view?: string; seats?: number; game: "guandan" | "holdem" | "home" }) {
+/** Opens the mahjong table with a fixed deal and a clock the test controls. */
+export async function openMahjong(page: Page, options: { seed?: number; save?: string } = {}) {
+  await open(page, { ...options, game: "mahjong" })
+  await expect(page.getByRole("list", { name: /^你的手牌/ })).toBeVisible()
+}
+
+async function open(page: Page, options: { seed?: number; save?: string; view?: string; seats?: number; game: "guandan" | "holdem" | "mahjong" | "home" }) {
   await page.clock.install()
   // One script, not two: Playwright does not promise the order in which separate init scripts run.
   const settings = JSON.stringify({ seed: options.seed ?? 5, save: options.save, view: options.view ?? "2d", game: options.game, seats: options.seats })
@@ -116,6 +131,54 @@ export async function dealHoldemExactly(page: Page, deal: HoldemDeal) {
   await page.evaluate((value) => window.guandanQa.dealHoldem(value), deal)
   await page.getByRole("button", { name: /^确认/ }).click()
   await expect(page.getByRole("dialog")).toHaveCount(0)
+}
+
+/** Mahjong: starts the match over from 设置, with the deal that `seed` gives. */
+export async function dealMahjongExactly(page: Page, seed: number) {
+  await page.getByRole("button", { name: "设置", exact: true }).click()
+  await page.getByRole("button", { name: "重新开始", exact: true }).click()
+  await page.evaluate((value) => window.guandanQa.seed(value), seed)
+  await page.getByRole("button", { name: /^确认/ }).click()
+  await expect(page.getByRole("dialog")).toHaveCount(0)
+}
+
+/**
+ * Mahjong: makes the player's next move the simplest way. It wins when it can, lets every other discard go, and
+ * otherwise discards the tile at the right of the hand, which is the one just drawn.
+ */
+export async function playMahjongMove(page: Page) {
+  const before = await page.evaluate(() => window.guandanQa.signature())
+  const actions = page.locator('[data-slot="mj-actions"]')
+  const win = actions.getByRole("button", { name: /^(自摸|荣和)$/ })
+  const pass = actions.getByRole("button", { name: "过", exact: true })
+  if ((await win.count()) > 0) await win.click()
+  else if ((await pass.count()) > 0) await pass.click()
+  else {
+    const tile = page.locator('[data-slot="mj-hand"] [data-slot="mj-tile"]:not(:disabled)').last()
+    // After 立直 the table discards for the player, so there may be nothing to press.
+    if ((await tile.count()) === 0) return waitForNextMove(page)
+    await tile.click()
+    await actions.getByRole("button", { name: "打出", exact: true }).click()
+  }
+  await expect.poll(() => page.evaluate(() => window.guandanQa.signature())).not.toBe(before)
+}
+
+/** Mahjong: plays until the hand is over. `check` runs every few decisions and at the end. */
+export async function playMahjongHand(page: Page, check?: (when: string) => Promise<void>) {
+  let decisions = 0
+  for (let step = 0; step < 900; step++) {
+    const now = await screen(page)
+    if (now.over) {
+      if (check) await check("when the hand is over")
+      return
+    }
+    if (now.myTurn) {
+      if (check && decisions % 5 === 0) await check(`at decision ${decisions}`)
+      decisions += 1
+      await playMahjongMove(page)
+    } else await waitForNextMove(page)
+  }
+  throw new Error("the hand did not finish within 900 steps")
 }
 
 /** Texas Hold'em: checks or calls until it is the player's turn with this many cards on the board. */

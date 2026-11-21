@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { botAction } from "./bot"
-import { START_POINTS, act, handName, isFuriten, legalActions, newMatch, nextHand, toAct } from "./game"
+import { START_POINTS, act, handName, isFuriten, legalActions, newMatch, nextHand, parseSave, resumeMatch, toAct, toSave } from "./game"
 import type { Action, MahjongState } from "./game"
 import { kinds, matchWithDealer, rig, seeded } from "./testing"
 import { byKind, shuffle } from "./tiles"
@@ -257,6 +257,28 @@ describe("一场比赛", () => {
       expect(() => nextHand(state, rng)).toThrow()
     }
     expect(results).toContain("win")
+  })
+
+  it("comes back from a save to the same tiles at the same point, in the middle of a hand or after it", () => {
+    const rng = seeded(9)
+    let state = playHand(newMatch(rng, 2), rng)
+    state = nextHand(state, rng)
+    for (let step = 0; step < 25 && state.phase !== "over"; step++) {
+      const seat = toAct(state)[0]
+      state = act(state, seat, botAction(state, seat, rng))
+    }
+    const save = parseSave(JSON.stringify(toSave(state)))
+    expect(save).not.toBeNull()
+    expect(save && resumeMatch(save)).toEqual(state)
+    const ended = playHand(state, rng)
+    expect(resumeMatch(toSave(ended))).toEqual(ended)
+    expect(JSON.stringify(toSave(state))).not.toContain("kind")
+  })
+
+  it("refuses text that is not a save", () => {
+    expect(parseSave(null)).toBeNull()
+    expect(parseSave("{}")).toBeNull()
+    expect(parseSave(JSON.stringify({ ...toSave(newMatch(seeded(1))), dealer: 7 }))).toBeNull()
   })
 
   it("decides without looking at hidden tiles", () => {

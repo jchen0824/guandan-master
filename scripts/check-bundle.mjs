@@ -6,7 +6,7 @@ import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import { gzipSync } from "node:zlib"
 
-const BUDGET_KB = { js: 160, css: 16.5 }
+const BUDGET_KB = { js: 185, css: 20 }
 
 const assets = join(resolve(dirname(fileURLToPath(import.meta.url)), ".."), "dist", "assets")
 if (!existsSync(assets)) {

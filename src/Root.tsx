@@ -3,6 +3,7 @@ import { App } from "./App"
 import { Home } from "./ui/Home"
 import type { GameChoice } from "./ui/Home"
 import { Holdem } from "./ui/holdem/Holdem"
+import { Mahjong } from "./ui/mahjong/Mahjong"
 import type { TableSize } from "./holdem/game"
 
 const GAME_KEY = "guandan.game"
@@ -10,7 +11,7 @@ const GAME_KEY = "guandan.game"
 function savedGame(): GameChoice | null {
   try {
     const saved = localStorage.getItem(GAME_KEY)
-    return saved === "guandan" || saved === "holdem" ? saved : null
+    return saved === "guandan" || saved === "holdem" || saved === "mahjong" ? saved : null
   } catch {
     return null
   }
@@ -33,6 +34,7 @@ function Root() {
   }
   if (game === "guandan") return <App onHome={() => go(null)} />
   if (game === "holdem") return <Holdem onHome={() => go(null)} seats={seats} />
+  if (game === "mahjong") return <Mahjong onHome={() => go(null)} />
   return <Home onPick={go} />
 }
 

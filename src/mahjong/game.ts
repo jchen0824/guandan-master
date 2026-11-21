@@ -127,6 +127,8 @@ export interface MahjongState {
   renchan: boolean
   /** The match is over. */
   over: boolean
+  /** The points and the sticks on the table when this hand was dealt. */
+  dealt: { points: number[]; sticks: number }
   /** The number the deal was shuffled from, and every action since: enough to replay the hand. */
   seed: number
   actions: { seat: number; action: Action }[]
@@ -161,8 +163,9 @@ function draw(state: MahjongState, seat: number): MahjongState {
 
 type Match = Pick<MahjongState, "length" | "round" | "dealer" | "firstDealer" | "honba" | "sticks">
 
-function deal(match: Match, scores: number[], rng: () => number): MahjongState {
-  const seed = Math.floor(rng() * 4294967296)
+const newSeed = (rng: () => number) => Math.floor(rng() * 4294967296)
+
+function deal(match: Match, scores: number[], seed: number): MahjongState {
   const tiles = shuffle(newTiles(), fromSeed(seed))
   const players = scores.map((score, seat): Player => ({
     hand: tiles.slice(14 + seat * 13, 27 + seat * 13).sort(byKind),
@@ -191,6 +194,7 @@ function deal(match: Match, scores: number[], rng: () => number): MahjongState {
     result: null,
     renchan: false,
     over: false,
+    dealt: { points: scores, sticks: match.sticks },
     seed,
     actions: [],
   }
@@ -200,7 +204,7 @@ function deal(match: Match, scores: number[], rng: () => number): MahjongState {
 /** A new match with the first hand dealt. The first dealer is picked at random. */
 export function newMatch(rng: () => number, length: MatchLength = 1): MahjongState {
   const dealer = Math.floor(rng() * 4)
-  return deal({ length, round: 0, dealer, firstDealer: dealer, honba: 0, sticks: 0 }, [0, 1, 2, 3].map(() => START_POINTS), rng)
+  return deal({ length, round: 0, dealer, firstDealer: dealer, honba: 0, sticks: 0 }, [0, 1, 2, 3].map(() => START_POINTS), newSeed(rng))
 }
 
 /** The hand after a finished one. Throws when the match is over. */
@@ -211,7 +215,46 @@ export function nextHand(state: MahjongState, rng: () => number): MahjongState {
   const round = !state.renchan && last ? state.round + 1 : state.round
   const honba = state.result.kind === "win" && !state.renchan ? 0 : state.honba + 1
   const scores = state.players.map((player) => player.points)
-  return deal({ length: state.length, round, dealer, firstDealer: state.firstDealer, honba, sticks: state.sticks }, scores, rng)
+  return deal({ length: state.length, round, dealer, firstDealer: state.firstDealer, honba, sticks: state.sticks }, scores, newSeed(rng))
+}
+
+/** A match as it is kept between visits: where the match stands, and the hand in play as its deal and its actions. */
+export interface MatchSave extends Match {
+  version: 1
+  /** Each seat's points when the hand in play was dealt. */
+  points: number[]
+  seed: number
+  actions: MahjongState["actions"]
+  /** The match has ended, so there is nothing to carry on. */
+  over: boolean
+}
+
+export function toSave(state: MahjongState): MatchSave {
+  const { length, round, dealer, firstDealer, honba, seed, actions, over } = state
+  return { version: 1, length, round, dealer, firstDealer, honba, sticks: state.dealt.sticks, points: state.dealt.points, seed, actions, over }
+}
+
+const isCount = (value: unknown, below: number) => typeof value === "number" && Number.isInteger(value) && value >= 0 && value < below
+
+/** Reads what `toSave` wrote, or null when the text is not a save. */
+export function parseSave(text: string | null): MatchSave | null {
+  if (!text) return null
+  try {
+    const save = JSON.parse(text) as Partial<MatchSave>
+    const points = Array.isArray(save.points) && save.points.length === 4 && save.points.every((value) => typeof value === "number")
+    const whole = save.version === 1 && points && Array.isArray(save.actions) && typeof save.seed === "number" && typeof save.over === "boolean"
+    const seats = isCount(save.dealer, 4) && isCount(save.firstDealer, 4) && isCount(save.round, 2) && isCount(save.honba, 1000) && isCount(save.sticks, 1000)
+    return whole && seats && MATCH_LENGTHS.some((length) => length === save.length) ? (save as MatchSave) : null
+  } catch {
+    return null
+  }
+}
+
+/** The table a save describes: the same deal, played forward through every saved action. Throws when they do not fit. */
+export function resumeMatch(save: MatchSave): MahjongState {
+  const { length, round, dealer, firstDealer, honba, sticks } = save
+  const dealt = deal({ length, round, dealer, firstDealer, honba, sticks }, save.points, save.seed)
+  return save.actions.reduce((state, { seat, action }) => act(state, seat, action), dealt)
 }
 
 /** What the seat's hand is worth if it wins now: on the tile it drew, or on `ron`, another seat's tile. Null when it cannot win. */

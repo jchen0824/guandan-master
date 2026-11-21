@@ -4,6 +4,7 @@ import "@fontsource/barlow-condensed/latin-600.css"
 import "@fontsource/barlow-condensed/latin-700.css"
 import "./index.css"
 import "./holdem.css"
+import "./mahjong.css"
 import { Root } from "./Root"
 
 const root = document.getElementById("root")
