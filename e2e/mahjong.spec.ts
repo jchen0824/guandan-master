@@ -34,8 +34,9 @@ test("the home page offers mahjong, and the table opens from it and comes back",
 
 test("every tile shows its picture, and the table picture loads", async ({ page }) => {
   await openMahjong(page)
-  const broken = await page.evaluate(() => [...document.querySelectorAll("img")].filter((img) => !img.complete || img.naturalWidth === 0).map((img) => img.src))
-  expect(broken, "tile pictures that did not load").toEqual([])
+  // The hand is on screen before its pictures have arrived, so give them time: a picture that never loads still fails.
+  const broken = () => page.evaluate(() => [...document.querySelectorAll("img")].filter((img) => !img.complete || img.naturalWidth === 0).map((img) => img.src))
+  await expect.poll(broken, "tile pictures that did not load").toEqual([])
   const pictures = ["/mahjong/parlour.jpg", "/mahjong/wall/front-1.png", "/mahjong/wall/front-2.png", "/mahjong/wall/side-1.png", "/mahjong/wall/side-2.png"]
   const missing = await page.evaluate((paths) => Promise.all(paths.map((path) => fetch(path).then((response) => (response.ok ? null : path)))), pictures)
   expect(missing.filter(Boolean), "pictures of the table and the wall that are not served").toEqual([])
@@ -153,6 +154,14 @@ test("the coach says what to discard, its working fits the screen, and it can be
   await coach.getByRole("button", { name: "怎么算的", exact: true }).click()
   await expect(page.getByRole("dialog")).toBeVisible()
   await expectLayoutToHold(page, "with the coach's working open")
+  // The dialog is a light panel inside the coach's dark one. Its words must take the dialog's colours, not the panel's cream.
+  const inks = await page.getByRole("dialog").evaluate((dialog) => {
+    const ink = (selector: string) => getComputedStyle(dialog.querySelector(selector) ?? dialog).color
+    return { dialog: getComputedStyle(dialog).color, title: ink("h2"), move: ink('[data-slot="mj-options"] b'), note: ink('[data-slot="mj-options"] li > span:last-child'), description: ink('[data-slot="dialog-description"]') }
+  })
+  expect(inks.title, "the dialog's title is the colour of the dialog's text").toBe(inks.dialog)
+  expect(inks.move, "each option's move is the colour of the dialog's text").toBe(inks.dialog)
+  expect(inks.note, "each option's numbers are the colour of the dialog's description").toBe(inks.description)
   await page.getByRole("dialog").getByRole("button", { name: "知道了", exact: true }).click()
   await page.getByRole("button", { name: "教练", exact: true }).click()
   await expect(coach).toHaveCount(0)

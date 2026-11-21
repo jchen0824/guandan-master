@@ -915,7 +915,9 @@
   line-height: 1.5;
   z-index: 2;
 }
-[data-slot="mj-coach"] h2 {
+/* The coach's dialog (怎么算的) sits inside this aside, so what colours the panel's own text uses the child
+   selector: the dialog is a light panel, and cream on it cannot be read. */
+[data-slot="mj-coach"] > h2 {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -943,6 +945,9 @@
   padding: 0;
   list-style: none;
   font-size: 13px;
+  color: var(--panel-soft);
+}
+[data-slot="mj-coach"] > [data-slot="mj-options"] {
   color: var(--cream-soft);
 }
 [data-slot="mj-options"] li {
@@ -952,6 +957,9 @@
   gap: 4px 8px;
 }
 [data-slot="mj-options"] b {
+  color: var(--panel-ink);
+}
+[data-slot="mj-coach"] > [data-slot="mj-options"] b {
   color: var(--cream);
 }
 [data-slot="mj-safety"] {
