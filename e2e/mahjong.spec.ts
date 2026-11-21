@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test"
-import { MAHJONG_SAVE_THREE_INDICATORS, dealMahjongExactly, expectLayoutToHold, openHome, openMahjong, playMahjongHand, playMahjongMove, screen, waitForNextMove } from "./helpers"
+import { MAHJONG_SAVE_MANY_CALLS, MAHJONG_SAVE_THREE_INDICATORS, dealMahjongExactly, expectLayoutToHold, openHome, openMahjong, playMahjongHand, playMahjongMove, screen, waitForNextMove } from "./helpers"
 
 // The rules of mahjong are tested in src/mahjong. These tests ask what the other two games' tests ask:
 // on a real browser at this screen size, can a player see and reach everything?
@@ -87,6 +87,23 @@ test("the top bar holds up to five 宝牌 indicators and a 立直 stick without 
   await expect(indicators).toHaveCount(5)
   await expect(page.getByRole("button", { name: "设置", exact: true })).toBeInViewport({ ratio: 1 })
   await expectLayoutToHold(page, "with five indicators and a stick on the table")
+})
+
+test("every answer to a discard can be reached when seven are offered at once", async ({ page }) => {
+  await openMahjong(page, { save: MAHJONG_SAVE_MANY_CALLS })
+  const answers = page.locator('[data-slot="mj-actions"]').getByRole("button")
+  await expect(answers).toHaveCount(5)
+  await expectLayoutToHold(page, "with 碰, three 吃 and 过 offered")
+  // The most a discard can offer is seven: 荣和 and 杠 as well. No saved hand here has that, so two more buttons
+  // stand in for them: what is checked is the room for the buttons, not the rules.
+  await page.evaluate(() => {
+    const row = document.querySelector('[data-slot="mj-actions"]')
+    const button = row?.querySelector("button")
+    if (row && button) row.prepend(button.cloneNode(true), button.cloneNode(true))
+  })
+  await expect(answers).toHaveCount(7)
+  for (const answer of await answers.all()) await expect(answer).toBeInViewport({ ratio: 1 })
+  await expectLayoutToHold(page, "with seven answers offered")
 })
 
 test("the rules and the settings fit on the screen", async ({ page }) => {

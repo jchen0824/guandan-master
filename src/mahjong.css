@@ -504,12 +504,12 @@
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) auto;
   grid-template-areas:
-    "status"
-    "mine";
+    "status actions"
+    "mine mine";
   align-items: center;
-  gap: 4px;
+  gap: 4px 12px;
   padding: 8px 16px 12px;
   background: var(--room);
 }
@@ -518,18 +518,40 @@
   grid-area: status;
   color: var(--cream-soft);
   font-size: 14px;
-  text-align: center;
 }
 
-/* Calls and 立直 are offered only when they can be made, as plaques over the near edge of the table. */
+/* Calls, 立直 and 打出 are offered only when they can be made. A discard can offer seven answers at once (荣和, 碰,
+   杠, three 吃 and 过), so wherever the buttons go there has to be room for seven. Here they are a row of their own
+   that wraps and keeps the height of one button, so the table does not jump when they come and go. */
 [data-slot="mj-actions"] {
-  position: absolute;
-  right: 20px;
-  bottom: calc(100% + 14px);
+  grid-area: actions;
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 8px;
+  max-width: 62vw;
+  min-height: 46px;
+}
+
+/* A wide screen has room beside the table: the buttons stand in a column over its near right corner. The column is
+   as wide as what is left beside the largest table the screen can draw. */
+@media (min-width: 1240px) and (min-height: 481px) {
+  [data-slot="mj-controls"] {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "status"
+      "mine";
+  }
+  [data-slot="mj-status"] {
+    text-align: center;
+  }
+  [data-slot="mj-actions"] {
+    position: absolute;
+    right: 20px;
+    bottom: calc(100% + 14px);
+    max-width: calc((100vw - 849px) / 2 - 24px);
+    min-height: 0;
+  }
 }
 
 [data-slot="mahjong"] [data-slot="button"][data-variant="call"],
@@ -665,14 +687,20 @@
     display: none;
   }
   [data-slot="mj-controls"] {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "status"
+      "actions"
+      "mine";
     padding: 6px 6px 10px;
   }
   [data-slot="mj-status"] {
     font-size: 13px;
+    text-align: center;
   }
   [data-slot="mj-actions"] {
-    right: 8px;
-    bottom: calc(100% + 8px);
+    max-width: none;
+    min-height: 44px;
     gap: 6px;
   }
   [data-slot="mahjong"] [data-slot="button"][data-variant="call"],
@@ -698,7 +726,7 @@
     --hw: min(32px, (100vw - 40px) / 17);
     /* The height of the row of tiles in hand: a tile, the room to lift one, and the space under it. */
     --mine-h: calc(var(--hw) * 4 / 3 * 1.18 + 8px);
-    grid-template-columns: 190px minmax(0, 1fr) 176px;
+    grid-template-columns: 190px minmax(0, 1fr) 190px;
     grid-template-rows: auto minmax(0, 1fr) var(--mine-h);
   }
   [data-slot="mj-top"] {
@@ -744,7 +772,7 @@
   [data-slot="mj-controls"] {
     grid-column: 1 / 4;
     grid-row: 2 / 4;
-    grid-template-columns: 190px minmax(0, 1fr) 176px;
+    grid-template-columns: 190px minmax(0, 1fr) 190px;
     grid-template-rows: minmax(0, 1fr) var(--mine-h);
     grid-template-areas:
       "status . actions"
@@ -763,21 +791,26 @@
     font-size: 13px;
     text-align: left;
   }
+  /* Two buttons a row, so seven answers take four rows and still fit between the top bar and the hand. */
   [data-slot="mj-actions"] {
-    position: static;
-    grid-area: actions;
     align-self: center;
-    align-content: center;
-    justify-content: center;
-    gap: 6px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 5px;
+    max-width: none;
+    min-height: 0;
     padding: 0 8px;
+  }
+  [data-slot="mj-actions"] > :only-child {
+    grid-column: 1 / 3;
   }
   [data-slot="mahjong"] [data-slot="button"][data-variant="call"],
   [data-slot="mahjong"] [data-slot="button"][data-variant="go"] {
-    min-width: 72px;
+    min-width: 0;
     min-height: 44px;
-    padding: 0 8px;
-    font-size: 15px;
+    padding: 0 4px;
+    font-size: 13px;
+    letter-spacing: 0;
   }
   [data-slot="mj-mine"] {
     align-self: stretch;

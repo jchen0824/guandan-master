@@ -55,6 +55,9 @@ export const SAVE_AFTER_DOUBLE_WIN = JSON.stringify({
  */
 export const MAHJONG_SAVE_THREE_INDICATORS = readFileSync(fileURLToPath(new URL("./fixtures/mahjong-three-indicators.json", import.meta.url)), "utf8").trim()
 
+/** A mahjong hand saved where 上家's discard offers the player 碰, three different 吃 and 过: five buttons at once. */
+export const MAHJONG_SAVE_MANY_CALLS = readFileSync(fileURLToPath(new URL("./fixtures/mahjong-many-calls.json", import.meta.url)), "utf8").trim()
+
 /** Runs in the page before the app starts. It needs the page tools, so both go into the page as one script. */
 function prepare({ seed, save, view, game, seats }: { seed: number; save?: string; view: string; game: string; seats?: number }) {
   window.guandanQa.seed(seed)
