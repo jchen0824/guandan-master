@@ -64,6 +64,9 @@ export const MAHJONG_SAVE_NO_SAFE_TILE = readFileSync(fileURLToPath(new URL("./f
 /** A mahjong hand saved on the player's turn, where all four tiles of one kind the hand could use are already in sight. */
 export const MAHJONG_SAVE_EXHAUSTED_WAIT = readFileSync(fileURLToPath(new URL("./fixtures/mahjong-exhausted-wait.json", import.meta.url)), "utf8").trim()
 
+/** A mahjong hand saved on the player's turn, with an opponent who has called four times. */
+export const MAHJONG_SAVE_FOUR_CALLS = readFileSync(fileURLToPath(new URL("./fixtures/mahjong-four-calls.json", import.meta.url)), "utf8").trim()
+
 /** Runs in the page before the app starts. It needs the page tools, so both go into the page as one script. */
 function prepare({ seed, save, view, game, seats }: { seed: number; save?: string; view: string; game: string; seats?: number }) {
   window.guandanQa.seed(seed)

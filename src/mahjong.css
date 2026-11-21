@@ -772,15 +772,20 @@
   }
 }
 
-/* An upright phone has its own picture of the table, taller than it is wide, so the whole table and its wooden
-   rim fit across the screen. The picture is 1086 by 1448. Its felt runs from 20.4% to 73.5% of the picture's
-   height, so it is 0.708 of the picture's width deep, with its middle 4% of that width above the picture's;
-   where the side walls stand it is at least 0.76 of the picture's width across. On a short table area the
-   picture is cropped a little at the top and bottom before it is drawn narrower than the screen, and where the
-   area is taller than the picture its top and bottom fade into the room. */
+/* An upright phone has its own picture of the table, taller than it is wide. The picture is 1086 by 1448. Its felt
+   runs from 20.4% to 73.5% of the picture's height, so it is 0.708 of the picture's width deep, with its middle 4%
+   of that width above the picture's; where the side walls stand it is at least 0.76 of the picture's width across.
+   The picture is drawn a quarter wider than the screen, so the felt is bigger and the tiles with it: the far rim and
+   its corners stay in view, the side rims and the near corners go off the screen. On a short table area it is drawn
+   smaller before the tiles leave the felt, and where the area is taller than the picture its top and bottom fade
+   into the room.
+
+   The 牌河 is square, as at a real table: 上家's and 下家's discards lie sideways, facing their owners, so each side
+   band is as wide as a band of rows is deep. A square 牌河 on the square felt leaves the tiles a third bigger than
+   bands of upright rows did. */
 @media (max-width: 739px) and (min-width: 360px) and (min-height: 481px) and (max-aspect-ratio: 3/4) {
   [data-slot="mj-table"] {
-    --pw: min(100cqw, 130cqh);
+    --pw: min(125cqw, 160cqh);
     background: #120904;
   }
   [data-slot="mj-table"]::before {
@@ -793,9 +798,40 @@
       transparent calc(50% + var(--edge))
     );
   }
+  /* The ring is 2.67 * rows + 9.6 tiles across (a side band is rows tiles deep, the middle band 6.33 tiles, the
+     wall's padding 2.45) and 0.7 of a tile more from top to bottom, where the wall's padding is deeper. */
   [data-slot="mj-ring"] {
-    --tw: min(38px, (var(--pw) * 0.76 - 36px) / 21.4, (var(--pw) * 0.708 - 52px) / (4 * var(--rows) + 3.4));
+    --tw: min(
+      38px,
+      (var(--pw) * 0.76 - 44px) / (2.67 * var(--rows) + 9.6),
+      (var(--pw) * 0.708 - 56px) / (2.67 * var(--rows) + 10.3),
+      (100cqh - 56px) / (2.67 * var(--rows) + 10.3)
+    );
     translate: 0 calc(var(--pw) * -0.041);
+  }
+  [data-slot="mj-grid"] {
+    grid-template-columns: var(--band-h) var(--band-w) var(--band-h);
+    grid-template-rows: var(--band-h) var(--band-w) var(--band-h);
+  }
+  /* A side 牌河 keeps its rows of six and is turned a quarter: its first row is the one nearest the centre and
+     the tops of its tiles face the centre, as they do for the seat that discarded them. */
+  [data-slot="mj-river"][data-seat="1"],
+  [data-slot="mj-river"][data-seat="3"] {
+    width: var(--band-w);
+    height: var(--band-h);
+    place-self: center;
+  }
+  [data-slot="mj-river"][data-seat="1"] {
+    rotate: -90deg;
+  }
+  [data-slot="mj-river"][data-seat="3"] {
+    rotate: 90deg;
+  }
+  /* The corners left for the opponents' calls are now as wide as a band is deep. A call of three tiles takes more
+     than half that width, so each call has a row of its own, and four rows of tiles a third taller than wide, with
+     three gaps between them, must fit the corner's height. */
+  [data-slot="mj-grid"] [data-slot="mj-melds"] {
+    --tw: calc((var(--band-h) - 12px) / 5.4);
   }
 }
 
