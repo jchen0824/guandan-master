@@ -106,6 +106,27 @@ test("every answer to a discard can be reached when seven are offered at once", 
   await expectLayoutToHold(page, "with seven answers offered")
 })
 
+test("the felt of the table picture is as tall as the table at any shape of window", async ({ page }, info) => {
+  test.skip(info.project.name !== "desktop-chromium", "one browser is enough for a rule of the stylesheet")
+  // The felt is the middle 72% of the picture's height and the picture is 1672 by 941, so the felt is as tall as the
+  // table once the picture is 2.47 times as wide as the table is high. A window near 4:3 once showed the whole
+  // picture, and the wall stood on its wooden rim.
+  for (const size of [{ width: 763, height: 639 }, { width: 1280, height: 720 }, { width: 1000, height: 900 }, { width: 1600, height: 620 }]) {
+    await page.setViewportSize(size)
+    await openMahjong(page)
+    const drawn = await page.evaluate(() => {
+      const table = document.querySelector('[data-slot="mj-table"]')
+      if (!table) return null
+      const picture = getComputedStyle(table, "::before").backgroundSize
+      return { picture: Number.parseFloat(picture), height: table.getBoundingClientRect().height, width: table.getBoundingClientRect().width }
+    })
+    expect(drawn, "the table picture is drawn").not.toBeNull()
+    expect(drawn!.picture, `the picture's width at ${size.width}×${size.height}`).toBeGreaterThanOrEqual(drawn!.height * 2.47)
+    expect(drawn!.picture, "the picture covers the table from side to side").toBeGreaterThanOrEqual(drawn!.width - 1)
+    await expectLayoutToHold(page, `at ${size.width}×${size.height}`)
+  }
+})
+
 test("the rules and the settings fit on the screen", async ({ page }) => {
   await openMahjong(page)
   for (const name of ["规则", "设置"]) {

@@ -152,7 +152,17 @@
   display: grid;
   place-content: center;
   container: mj-table / size;
-  background: var(--room) url("/mahjong/parlour.jpg") center / cover no-repeat;
+  background: var(--room);
+}
+
+/* The picture of the parlour table. Its felt is the middle 72% of its height, so the picture is drawn at least two
+   and a half times as wide as this box is high: then the felt is as tall as the box at any shape of window, and
+   the tiles and the wall, which are sized to fit the box, never lie on the rim or the floor. */
+[data-slot="mj-table"]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: url("/mahjong/parlour.jpg") center / max(100cqw, 250cqh) auto no-repeat;
 }
 
 /* Three bands of 牌河 round the centre panel. A band holds --rows rows of six tiles, with room for one lying on its side. */
