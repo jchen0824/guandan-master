@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test"
 import type { Page } from "@playwright/test"
-import { MAHJONG_SAVE_EXHAUSTED_WAIT, MAHJONG_SAVE_MANY_CALLS, MAHJONG_SAVE_NO_SAFE_TILE, MAHJONG_SAVE_THREE_INDICATORS, dealMahjongExactly, expectLayoutToHold, openHome, openMahjong, playMahjongHand, playMahjongMove, screen, waitForNextMove } from "./helpers"
+import { MAHJONG_SAVE_EXHAUSTED_WAIT, MAHJONG_SAVE_FOUR_CALLS, MAHJONG_SAVE_MANY_CALLS, MAHJONG_SAVE_NO_SAFE_TILE, MAHJONG_SAVE_THREE_INDICATORS, dealMahjongExactly, expectLayoutToHold, openHome, openMahjong, playMahjongHand, playMahjongMove, screen, waitForNextMove } from "./helpers"
 
 // The rules of mahjong are tested in src/mahjong. These tests ask what the other two games' tests ask:
 // on a real browser at this screen size, can a player see and reach everything?
@@ -118,15 +118,13 @@ interface Felt {
   /** How far in from each side the felt starts, at its far edge and at its near edge. */
   insetTop: number
   insetBottom: number
-  /** How far in from each side the wooden rim starts, when the whole table must be on screen. */
-  rim?: number
 }
 
 // The landscape picture is 1672 by 941: its felt's far edge is 12.5% of the way down, from 21.4% to 78.6% across,
 // its near edge 84.8% down, from 4.3% to 95.7% across. The upright one is 1086 by 1448: its felt runs from 20.4% to
-// 73.5% of the way down, from 13.6% in at the far edge to 7.1% in at the near one, and its rim from 1.5% in.
+// 73.5% of the way down, from 13.6% in at the far edge to 7.1% in at the near one.
 const LANDSCAPE: Felt = { picture: "parlour.jpg", ratio: 941 / 1672, top: 0.125, bottom: 0.848, insetTop: 0.214, insetBottom: 0.043 }
-const UPRIGHT: Felt = { picture: "parlour-upright.jpg", ratio: 1448 / 1086, top: 0.204, bottom: 0.735, insetTop: 0.136, insetBottom: 0.071, rim: 0.015 }
+const UPRIGHT: Felt = { picture: "parlour-upright.jpg", ratio: 1448 / 1086, top: 0.204, bottom: 0.735, insetTop: 0.136, insetBottom: 0.071 }
 
 /** What on the table is off the felt of its picture, and whether the picture is the one expected. */
 function offTheFelt(page: Page, felt: Felt) {
@@ -142,8 +140,7 @@ function offTheFelt(page: Page, felt: Felt) {
     const top = box.top + box.height / 2 - high / 2
     const inset = (y: number) => f.insetTop + ((f.insetBottom - f.insetTop) * ((y - top) / high - f.top)) / (f.bottom - f.top)
     const problems: string[] = []
-    if (f.rim !== undefined && (left + f.rim * wide < box.left - 1 || left + (1 - f.rim) * wide > box.right + 1)) problems.push("the rim of the table is off the side of the screen")
-    for (const el of document.querySelectorAll('[data-slot="mj-wall-side"], [data-slot="mj-river"]')) {
+    for (const el of document.querySelectorAll('[data-slot="mj-wall-side"], [data-slot="mj-river"], [data-slot="mj-grid"] [data-slot="mj-melds"]')) {
       const r = el.getBoundingClientRect()
       const name = el.getAttribute("aria-label") ?? el.getAttribute("data-side") ?? ""
       if (r.top < top + f.top * high - 2 || r.bottom > top + f.bottom * high + 2) problems.push(`${name} is above or below the felt`)
@@ -166,9 +163,9 @@ test("the wall and the 牌河 stay on the felt of the table picture at any shape
   }
 })
 
-test("an upright phone shows the whole table, wooden rim and all, with the wall and the 牌河 on its felt", async ({ page }, info) => {
+test("an upright phone keeps the wall and the 牌河 on the felt of its own table picture", async ({ page }, info) => {
   test.skip(info.project.name !== "desktop-chromium", "one browser is enough for a rule of the stylesheet")
-  for (const size of [{ width: 393, height: 745 }, { width: 360, height: 740 }, { width: 375, height: 667 }, { width: 430, height: 932 }, { width: 375, height: 550 }]) {
+  for (const size of [{ width: 393, height: 745 }, { width: 402, height: 874 }, { width: 360, height: 740 }, { width: 375, height: 667 }, { width: 430, height: 932 }, { width: 375, height: 550 }]) {
     await page.setViewportSize(size)
     await openMahjong(page, { save: MAHJONG_SAVE_MANY_CALLS })
     expect(await offTheFelt(page, UPRIGHT), `what is off the felt at ${size.width}×${size.height}`).toEqual([])
@@ -241,6 +238,47 @@ test("every section of the rules opens on the screen, with its example tiles dra
     // A section's pictures start loading when it opens, so give them time: one that never loads still fails.
     const broken = () => rules.evaluate((dialog) => [...dialog.querySelectorAll("img")].filter((img) => img.checkVisibility() && (!img.complete || img.naturalWidth === 0)).length)
     await expect.poll(broken, { message: `tile pictures that did not load in ${name}` }).toBe(0)
+  }
+})
+
+test("an upright phone lays the 牌河 out square, with the side seats' discards turned to face them, so its tiles are big enough to read", async ({ page }, info) => {
+  test.skip(info.project.name !== "desktop-chromium", "one browser is enough for a rule of the stylesheet")
+  // Rows of six standing upright on all four sides made the 牌河 three times as wide as it was deep, and its tiles
+  // 12px across on a 393px phone.
+  await page.setViewportSize({ width: 393, height: 745 })
+  await openMahjong(page, { save: MAHJONG_SAVE_MANY_CALLS })
+  const shape = await page.evaluate(() => {
+    const size = (selector: string) => {
+      const r = document.querySelector(selector)?.getBoundingClientRect()
+      return r ? { wide: r.width, high: r.height } : { wide: 0, high: 0 }
+    }
+    const side = (seat: number) => getComputedStyle(document.querySelector(`[data-slot="mj-river"][data-seat="${seat}"]`) ?? document.body).rotate
+    return { grid: size('[data-slot="mj-grid"]'), tile: size('[data-slot="mj-river"][data-seat="0"] [data-slot="mj-tile"]').wide, left: side(3), right: side(1) }
+  })
+  expect(shape.tile, "a tile in the 牌河 is at least 15px across").toBeGreaterThanOrEqual(15)
+  expect(Math.abs(shape.grid.wide - shape.grid.high), `the 牌河 is ${Math.round(shape.grid.wide)}×${Math.round(shape.grid.high)}`).toBeLessThan(shape.grid.wide * 0.1)
+  expect([shape.left, shape.right], "上家's 牌河 turns a quarter clockwise, 下家's a quarter the other way").toEqual(["90deg", "-90deg"])
+  await expectLayoutToHold(page, "with the square 牌河")
+})
+
+test("on an upright phone an opponent's four calls fit in their corner of the 牌河", async ({ page }, info) => {
+  test.skip(info.project.name !== "desktop-chromium", "one browser is enough for a rule of the stylesheet")
+  for (const size of [{ width: 393, height: 745 }, { width: 360, height: 740 }, { width: 430, height: 932 }]) {
+    await page.setViewportSize(size)
+    await openMahjong(page, { save: MAHJONG_SAVE_FOUR_CALLS })
+    const calls = page.locator('[data-slot="mj-grid"] [data-slot="mj-melds"]').filter({ has: page.locator('[data-slot="mj-meld"]:nth-child(4)') })
+    await expect(calls).toHaveCount(1)
+    const fits = await calls.evaluate((corner) => {
+      const box = corner.getBoundingClientRect()
+      const cell = corner.parentElement?.getBoundingClientRect()
+      const grid = getComputedStyle(corner.parentElement ?? corner)
+      const [, , side] = grid.gridTemplateColumns.split(" ").map(Number.parseFloat)
+      return { tall: Math.round(box.height), wide: Math.round(box.width), corner: Math.round(side), inGrid: cell ? box.top >= cell.top - 1 && box.bottom <= cell.bottom + 1 : false }
+    })
+    expect(fits.tall, `four calls are ${fits.tall}px tall in a corner ${fits.corner}px square at ${size.width}×${size.height}`).toBeLessThanOrEqual(fits.corner + 1)
+    expect(fits.wide, `four calls are ${fits.wide}px wide at ${size.width}×${size.height}`).toBeLessThanOrEqual(fits.corner + 1)
+    expect(await offTheFelt(page, UPRIGHT), `what is off the felt at ${size.width}×${size.height}`).toEqual([])
+    await expectLayoutToHold(page, `with four calls in a corner at ${size.width}×${size.height}`)
   }
 })
 
