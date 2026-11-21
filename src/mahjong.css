@@ -1169,3 +1169,62 @@
     visibility: hidden;
   }
 }
+
+/* ---- The rules: one section open at a time, with tiles shown as examples beside the words ---- */
+[data-slot="mj-rules"] {
+  align-self: stretch;
+}
+[data-slot="mj-rules"] :is(h3, p) {
+  margin: 0;
+}
+[data-slot="mj-rules"] [data-slot="accordion-trigger"] {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid #0002;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+}
+/* A drawn chevron, not a character, so the heading's name stays its words alone. */
+[data-slot="mj-rules"] [data-slot="accordion-trigger"]::after {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border: solid var(--panel-soft);
+  border-width: 0 2px 2px 0;
+  rotate: 45deg;
+}
+[data-slot="mj-rules"] [aria-expanded="true"]::after {
+  rotate: -135deg;
+}
+[data-slot="mj-rules"] [data-slot="accordion-panel"] {
+  display: grid;
+  gap: 8px;
+  padding: 10px 0 14px;
+}
+[data-slot="mj-example"] {
+  --tw: 24px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  font-size: 12px;
+  color: var(--panel-soft);
+}
+[data-slot="mj-example"] > span {
+  display: grid;
+  justify-items: center;
+}
+[data-slot="mj-example"] [role="img"] {
+  display: flex;
+  gap: 1px;
+}
+/* The dialog is as pale as a tile, so each tile gets an edge; 白 would vanish without one. */
+[data-slot="mj-example"] [data-slot="mj-tile"] {
+  box-shadow: 0 0 0 1px #0005;
+}

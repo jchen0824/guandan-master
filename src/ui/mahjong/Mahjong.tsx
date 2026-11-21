@@ -1,8 +1,10 @@
+import { Accordion, AccordionHeader, AccordionItem, AccordionPanel, AccordionTrigger } from "@ui-sdk/react/accordion"
 import { Button } from "@ui-sdk/react/button"
 import { Dialog, DialogBackdrop, DialogClose, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from "@ui-sdk/react/dialog"
 import { Field, FieldDescription, FieldLabel } from "@ui-sdk/react/field"
 import { SegmentedControl, SegmentedControlItem } from "@ui-sdk/react/segmented-control"
 import { useState } from "react"
+import type { ReactNode } from "react"
 import type { BotSkill } from "../../mahjong/bot"
 import { SAFETY_NAMES, advise, shantenName } from "../../mahjong/coach"
 import type { Advice, DiscardOption } from "../../mahjong/coach"
@@ -195,6 +197,150 @@ function Result({ game }: { game: MahjongState }) {
   )
 }
 
+/** Where each suit starts among the 34 kinds, for writing tiles in examples as "123m", "55p" or "4z1z". */
+const SUIT_START: Record<string, number> = { m: 0, p: 9, s: 18, z: 27 }
+function kindsOf(written: string): Kind[] {
+  const kinds: Kind[] = []
+  let digits = ""
+  for (const char of written) {
+    if (char in SUIT_START) {
+      for (const digit of digits) kinds.push(SUIT_START[char] + Number(digit) - 1)
+      digits = ""
+    } else digits += char
+  }
+  return kinds
+}
+
+/** Tiles shown as an example in the rules: groups of tiles, each with an optional word under it. */
+function Example({ groups }: { groups: [string, string?][] }) {
+  return (
+    <div data-slot="mj-example">
+      {groups.map(([group, label]) => {
+        const kinds = kindsOf(group)
+        return (
+          <span key={group}>
+            <span role="img" aria-label={kinds.map(kindName).join("")}>
+              {kinds.map((kind, at) => (
+                // oxlint-disable-next-line react/no-array-index-key -- an example can show the same tile twice, and its tiles never move
+                <span key={at} data-slot="mj-tile">
+                  <Face kind={kind} />
+                </span>
+              ))}
+            </span>
+            {label ? <small>{label}</small> : null}
+          </span>
+        )
+      })}
+    </div>
+  )
+}
+
+/** The rules, one section at a time. Each is short, with tiles to show what the words mean. */
+const RULES: { title: string; body: ReactNode }[] = [
+  {
+    title: "和牌是什么样子",
+    body: (
+      <>
+        <Example groups={[["123m"], ["456p"], ["789s"], ["555z"], ["55p"]]} />
+        <p>四组是一二三万、四五六筒、七八九索、白白白，一对是五五筒。三张白是役，所以能和。</p>
+        <p>另外两种也能和：七个不同的对子（七对子），或者十三种一、九和字牌各一张，再多一张其中的一种（国士无双）。</p>
+      </>
+    ),
+  },
+  {
+    title: "顺子、刻子、对子",
+    body: (
+      <>
+        <Example groups={[["345m", "顺子"], ["777s", "刻子"], ["55p", "对子"]]} />
+        <p>顺子是同一种数牌连着的三张，字牌不能做顺子。刻子是三张一样的牌，四张一样叫杠子。对子是两张一样的牌。</p>
+      </>
+    ),
+  },
+  {
+    title: "牌",
+    body: (
+      <>
+        <Example groups={[["19m", "万"], ["19p", "筒"], ["19s", "索"], ["1234z", "风牌"], ["567z", "三元牌"]]} />
+        <p>万、筒、索各有一到九。字牌是东南西北和白发中，白是一张空白的牌。每种四张，一共 136 张。</p>
+      </>
+    ),
+  },
+  {
+    title: "吃、碰、杠",
+    body: (
+      <ul data-slot="rules-list">
+        <li>吃：用上家打的牌凑顺子。只能吃上家的。</li>
+        <li>碰：用任何一家打的牌凑刻子。</li>
+        <li>杠：凑四张一样的，再从牌山后面补摸一张。</li>
+        <li>吃、碰或杠了别人的牌，就不能再立直。</li>
+      </ul>
+    ),
+  },
+  {
+    title: "役：和牌至少要有一个",
+    body: (
+      <>
+        <ul data-slot="rules-list">
+          <li>立直：没吃没碰、只差一张时宣布。</li>
+          <li>门前清自摸：没吃没碰，自己摸到和牌。</li>
+          <li>断幺九：手里没有一、九和字牌。</li>
+          <li>役牌：白、发、中，或场风、自风的刻子。</li>
+          <li>平和：没吃没碰，四组都是顺子，对子不是役牌，等两头的牌。</li>
+        </ul>
+        <p>宝牌只加番，不是役。</p>
+      </>
+    ),
+  },
+  {
+    title: "立直",
+    body: <p>没吃没碰、只差一张就和时可以立直：付 1,000 点，下一个和牌的人拿走。之后牌桌替你摸什么打什么。和了多一番。</p>,
+  },
+  {
+    title: "自摸和荣和",
+    body: (
+      <ul data-slot="rules-list">
+        <li>自摸：自己摸到和牌，另外三家一起付。</li>
+        <li>荣和：别人打出你要的牌，打的人一个人付。</li>
+      </ul>
+    ),
+  },
+  {
+    title: "振听：不能荣和的时候",
+    body: (
+      <>
+        <Example groups={[["45m", "手里"], ["36m", "等这两张"], ["6m", "你打过"]]} />
+        <p>你等的牌只要有一张在你自己的牌河里，就不能荣和，只能自摸。上面这手打过六万，别人打三万也不能和。</p>
+        <ul data-slot="rules-list">
+          <li>别人打出你要的牌你没和，到你下次摸牌前不能荣和。</li>
+          <li>立直以后放过一次，这一局都不能荣和。</li>
+        </ul>
+      </>
+    ),
+  },
+  {
+    title: "宝牌",
+    body: (
+      <>
+        <Example groups={[["5m6m", "五万 → 六万"], ["9m1m", "九万 → 一万"], ["4z1z", "北 → 东"], ["7z5z", "中 → 白"]]} />
+        <p>牌山上翻开的是指示牌，它的下一张是宝牌。手里每有一张宝牌，多一番。</p>
+      </>
+    ),
+  },
+  {
+    title: "流局和坐庄",
+    body: (
+      <ul data-slot="rules-list">
+        <li>牌山摸完没人和就是流局。听牌的人从没听牌的人那里一共收 3,000 点。</li>
+        <li>庄家和了，或流局时庄家听牌，就继续坐庄。不然由下家坐庄。</li>
+      </ul>
+    ),
+  },
+  {
+    title: "一场比赛",
+    body: <p>每人 25,000 点开始。东风战打完东场结束，半庄战打完南场结束。有人点数低于 0 就马上结束。</p>,
+  },
+]
+
 function Rules() {
   return (
     <Dialog>
@@ -202,19 +348,19 @@ function Rules() {
       <DialogBackdrop />
       <DialogContent initialFocus="content">
         <DialogTitle>日本麻将怎么打</DialogTitle>
-        <DialogDescription>四个人轮流摸一张、打一张。先把手里的 14 张凑成四组加一对，并且至少有一个役，就和牌。</DialogDescription>
-        <ul data-slot="rules-list">
-          <li>牌有万、筒、索三种数牌（一到九），加上东南西北和白发中，每种四张，一共 136 张。一索画的是一只鸟，不是一根竹子；白是一张空白的牌。</li>
-          <li>一组是三张连着的同种数牌（顺子），或三张一样的牌（刻子）。四组加一对相同的牌就是和牌的样子。七个对子、十三种幺九牌各一张也能和。</li>
-          <li>别人打出的牌可以拿来用：上家打的能吃成顺子，谁打的都能碰成刻子，有三张一样的还能杠。鸣牌之后手牌就不算门前清，不能立直。</li>
-          <li>和牌一定要有役。最常见的役：立直、门前清自摸、断幺九（没有一、九和字牌）、役牌（白发中，或场风、自风的刻子）、平和。只有宝牌不算役。</li>
-          <li>立直：没鸣过牌、只差一张就和的时候，付 1,000 点宣布立直，之后摸到什么打什么，和了多一番。</li>
-          <li>自己摸到是自摸，三家一起付；别人打出来是荣和，打的人一个人付。</li>
-          <li>振听：你要的牌自己以前打过，或者刚才别人打了你没和，就不能荣和，只能自摸。</li>
-          <li>宝牌：牌桌上方翻开的指示牌的下一张是宝牌，手里每有一张多一番。</li>
-          <li>牌山摸完没人和就是流局，听牌的人从没听牌的人那里一共收 3,000 点。庄家和了或流局时听牌，就继续坐庄。</li>
-          <li>每人 25,000 点开始。东风战打完东场结束，半庄战打完南场结束；有人点数低于 0 也结束。</li>
-        </ul>
+        <DialogDescription>四个人轮流摸一张、打一张。凑成四组加一对，再有一个役，就能和牌。点一节看详细。</DialogDescription>
+        <div data-slot="mj-rules">
+          <Accordion defaultValue={[RULES[0].title]}>
+            {RULES.map((rule) => (
+              <AccordionItem key={rule.title} value={rule.title}>
+                <AccordionHeader>
+                  <AccordionTrigger>{rule.title}</AccordionTrigger>
+                </AccordionHeader>
+                <AccordionPanel>{rule.body}</AccordionPanel>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        </div>
         <DialogClose data-variant="play">知道了</DialogClose>
       </DialogContent>
     </Dialog>
