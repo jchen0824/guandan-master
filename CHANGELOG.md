@@ -2,6 +2,17 @@
 
 What changed in each release of 掼蛋教练. The newest release is first. Versions follow [Semantic Versioning](https://semver.org/): the middle number rises for a new feature, the last for a fix. How to cut a release is in [CONTRIBUTING.md](CONTRIBUTING.md#releases).
 
+## [0.7.0] - 2026-11-21
+
+A third game: Japanese riichi mahjong, with a coach and three levels of computer players.
+
+### Added
+
+- 日本麻将 on the home page: riichi mahjong against three computer players, over one round (东风战) or two (半庄战), chosen under 比赛长度 in 设置. It has 立直, 吃, 碰 and 杠, 振听, the four abortive draws, and full scoring by 役, 符 and 番. The wall (牌山) stands round the discards, the 宝牌 indicators are in the top bar, and the end of a hand shows the winning tiles, the 役 and every seat's points. A hand left halfway comes back with the same tiles.
+- A coach for mahjong. On your turn it says which tile to discard and why, how far your hand is from 听牌 and how many tiles would help, and marks that tile in your hand. When someone has declared 立直 and your hand is still far, it switches to defence and marks how safe each tile is: 现物, 筋, 熟字牌 or 危险. 怎么算的 lists every discard it weighed and explains the words. 教练 in the top bar turns it off.
+- Three levels of mahjong computer players in 设置: 新手, 普通 and 进阶, which plays like the coach.
+- On a phone held upright, the mahjong table shows the whole parlour table, wooden rim and all.
+
 ## [0.6.0] - 2026-11-21
 
 Set the exact Hold'em bet on any screen, and a hand left halfway comes back as it was.
