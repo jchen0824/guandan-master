@@ -6,7 +6,9 @@ import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import { gzipSync } from "node:zlib"
 
-const BUDGET_KB = { js: 185, css: 20 }
+// The CSS budget went from 20 to 21 kB when the mahjong table got a square 牌河 on upright phones and rules with
+// example tiles: together they came to 20,515 bytes, 35 over, with no unused styles left to remove.
+const BUDGET_KB = { js: 185, css: 21 }
 
 const assets = join(resolve(dirname(fileURLToPath(import.meta.url)), ".."), "dist", "assets")
 if (!existsSync(assets)) {
