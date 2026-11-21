@@ -2,6 +2,15 @@
 
 What changed in each release of 掼蛋教练. The newest release is first. Versions follow [Semantic Versioning](https://semver.org/): the middle number rises for a new feature, the last for a fix. How to cut a release is in [CONTRIBUTING.md](CONTRIBUTING.md#releases).
 
+## [0.8.0] - 2026-11-22
+
+Bigger mahjong tiles on a phone, and mahjong rules that are quick to read.
+
+### Changed
+
+- On a phone held upright, the mahjong 牌河 is square, as at a real table: 上家's and 下家's discards lie sideways, facing them. The table is drawn larger, so the discards are about a third bigger than before, 16px across on a 402px-wide phone. The wall stays; the side rims of the table go off the edges of the screen.
+- The mahjong 规则 are eleven short sections that open one at a time, so they fit about one phone screen. Each says one thing in a few sentences, with real tiles where they help: a winning hand, the suits and honours, a 顺子, 刻子 and 对子, a 振听 case, and each 宝牌 indicator beside its 宝牌.
+
 ## [0.7.0] - 2026-11-21
 
 A third game: Japanese riichi mahjong, with a coach and three levels of computer players.
