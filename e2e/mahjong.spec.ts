@@ -106,23 +106,35 @@ test("every answer to a discard can be reached when seven are offered at once", 
   await expectLayoutToHold(page, "with seven answers offered")
 })
 
-test("the felt of the table picture is as tall as the table at any shape of window", async ({ page }, info) => {
+test("the wall and the 牌河 stay on the felt of the table picture at any shape of window", async ({ page }, info) => {
   test.skip(info.project.name !== "desktop-chromium", "one browser is enough for a rule of the stylesheet")
-  // The felt is the middle 72% of the picture's height and the picture is 1672 by 941, so the felt is as tall as the
-  // table once the picture is 2.47 times as wide as the table is high. A window near 4:3 once showed the whole
-  // picture, and the wall stood on its wooden rim.
+  // A window near 4:3 once showed the whole picture with the wall standing on its wooden rim.
   for (const size of [{ width: 763, height: 639 }, { width: 1280, height: 720 }, { width: 1000, height: 900 }, { width: 1600, height: 620 }]) {
     await page.setViewportSize(size)
     await openMahjong(page)
-    const drawn = await page.evaluate(() => {
+    const off = await page.evaluate(() => {
       const table = document.querySelector('[data-slot="mj-table"]')
-      if (!table) return null
-      const picture = getComputedStyle(table, "::before").backgroundSize
-      return { picture: Number.parseFloat(picture), height: table.getBoundingClientRect().height, width: table.getBoundingClientRect().width }
+      if (!table) return ["no table"]
+      const box = table.getBoundingClientRect()
+      // The picture is 1672 by 941 and drawn centred. Its felt is a trapezium: the far edge is 12.5% of the way
+      // down, from 21.4% to 78.6% across; the near edge is 84.8% down, from 4.3% to 95.7% across.
+      const wide = Number.parseFloat(getComputedStyle(table, "::before").backgroundSize)
+      const high = (wide * 941) / 1672
+      const left = box.left + box.width / 2 - wide / 2
+      const top = box.top + box.height / 2 - high / 2
+      const inset = (y: number) => 0.214 - 0.171 * ((y - top) / high - 0.125) / 0.723
+      const problems: string[] = []
+      for (const el of document.querySelectorAll('[data-slot="mj-wall-side"], [data-slot="mj-river"]')) {
+        const r = el.getBoundingClientRect()
+        const name = el.getAttribute("aria-label") ?? el.getAttribute("data-side") ?? ""
+        if (r.top < top + 0.125 * high - 2 || r.bottom > top + 0.848 * high + 2) problems.push(`${name} is above or below the felt`)
+        for (const y of [r.top, r.bottom]) {
+          if (r.left < left + inset(y) * wide - 2 || r.right > left + (1 - inset(y)) * wide + 2) problems.push(`${name} is off the side of the felt`)
+        }
+      }
+      return [...new Set(problems)]
     })
-    expect(drawn, "the table picture is drawn").not.toBeNull()
-    expect(drawn!.picture, `the picture's width at ${size.width}×${size.height}`).toBeGreaterThanOrEqual(drawn!.height * 2.47)
-    expect(drawn!.picture, "the picture covers the table from side to side").toBeGreaterThanOrEqual(drawn!.width - 1)
+    expect(off, `what is off the felt at ${size.width}×${size.height}`).toEqual([])
     await expectLayoutToHold(page, `at ${size.width}×${size.height}`)
   }
 })

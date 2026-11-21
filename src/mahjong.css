@@ -153,22 +153,33 @@
   place-content: center;
   container: mj-table / size;
   background: var(--room);
+  /* How wide the picture of the parlour table is drawn: enough to cover this box, and a little more so the floor
+     round the table is cropped first. The picture is 1672 by 941. The tiles are sized from the same number, so
+     they stay on its felt whatever the shape of the window. */
+  --pw: calc(max(100cqw, 177.68cqh) * 1.12);
 }
 
-/* The picture of the parlour table. Its felt is the middle 72% of its height, so the picture is drawn at least two
-   and a half times as wide as this box is high: then the felt is as tall as the box at any shape of window, and
-   the tiles and the wall, which are sized to fit the box, never lie on the rim or the floor. */
 [data-slot="mj-table"]::before {
   content: "";
   position: absolute;
   inset: 0;
-  background: url("/mahjong/parlour.jpg") center / max(100cqw, 250cqh) auto no-repeat;
+  background: url("/mahjong/parlour.jpg") center / var(--pw) auto no-repeat;
 }
 
 /* Three bands of 牌河 round the centre panel. A band holds --rows rows of six tiles, with room for one lying on its side. */
 /* 牌山 stands round the 牌河: a side of seventeen stacks above, below and at each side of the grid. */
 [data-slot="mj-ring"] {
-  --tw: min(38px, (100cqw - 36px) / 21.4, (100cqh - 52px) / (4 * var(--rows) + 3.4));
+  /* A tile is as wide as the box allows, and no wider than the felt in the picture allows. The felt is 0.388 of
+     the picture's width from its far edge to its near one, and at the height where the side walls begin it is
+     about 0.6 of the picture's width across; its middle is a little above the picture's. */
+  --tw: min(
+    38px,
+    (100cqw - 36px) / 21.4,
+    (100cqh - 52px) / (4 * var(--rows) + 3.4),
+    var(--pw) * 0.028 - 2px,
+    (var(--pw) * 0.388 - 52px) / (4 * var(--rows) + 3.4)
+  );
+  translate: 0 calc(var(--pw) * -0.008);
   /* A stack in the wall is drawn smaller than a discard, so a side of seventeen is no longer than the grid. */
   --sw: calc(var(--tw) * 0.7);
   position: relative;
@@ -416,6 +427,22 @@
 [data-slot="mj-riichi"] {
   color: var(--brass);
   font-weight: 700;
+}
+
+/* A low table draws small tiles and so a small centre panel: it keeps the wind and the points, as on a phone, and
+   leaves out the names, which where a seat sits already says. A phone on its side has a wide panel and keeps them. */
+@media (min-height: 481px) {
+  @container mj-table (max-height: 480px) {
+    [data-slot="mj-centre"] {
+      font-size: 10px;
+    }
+    [data-slot="mj-seat"] {
+      gap: 2px;
+    }
+    [data-slot="mj-name"] {
+      display: none;
+    }
+  }
 }
 
 /* ---- The result of a hand, over the table ---- */
@@ -752,6 +779,13 @@
   [data-slot="mj-table"] {
     grid-column: 2;
     grid-row: 2;
+  }
+  /* The picture is drawn larger here, so the felt is wide enough for the 牌河 at the sides. */
+  [data-slot="mj-table"] {
+    --pw: calc(max(100cqw, 177.68cqh) * 1.3);
+  }
+  [data-slot="mj-ring"] {
+    translate: none;
   }
   /* No room for the wall round a table this low: the centre panel says how many tiles are left. */
   [data-slot="mj-walls"] {
