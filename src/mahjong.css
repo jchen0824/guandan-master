@@ -701,8 +701,8 @@
   [data-slot="mahjong"] {
     --hw: calc((100vw - 14px) / 14.7);
   }
-  /* A phone is too narrow to show the whole table and keep the tiles readable, so the picture is drawn large
-     enough that its felt fills the table area, and the tiles are sized by the screen alone. */
+  /* A window that is not clearly upright, or narrower than 360px, draws the parlour picture large enough that
+     its felt fills the table area, and the tiles are sized by the screen alone. */
   [data-slot="mj-table"] {
     --pw: max(100cqw, 250cqh);
   }
@@ -727,8 +727,9 @@
   [data-slot="mj-grid"] {
     gap: 4px;
   }
+  /* The panel is as big as three rows of tiles, so its four lines of points shrink with the tiles. */
   [data-slot="mj-centre"] {
-    font-size: 10px;
+    font-size: min(10px, var(--tw) * 0.75);
   }
   [data-slot="mj-seat"] {
     gap: 2px;
@@ -768,6 +769,33 @@
   [data-slot="mj-result"] {
     padding: 10px 12px;
     font-size: 13px;
+  }
+}
+
+/* An upright phone has its own picture of the table, taller than it is wide, so the whole table and its wooden
+   rim fit across the screen. The picture is 1086 by 1448. Its felt runs from 20.4% to 73.5% of the picture's
+   height, so it is 0.708 of the picture's width deep, with its middle 4% of that width above the picture's;
+   where the side walls stand it is at least 0.76 of the picture's width across. On a short table area the
+   picture is cropped a little at the top and bottom before it is drawn narrower than the screen, and where the
+   area is taller than the picture its top and bottom fade into the room. */
+@media (max-width: 739px) and (min-width: 360px) and (min-height: 481px) and (max-aspect-ratio: 3/4) {
+  [data-slot="mj-table"] {
+    --pw: min(100cqw, 130cqh);
+    background: #120904;
+  }
+  [data-slot="mj-table"]::before {
+    background-image: url("/mahjong/parlour-upright.jpg");
+    --edge: calc(var(--pw) * 2 / 3);
+    mask-image: linear-gradient(
+      transparent calc(50% - var(--edge)),
+      #000 calc(50% - var(--edge) + 48px),
+      #000 calc(50% + var(--edge) - 48px),
+      transparent calc(50% + var(--edge))
+    );
+  }
+  [data-slot="mj-ring"] {
+    --tw: min(38px, (var(--pw) * 0.76 - 36px) / 21.4, (var(--pw) * 0.708 - 52px) / (4 * var(--rows) + 3.4));
+    translate: 0 calc(var(--pw) * -0.041);
   }
 }
 
