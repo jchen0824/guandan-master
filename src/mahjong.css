@@ -695,6 +695,14 @@
   [data-slot="mahjong"] {
     --hw: calc((100vw - 14px) / 14.7);
   }
+  /* A phone is too narrow to show the whole table and keep the tiles readable, so the picture is drawn large
+     enough that its felt fills the table area, and the tiles are sized by the screen alone. */
+  [data-slot="mj-table"] {
+    --pw: max(100cqw, 250cqh);
+  }
+  [data-slot="mj-ring"] {
+    translate: none;
+  }
   [data-slot="mj-top"] {
     gap: 8px;
     min-height: 46px;
