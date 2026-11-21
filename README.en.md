@@ -4,7 +4,7 @@
 
 [![CI](https://github.com/jchen0824/guandan-master/actions/workflows/ci.yml/badge.svg)](https://github.com/jchen0824/guandan-master/actions/workflows/ci.yml)
 
-Guandan Coach is a single-player card practice game for people who have just started. The home page offers Guandan (掼蛋), the four-player Chinese card game, and Texas Hold'em. You play in the browser against computer players, and a coach gives hints and comments on each move.
+Guandan Coach is a single-player card practice game for people who have just started. The home page offers Guandan (掼蛋), the four-player Chinese card game, Texas Hold'em and riichi mahjong. You play in the browser against computer players, and a coach gives hints and comments on each move.
 
 Play it: https://guandan-playground.vercel.app
 
@@ -21,6 +21,7 @@ The game itself is in Chinese.
 - Works in desktop and phone browsers, upright or landscape
 - A switch between a 2D (flat) and a 3D table
 - Texas Hold'em: a six-seat or nine-seat no-limit table, picked on the home page or in 设置, with 10/20 blinds and practice chips. The nine-seat table adds three positions: 枪口+1, 枪口+2 and 劫位 (the hijack). The coach shows your win rate, the pot odds and its advice. After the flop it also shows the working a player can do at the table: what you hold, which cards would help, and the 2-and-4 rule estimate. It grades each of your decisions when the hand ends. It can be turned off, and the computer players have three levels. A player who runs out of chips is out, as in a real game, and the table ends when you are out or the last one left. The table is saved in the browser after every move, so coming back carries on where you left: a hand left halfway resumes with the same cards, not a new deal; 设置 has a button to start over
+- Riichi mahjong: four players, 136 tiles, 25,000 points each, one round (东风战) or two (半庄战), picked in 设置. Calls, 立直, 振听, 役 and the points in 符 and 番 follow the rules, and the end of each hand lists the winner's 役 and every seat's change in points. The tile faces are a standard public-domain set. The match is saved after every move, so coming back carries on where you left. It has no coach yet, and one level of computer player
 
 The computer players and the coach are rule-based programs. No large language model is involved.
 
@@ -52,6 +53,7 @@ npm run build              # production build
 
 - `src/engine`: Guandan rules, game flow and bots, with no UI dependency
 - `src/holdem`: Texas Hold'em rules, win-rate estimates, bots and coach, with no UI dependency
+- `src/mahjong`: riichi mahjong rules, 向听, 役 and scoring, and a computer player, with no UI dependency
 - `src/ui`, `src/App.tsx`, `src/Root.tsx`: the interface, built with React and `@ui-sdk/react`
 - `.agents/skills`: Guandan and Texas Hold'em rules, play skills and UI conventions written for coding agents
 

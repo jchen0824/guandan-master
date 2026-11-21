@@ -40,6 +40,17 @@ describe("the home page", () => {
     expect(screen.queryByLabelText("你的操作")).toBeNull()
   })
 
+  it("opens the mahjong table, remembers the choice, and comes back from its top bar", () => {
+    render(<Root />)
+    expect(screen.getByRole("heading", { name: "日本麻将" })).toBeTruthy()
+    fireEvent.click(screen.getByRole("button", { name: "进入日本麻将牌桌" }))
+    expect(screen.getByRole("list", { name: /^你的手牌/ })).toBeTruthy()
+    expect(localStorage.getItem("guandan.game")).toBe("mahjong")
+    fireEvent.click(screen.getByRole("button", { name: "回到首页" }))
+    expect(screen.getByRole("heading", { name: "今天练哪一桌？" })).toBeTruthy()
+    expect(screen.getByText(/^上次打到东一局，你有 25,000 点/)).toBeTruthy()
+  })
+
   it("opens the 掼蛋 table and comes back from the button at the left of its top bar", () => {
     render(<Root />)
     fireEvent.click(screen.getByRole("button", { name: "进入掼蛋牌桌" }))

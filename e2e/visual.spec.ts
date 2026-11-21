@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs"
 import { expect, test } from "@playwright/test"
-import { callDownTo, dealExactly, dealHoldemExactly, openGame, openHoldem, openHome, screen, waitForNextMove } from "./helpers"
+import { callDownTo, dealExactly, dealHoldemExactly, dealMahjongExactly, openGame, openHoldem, openHome, openMahjong, playMahjongHand, playMahjongMove, screen, waitForNextMove } from "./helpers"
 import type { Page } from "@playwright/test"
 
 // A few fixed screens compared with saved pictures, for what layoutProblems() cannot see: something moved or drawn
@@ -69,3 +69,20 @@ for (const seats of [6, 9] as const) {
     await expectPicture(page, `holdem-${seats}-showdown.png`)
   })
 }
+
+test("日本麻将, partway through a hand and at its result", async ({ page }) => {
+  await openMahjong(page)
+  await dealMahjongExactly(page, 3)
+  for (let moves = 0; moves < 6; ) {
+    if ((await screen(page)).myTurn) {
+      await playMahjongMove(page)
+      moves += 1
+    } else await waitForNextMove(page)
+  }
+  // On the player's turn nothing moves until the player does, so the picture is the same every run.
+  for (let step = 0; step < 40 && !(await screen(page)).myTurn; step++) await waitForNextMove(page)
+  expect((await screen(page)).myTurn).toBe(true)
+  await expectPicture(page, "mahjong-hand.png")
+  await playMahjongHand(page)
+  await expectPicture(page, "mahjong-result.png")
+})

@@ -1,0 +1,772 @@
+/* ------------------------------------------------------------------------------------------------
+   The riichi mahjong table. The parlour table behind it is one picture; every tile, label and panel
+   lies flat and upright over it, so there is nothing for a browser to sort by depth. A tile is as
+   wide as --tw and a third taller; everything on the table is sized from that.
+   ------------------------------------------------------------------------------------------------ */
+[data-slot="mahjong"] {
+  --room: #0f0c0a;
+  --hud: rgb(16 12 10 / 0.9);
+  --line: rgb(255 255 255 / 0.14);
+  --brass: #e9bf62;
+  --brass-ink: #23170a;
+  --cream: #f4ecdf;
+  --cream-soft: #cbbfa9;
+  --ivory: #f6f1e3;
+  /* The most rows a 牌河 shows: three, or four once somebody has discarded more than eighteen tiles. */
+  --rows: 3;
+  --hw: min(50px, (100vw - 80px) / 15);
+  position: relative;
+  height: 100dvh;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  overflow: hidden;
+  background: var(--room);
+  color: var(--cream);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+[data-slot="mahjong"][data-long] {
+  --rows: 4;
+}
+
+/* ---- Tiles ---- */
+[data-slot="mj-tile"] {
+  display: block;
+  flex: none;
+  width: var(--tw);
+  height: calc(var(--tw) * 4 / 3);
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+[data-slot="mj-face"] {
+  display: block;
+  width: var(--tw);
+  height: calc(var(--tw) * 4 / 3);
+  border-radius: calc(var(--tw) * 0.12);
+  background: var(--ivory);
+  box-shadow: 0 calc(var(--tw) * 0.07) 0 #c9c2ab, 0 calc(var(--tw) * 0.14) calc(var(--tw) * 0.2) rgb(0 0 0 / 0.5);
+}
+
+/* The discard that declared 立直 lies on its side, as on a real table. */
+[data-slot="mj-tile"][data-riichi] {
+  display: grid;
+  place-items: center;
+  width: calc(var(--tw) * 4 / 3);
+}
+
+[data-slot="mj-tile"][data-riichi] [data-slot="mj-face"] {
+  transform: rotate(90deg);
+}
+
+[data-slot="mj-tile"][data-called] [data-slot="mj-face"] {
+  filter: brightness(0.55);
+}
+
+[data-slot="mj-tile"][data-last] [data-slot="mj-face"] {
+  box-shadow: 0 0 0 2px var(--brass), 0 calc(var(--tw) * 0.14) calc(var(--tw) * 0.2) rgb(0 0 0 / 0.5);
+}
+
+/* ---- The top bar ---- */
+[data-slot="mj-top"] {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 54px;
+  padding: 0 16px;
+  white-space: nowrap;
+}
+
+[data-slot="mahjong"] [data-slot][data-variant="text"] {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  background: none;
+  color: var(--cream);
+  font-size: 14px;
+}
+
+[data-slot="mahjong"] [data-slot="button"][data-home] {
+  padding-left: 4px;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+[data-slot="mj-round"] {
+  padding: 3px 9px;
+  border-radius: 11px;
+  border: 1px solid rgb(255 255 255 / 0.18);
+  color: var(--cream-soft);
+  font-size: 13px;
+}
+
+[data-slot="mj-dora"] {
+  --tw: 21px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--cream-soft);
+  font-size: 13px;
+}
+
+[data-slot="mj-menu"] {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+
+/* ---- The table ---- */
+[data-slot="mj-table"] {
+  position: relative;
+  min-height: 0;
+  display: grid;
+  place-content: center;
+  container: mj-table / size;
+  background: var(--room) url("/mahjong/parlour.jpg") center / cover no-repeat;
+}
+
+/* Three bands of 牌河 round the centre panel. A band holds --rows rows of six tiles, with room for one lying on its side. */
+/* 牌山 stands round the 牌河: a side of seventeen stacks above, below and at each side of the grid. */
+[data-slot="mj-ring"] {
+  --tw: min(38px, (100cqw - 36px) / 21.4, (100cqh - 52px) / (4 * var(--rows) + 3.4));
+  /* A stack in the wall is drawn smaller than a discard, so a side of seventeen is no longer than the grid. */
+  --sw: calc(var(--tw) * 0.7);
+  position: relative;
+  display: grid;
+  place-items: center;
+  gap: calc(var(--tw) * 0.3);
+  padding: calc(var(--sw) * 2.25) calc(var(--sw) * 1.75);
+}
+
+[data-slot="mj-walls"] {
+  position: absolute;
+  inset: 0;
+}
+
+[data-slot="mj-wall-side"] {
+  position: absolute;
+  display: flex;
+}
+[data-slot="mj-wall-side"][data-side="top"] {
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+[data-slot="mj-wall-side"][data-side="bottom"] {
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+[data-slot="mj-wall-side"][data-side="left"],
+[data-slot="mj-wall-side"][data-side="right"] {
+  top: 50%;
+  flex-direction: column;
+  transform: translateY(-50%);
+}
+[data-slot="mj-wall-side"][data-side="left"] {
+  left: 0;
+}
+[data-slot="mj-wall-side"][data-side="right"] {
+  right: 0;
+}
+
+/* One stack of two tiles, backs up, as a picture rendered from above and in front (public/mahjong/wall). A stack on
+   a side wall lies the other way and is overlapped by the one nearer the player. A place whose stack has been
+   taken keeps an outline of where it stood. */
+[data-slot="mj-stack"] {
+  --tw: var(--sw);
+  position: relative;
+  flex: none;
+  width: var(--sw);
+  height: calc(var(--sw) * 1.82);
+  background: center bottom / 100% auto no-repeat;
+  filter: drop-shadow(0 calc(var(--sw) * 0.12) calc(var(--sw) * 0.1) rgb(0 0 0 / 0.5));
+}
+[data-slot="mj-stack"][data-height="2"] {
+  background-image: url("/mahjong/wall/front-2.png");
+}
+[data-slot="mj-stack"][data-height="1"] {
+  background-image: url("/mahjong/wall/front-1.png");
+}
+[data-slot="mj-stack"][data-height="0"] {
+  filter: none;
+}
+[data-slot="mj-stack"][data-height="0"]::after {
+  content: "";
+  position: absolute;
+  inset: 37% 1px 1px;
+  border-radius: calc(var(--sw) * 0.12);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.2);
+}
+[data-slot="mj-wall-side"][data-side="left"] [data-slot="mj-stack"],
+[data-slot="mj-wall-side"][data-side="right"] [data-slot="mj-stack"] {
+  width: calc(var(--sw) * 4 / 3);
+  height: calc(var(--sw) * 4 / 3 * 1.15);
+}
+[data-slot="mj-wall-side"][data-side="left"] [data-slot="mj-stack"] + [data-slot="mj-stack"],
+[data-slot="mj-wall-side"][data-side="right"] [data-slot="mj-stack"] + [data-slot="mj-stack"] {
+  margin-top: calc(var(--sw) * 4 / 3 * -0.5);
+}
+[data-slot="mj-wall-side"][data-side="left"] [data-slot="mj-stack"][data-height="2"],
+[data-slot="mj-wall-side"][data-side="right"] [data-slot="mj-stack"][data-height="2"] {
+  background-image: url("/mahjong/wall/side-2.png");
+}
+[data-slot="mj-wall-side"][data-side="left"] [data-slot="mj-stack"][data-height="1"],
+[data-slot="mj-wall-side"][data-side="right"] [data-slot="mj-stack"][data-height="1"] {
+  background-image: url("/mahjong/wall/side-1.png");
+}
+[data-slot="mj-wall-side"][data-side="left"] [data-slot="mj-stack"][data-height="0"]::after,
+[data-slot="mj-wall-side"][data-side="right"] [data-slot="mj-stack"][data-height="0"]::after {
+  inset: 44% 1px 1px;
+}
+/* A 宝牌 indicator lies face up on its stack, squeezed the way the stack's top is. */
+[data-slot="mj-stack"] [data-slot="mj-face"] {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform: scaleY(0.866);
+  transform-origin: 50% 0;
+  box-shadow: none;
+}
+
+/* The number is for a screen with no room for the wall itself. */
+[data-slot="mj-centre"] > [data-slot="mj-wall"] {
+  display: none;
+}
+
+[data-slot="mj-grid"] {
+  position: relative;
+  --band-w: calc(6 * (var(--tw) + 1px) + var(--tw) / 3);
+  --band-h: calc(var(--rows) * (var(--tw) * 4 / 3 + 2px));
+  display: grid;
+  grid-template-columns: repeat(3, var(--band-w));
+  grid-template-rows: repeat(3, var(--band-h));
+  grid-template-areas:
+    "calls-2 river-2 calls-1"
+    "river-3 centre river-1"
+    "calls-3 river-0 .";
+  gap: 6px;
+}
+
+[data-slot="mj-river"] {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 2px 1px;
+  min-width: 0;
+}
+
+[data-slot="mj-river"][data-seat="0"] {
+  grid-area: river-0;
+}
+[data-slot="mj-river"][data-seat="1"] {
+  grid-area: river-1;
+}
+/* 对家's first row is the one nearest the centre, and later rows go up from it. */
+[data-slot="mj-river"][data-seat="2"] {
+  grid-area: river-2;
+  flex-wrap: wrap-reverse;
+}
+[data-slot="mj-river"][data-seat="3"] {
+  grid-area: river-3;
+}
+
+[data-slot="mj-melds"] {
+  --tw: calc(var(--band-w) / 8.2);
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-end;
+  gap: 3px 6px;
+  min-width: 0;
+}
+
+[data-slot="mj-meld"] {
+  display: flex;
+  gap: 1px;
+}
+
+[data-slot="mj-melds"][data-seat="1"] {
+  grid-area: calls-1;
+}
+[data-slot="mj-melds"][data-seat="2"] {
+  grid-area: calls-2;
+  justify-content: flex-end;
+}
+[data-slot="mj-melds"][data-seat="3"] {
+  grid-area: calls-3;
+  align-content: flex-start;
+  justify-content: flex-end;
+}
+
+/* ---- The centre panel: tiles left in the wall, and each seat's wind and points on its own side ---- */
+[data-slot="mj-centre"] {
+  grid-area: centre;
+  position: relative;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: rgb(10 14 12 / 0.86);
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+[data-slot="mj-wall"] {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--cream-soft);
+}
+
+[data-slot="mj-wall"] b {
+  color: var(--cream);
+  font-size: 1.5em;
+}
+
+[data-slot="mj-seat"] {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+[data-slot="mj-seat"][data-seat="0"],
+[data-slot="mj-seat"][data-seat="2"] {
+  left: 50%;
+  transform: translateX(-50%);
+}
+[data-slot="mj-seat"][data-seat="0"] {
+  bottom: 4px;
+}
+[data-slot="mj-seat"][data-seat="2"] {
+  top: 4px;
+}
+[data-slot="mj-seat"][data-seat="1"],
+[data-slot="mj-seat"][data-seat="3"] {
+  top: 50%;
+  flex-direction: column;
+  gap: 1px;
+  transform: translateY(-50%);
+}
+[data-slot="mj-seat"][data-seat="1"] {
+  right: 5px;
+}
+[data-slot="mj-seat"][data-seat="3"] {
+  left: 5px;
+}
+
+[data-slot="mj-wind"] {
+  padding: 0 4px;
+  border-radius: 4px;
+  background: rgb(255 255 255 / 0.16);
+}
+
+[data-slot="mj-seat"][data-dealer] [data-slot="mj-wind"] {
+  background: #b4472e;
+  color: #fff;
+}
+
+[data-slot="mj-seat"][data-active] b,
+[data-slot="mj-seat"][data-active] [data-slot="mj-name"] {
+  color: var(--brass);
+}
+
+[data-slot="mj-riichi"] {
+  color: var(--brass);
+  font-weight: 700;
+}
+
+/* ---- The result of a hand, over the table ---- */
+[data-slot="mj-result"] {
+  --tw: min(24px, (min(92cqw, 560px) - 40px) / 17);
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 1;
+  box-sizing: border-box;
+  width: min(92cqw, 560px);
+  max-height: calc(100cqh - 12px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  transform: translate(-50%, -50%);
+  border-radius: 14px;
+  border: 1px solid var(--brass);
+  background: var(--hud);
+  font-size: 14px;
+}
+
+[data-slot="mj-result"] h2 {
+  font-size: 18px;
+}
+
+[data-slot="mj-result"] h3 {
+  font-size: 14px;
+  color: var(--cream-soft);
+}
+
+[data-slot="mj-win"] {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+[data-slot="mj-won"] {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 4px 1px;
+}
+
+[data-slot="mj-won"] [data-slot="mj-meld"] {
+  margin-left: 6px;
+}
+
+[data-slot="mj-gap"] {
+  width: calc(var(--tw) * 0.3);
+}
+
+[data-slot="mj-yaku"] {
+  color: var(--cream-soft);
+}
+
+[data-slot="mj-worth"] b {
+  color: var(--brass);
+}
+
+[data-slot="mj-deltas"] {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+[data-slot="mj-deltas"] li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4px 2px;
+  border-radius: 8px;
+  background: rgb(255 255 255 / 0.07);
+  font-size: 13px;
+}
+
+[data-slot="mj-deltas"] li[data-up] span:last-child {
+  color: #8fd6a4;
+}
+[data-slot="mj-deltas"] li[data-down] span:last-child {
+  color: #f0a08e;
+}
+
+[data-slot="mj-final"] {
+  color: var(--brass);
+  font-weight: 700;
+}
+
+/* ---- The player's line of status, buttons and tiles ---- */
+[data-slot="mj-controls"] {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    "status"
+    "mine";
+  align-items: center;
+  gap: 4px;
+  padding: 8px 16px 12px;
+  background: var(--room);
+}
+
+[data-slot="mj-status"] {
+  grid-area: status;
+  color: var(--cream-soft);
+  font-size: 14px;
+  text-align: center;
+}
+
+/* Calls and 立直 are offered only when they can be made, as plaques over the near edge of the table. */
+[data-slot="mj-actions"] {
+  position: absolute;
+  right: 20px;
+  bottom: calc(100% + 14px);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+[data-slot="mahjong"] [data-slot="button"][data-variant="call"],
+[data-slot="mahjong"] [data-slot="button"][data-variant="go"] {
+  min-width: 62px;
+  min-height: 46px;
+  padding: 0 18px;
+  border-radius: 23px;
+  border: 1px solid #8c6a2e;
+  background: #2a1a10;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.12), 0 4px 10px rgb(0 0 0 / 0.45);
+  color: var(--brass);
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+
+[data-slot="mahjong"] [data-slot="button"][data-variant="go"] {
+  min-width: 88px;
+  padding: 0 22px;
+  border-color: #f3d48a;
+  background: #e0b14f;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.5), inset 0 -2px 0 rgb(120 80 10 / 0.45), 0 4px 10px rgb(0 0 0 / 0.45);
+  color: var(--brass-ink);
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 2px;
+}
+
+[data-slot="mahjong"] [data-slot="button"][data-variant]:disabled {
+  opacity: 0.45;
+}
+
+[data-slot="mj-mine"] {
+  grid-area: mine;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: calc(var(--hw) * 0.4);
+  /* Room above for a lifted tile. */
+  padding-top: calc(var(--hw) * 0.24);
+}
+
+[data-slot="mj-hand"] {
+  --tw: var(--hw);
+  display: flex;
+  gap: 1px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+[data-slot="mj-hand"] li[data-drawn] {
+  margin-left: calc(var(--hw) * 0.3);
+}
+
+[data-slot="mj-hand"] [data-slot="mj-tile"] {
+  cursor: pointer;
+}
+
+[data-slot="mj-hand"] [data-slot="mj-tile"]:disabled {
+  cursor: default;
+}
+
+[data-slot="mj-hand"] [data-slot="mj-tile"][aria-pressed="true"] {
+  transform: translateY(-18%);
+}
+
+[data-slot="mj-hand"] [data-slot="mj-tile"]:focus-visible [data-slot="mj-face"] {
+  outline: 2px solid var(--brass);
+  outline-offset: 1px;
+}
+
+/* A tile the player may discard to declare 立直. */
+[data-slot="mj-hand"] [data-slot="mj-tile"][data-ready] [data-slot="mj-face"] {
+  box-shadow: 0 0 0 2px var(--brass), 0 calc(var(--tw) * 0.07) 0 #c9c2ab;
+}
+
+[data-slot="mj-mine"] [data-slot="mj-melds"] {
+  --tw: calc(var(--hw) * 0.72);
+  flex-wrap: nowrap;
+}
+
+/* ---- The mahjong tile on the home page ---- */
+[data-game="mahjong"] [data-slot="tile-scene"] {
+  --felt: #1d5a3a;
+}
+
+[data-game="mahjong"] [data-slot="tile-skills"] li {
+  background: rgb(29 90 58 / 0.6);
+}
+
+[data-slot="tile-mahjong"] {
+  width: calc(var(--cw) * 0.86);
+  aspect-ratio: 3 / 4;
+  border-radius: calc(var(--cw) * 0.1);
+  background: #f6f1e3;
+  box-shadow: 0 3px 0 #c9c2ab, 0 8px 12px rgb(0 0 0 / 0.45);
+}
+
+/* ---- An upright phone: the status line, the buttons and the tiles each get a row ---- */
+@media (max-width: 739px) and (min-height: 481px) {
+  [data-slot="mahjong"] {
+    --hw: calc((100vw - 14px) / 14.7);
+  }
+  [data-slot="mj-top"] {
+    gap: 8px;
+    min-height: 46px;
+    padding: 0 6px;
+  }
+  [data-slot="mj-long"],
+  [data-slot="mj-dora"] > span:first-child {
+    display: none;
+  }
+  [data-slot="mahjong"] [data-slot][data-variant="text"] {
+    padding: 0 8px;
+  }
+  [data-slot="mj-dora"] {
+    --tw: 18px;
+  }
+  [data-slot="mj-grid"] {
+    gap: 4px;
+  }
+  [data-slot="mj-centre"] {
+    font-size: 10px;
+  }
+  [data-slot="mj-seat"] {
+    gap: 2px;
+  }
+  /* Where a seat sits says who it is, so a small panel keeps the wind and the points. */
+  [data-slot="mj-name"] {
+    display: none;
+  }
+  [data-slot="mj-controls"] {
+    padding: 6px 6px 10px;
+  }
+  [data-slot="mj-status"] {
+    font-size: 13px;
+  }
+  [data-slot="mj-actions"] {
+    right: 8px;
+    bottom: calc(100% + 8px);
+    gap: 6px;
+  }
+  [data-slot="mahjong"] [data-slot="button"][data-variant="call"],
+  [data-slot="mahjong"] [data-slot="button"][data-variant="go"] {
+    min-width: 58px;
+    min-height: 44px;
+    padding: 0 10px;
+    font-size: 15px;
+  }
+  [data-slot="mj-mine"] {
+    gap: 6px;
+  }
+  [data-slot="mj-result"] {
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+}
+
+/* ---- A phone on its side: 对家 and the player get twelve tiles a row, the status goes left of the table
+   and the buttons right of it ---- */
+@media (max-height: 480px) {
+  [data-slot="mahjong"] {
+    --hw: min(32px, (100vw - 40px) / 17);
+    /* The height of the row of tiles in hand: a tile, the room to lift one, and the space under it. */
+    --mine-h: calc(var(--hw) * 4 / 3 * 1.18 + 8px);
+    grid-template-columns: 190px minmax(0, 1fr) 176px;
+    grid-template-rows: auto minmax(0, 1fr) var(--mine-h);
+  }
+  [data-slot="mj-top"] {
+    grid-column: 1 / 4;
+    min-height: 34px;
+  }
+  [data-slot="mahjong"] [data-slot][data-variant="text"] {
+    min-height: 34px;
+  }
+  [data-slot="mj-dora"] {
+    --tw: 17px;
+  }
+  [data-slot="mj-table"] {
+    grid-column: 2;
+    grid-row: 2;
+  }
+  /* No room for the wall round a table this low: the centre panel says how many tiles are left. */
+  [data-slot="mj-walls"] {
+    display: none;
+  }
+  [data-slot="mj-ring"] {
+    padding: 0;
+  }
+  [data-slot="mj-centre"] > [data-slot="mj-wall"] {
+    display: flex;
+  }
+  [data-slot="mj-grid"] {
+    --tw: min(17px, (100cqw - 12px) / 25.4, ((100cqh - 10px) / 8 - 2px) * 0.75);
+    --side-w: calc(6 * (var(--tw) + 1px));
+    --mid-w: calc(12 * (var(--tw) + 1px) + var(--tw) / 3);
+    --row: calc(var(--tw) * 4 / 3 + 2px);
+    grid-template-columns: var(--side-w) var(--mid-w) var(--side-w);
+    grid-template-rows: calc(2 * var(--row)) calc(4 * var(--row)) calc(2 * var(--row));
+    gap: 3px;
+  }
+  [data-slot="mj-centre"] {
+    font-size: 11px;
+  }
+  [data-slot="mj-melds"] {
+    --tw: calc(var(--side-w) / 7.6);
+  }
+  /* The footer lies over the whole lower screen, so its three parts can sit left of, right of and under the table. */
+  [data-slot="mj-controls"] {
+    grid-column: 1 / 4;
+    grid-row: 2 / 4;
+    grid-template-columns: 190px minmax(0, 1fr) 176px;
+    grid-template-rows: minmax(0, 1fr) var(--mine-h);
+    grid-template-areas:
+      "status . actions"
+      "mine mine mine";
+    gap: 0;
+    padding: 0;
+    background: none;
+    pointer-events: none;
+  }
+  [data-slot="mj-controls"] > * {
+    pointer-events: auto;
+  }
+  [data-slot="mj-status"] {
+    align-self: center;
+    padding: 0 8px 0 12px;
+    font-size: 13px;
+    text-align: left;
+  }
+  [data-slot="mj-actions"] {
+    position: static;
+    grid-area: actions;
+    align-self: center;
+    align-content: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 0 8px;
+  }
+  [data-slot="mahjong"] [data-slot="button"][data-variant="call"],
+  [data-slot="mahjong"] [data-slot="button"][data-variant="go"] {
+    min-width: 72px;
+    min-height: 44px;
+    padding: 0 8px;
+    font-size: 15px;
+  }
+  [data-slot="mj-mine"] {
+    align-self: stretch;
+    padding: 0 8px 6px;
+    background: var(--room);
+  }
+  [data-slot="mj-result"] {
+    padding: 8px 12px;
+    gap: 5px;
+    font-size: 12px;
+  }
+  [data-slot="mj-result"] h2 {
+    font-size: 15px;
+  }
+}

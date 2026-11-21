@@ -36,7 +36,7 @@ npx playwright show-trace test-results/<folder>/trace.zip   # step through a fai
 
 A failure lists what is wrong in sentences, for example `the 出牌 button is partly off screen (369,466 88×44 in 393×745)`. The numbers are left, top, width×height. Fix the layout. Do not loosen the check: if a rule in `e2e/page-tools.js` is wrong for a real reason, change it in the same pull request and say why.
 
-When you add something a player can see or press, add it to a test in `e2e/game.spec.ts`, or in `e2e/holdem.spec.ts` for the home page and the Texas Hold'em table. Keep rules out of there; they belong in `src/engine/engine.test.ts` and `src/holdem`.
+When you add something a player can see or press, add it to a test in `e2e/game.spec.ts`, in `e2e/holdem.spec.ts` for the home page and the Texas Hold'em table, or in `e2e/mahjong.spec.ts` for the mahjong table. Keep rules out of there; they belong in `src/engine/engine.test.ts` and `src/holdem`.
 
 ### Screenshot tests
 
@@ -76,6 +76,7 @@ Automated checks only cover what someone thought to assert. Use whatever browser
 | A hand with tribute | In the console: `localStorage.setItem("guandan.match", <save>)` with the `SAVE_AFTER_DOUBLE_WIN` text from `e2e/helpers.ts`, reload, click 继续第 2 局. You win the previous hand by a double, so you receive tribute and must return a card |
 | An exact deal | Open 设置, click 重新开始整场比赛, run `guandanQa.seed(4)`, then click the 确认 button. Seed 4 with hint-following play ends on your own bomb of 9s |
 | Exact Texas Hold'em cards | Open 设置, click 重新开始, run `guandanQa.dealHoldem({ holes: { 0: "5H 2D", 1: "AH AC" }, board: "5S 6D 7C 8H 9S" })`, then click 确认. Seat 0 is you; cards are rank then suit, T for ten. The button goes to you unless you pass `button`. It deals a full table of the size on screen. If you pick the other size under 牌桌人数 in the same dialog, pass `seats` too, for example `seats: 9`. It cannot set up a seat that is out; for that, put a save with a zero stack under `guandan.holdem.table` and reload. A reload in the middle of a hand brings back that same hand; 重新开始 is the way to a new deal. In a test, `dealHoldemExactly` and `callDownTo` in `e2e/helpers.ts` do the same and play to a street |
+| A mahjong hand | Set `localStorage['guandan.game']` to `mahjong` and reload. For the same deal every time, open 设置, click 重新开始, run `guandanQa.seed(3)`, then click 确认. Tap a tile and press 打出 to discard; press 过 when a discard is offered. With seed 3 and that play, 上家 declares 立直 and wins on your discard within about ten turns, which shows the result panel. In a test, `dealMahjongExactly` and `playMahjongHand` in `e2e/helpers.ts` do the same |
 | Both tables | The game opens on the 3D table. For the flat one use the 2D/3D switch in the top bar (it is also in 设置), or run `localStorage.setItem("guandan.view", "2d")` and reload. Check every state above on both tables when the change touches something they share |
 
 `guandanQa.state()` tells you where you are: `{ over, myTurn, mustReturn, cards, selected, dialog }`.
