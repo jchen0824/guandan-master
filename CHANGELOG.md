@@ -2,6 +2,14 @@
 
 What changed in each release of 掼蛋教练. The newest release is first. Versions follow [Semantic Versioning](https://semver.org/): the middle number rises for a new feature, the last for a fix. How to cut a release is in [CONTRIBUTING.md](CONTRIBUTING.md#releases).
 
+## [0.10.0] - 2026-11-22
+
+Mahjong shows how many tiles each opponent holds.
+
+### Changed
+
+- Each mahjong opponent's concealed tiles lie as backs on their side of the table, outside the wall: 13 less 3 for each call, and one more on their turn. The wall stands inside them, so the two never overlap. A phone on its side has no room for them and shows the count beside each opponent's name in the centre panel, for example "下家 13 张".
+
 ## [0.9.0] - 2026-11-22
 
 Mahjong shows who has declared 立直, and where the 立直 sticks go.
