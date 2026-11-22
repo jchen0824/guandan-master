@@ -5,6 +5,7 @@ import manyCalls from "../../../e2e/fixtures/mahjong-many-calls.json?raw"
 import sticksCarried from "../../../e2e/fixtures/mahjong-sticks-carried.json?raw"
 import sticksDraw from "../../../e2e/fixtures/mahjong-sticks-draw.json?raw"
 import sticksResult from "../../../e2e/fixtures/mahjong-sticks-result.json?raw"
+import fourCalls from "../../../e2e/fixtures/mahjong-four-calls.json?raw"
 import { seeded } from "../../mahjong/testing"
 import { Mahjong } from "./Mahjong"
 
@@ -274,6 +275,20 @@ describe("the mahjong table", () => {
       const wind = seat.querySelector('[data-slot="mj-wind"]')
       expect(wind?.nextElementSibling?.textContent).toBe("立直")
     }
+  })
+
+  it("shows each opponent's concealed tiles as backs, 13 less 3 for each call", () => {
+    // 下家 has called four times and holds one tile; 对家 has called twice, 上家 once.
+    localStorage.setItem("guandan.mahjong.match", fourCalls)
+    render(<Mahjong onHome={() => {}} />)
+    const rows = [...document.querySelectorAll<HTMLElement>('[data-slot="mj-held"]')]
+    expect(rows.map((row) => [row.getAttribute("aria-label"), row.querySelectorAll('[data-slot="mj-back"]').length])).toEqual([
+      ["下家手里 1 张牌", 1],
+      ["对家手里 7 张牌", 7],
+      ["上家手里 10 张牌", 10],
+    ])
+    // The centre panel carries the same counts for a phone on its side, which has no room for the backs.
+    expect([...document.querySelectorAll('[data-slot="mj-count"]')].map((count) => count.textContent?.trim())).toEqual(["1 张", "7 张", "10 张"])
   })
 
   it("goes home from the button at the left of the top bar", () => {
