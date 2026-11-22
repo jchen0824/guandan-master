@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import manyCalls from "../../../e2e/fixtures/mahjong-many-calls.json?raw"
 import sticksCarried from "../../../e2e/fixtures/mahjong-sticks-carried.json?raw"
 import sticksDraw from "../../../e2e/fixtures/mahjong-sticks-draw.json?raw"
 import sticksResult from "../../../e2e/fixtures/mahjong-sticks-result.json?raw"
@@ -260,6 +261,19 @@ describe("the mahjong table", () => {
     expect(panel(sticksDraw)).toEqual({ sticks: "桌上 1 根立直棒（上家立直时付 1,000）留给下一局和牌的人。", changes: ["-1,000", "-1,000", "-1,000", "+2,000"] })
     // The next win takes a stick left over from that draw.
     expect(panel(sticksCarried)).toEqual({ sticks: "桌上 1 根立直棒（之前流局留下的）归上家。", changes: ["不变", "-8,000", "不变", "+9,000"] })
+  })
+
+  it("marks every seat in 立直 with a 立直 tag beside its wind, and no other seat", () => {
+    // A saved hand where 下家 and 上家 have declared 立直.
+    localStorage.setItem("guandan.mahjong.match", manyCalls)
+    render(<Mahjong onHome={() => {}} />)
+    const seats = [...document.querySelectorAll<HTMLElement>('[data-slot="mj-seat"]')]
+    const tagged = seats.filter((seat) => seat.querySelector('[data-slot="mj-riichi"]'))
+    expect(tagged.map((seat) => seat.getAttribute("aria-label"))).toEqual(["下家，南家，24,000 点，已立直", "上家，北家，25,000 点，已立直"])
+    for (const seat of tagged) {
+      const wind = seat.querySelector('[data-slot="mj-wind"]')
+      expect(wind?.nextElementSibling?.textContent).toBe("立直")
+    }
   })
 
   it("goes home from the button at the left of the top bar", () => {

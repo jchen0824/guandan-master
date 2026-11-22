@@ -292,6 +292,18 @@ test("the result of a hand says where the 立直 sticks went, and its changes ad
   await expectLayoutToHold(page, "with the 立直 sticks explained in the result")
 })
 
+test("a seat in 立直 shows a red 立直 tag at every screen size", async ({ page }) => {
+  // 下家 and 上家 have declared 立直 in this saved hand. Phones used to hide the word and leave a thin ring.
+  await openMahjong(page, { save: MAHJONG_SAVE_MANY_CALLS })
+  const tags = page.locator('[data-slot="mj-seat"][data-riichi] [data-slot="mj-riichi"]')
+  await expect(tags).toHaveCount(2)
+  for (const tag of await tags.all()) {
+    await expect(tag).toBeVisible()
+    await expect(tag).toHaveText("立直")
+  }
+  await expectLayoutToHold(page, "with two 立直 tags in the centre panel")
+})
+
 test("the rules and the settings fit on the screen", async ({ page }) => {
   await openMahjong(page)
   for (const name of ["规则", "设置"]) {
