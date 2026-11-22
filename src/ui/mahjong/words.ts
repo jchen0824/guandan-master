@@ -1,6 +1,6 @@
 // The Chinese the mahjong screen says, worked out from the table. Kept apart from the components so both they and
 // the tests can use it.
-import { HERO, SEAT_NAMES, legalActions, seatWind } from "../../mahjong/game"
+import { HERO, RIICHI_STICK, SEAT_NAMES, legalActions, seatWind } from "../../mahjong/game"
 import type { Action, MahjongState, Win } from "../../mahjong/game"
 import { EAST, WIND_NAMES, kindName, points } from "../../mahjong/tiles"
 import type { Kind } from "../../mahjong/tiles"
@@ -75,6 +75,40 @@ export const worthLine = (win: Win) => win.value.limit ?? `${win.value.fu} 符 $
 /** 对家荣和，下家放铳. */
 export function winTitle(win: Win): string {
   return win.from === null ? `${SEAT_NAMES[win.seat]}自摸` : `${SEAT_NAMES[win.seat]}荣和，${SEAT_NAMES[win.from]}放铳`
+}
+
+/**
+ * What each seat gained or lost over the whole hand: its share of the result, and a 立直 stick it put on the table.
+ * The engine takes a stick when it is declared and gives every stick on the table to the winner, so the result's own
+ * deltas leave the declarer's 1,000 out and count the winner's in, and do not add up to zero.
+ */
+export const handChanges = (game: MahjongState) => game.players.map((player, seat) => player.points - game.dealt.points[seat])
+
+/** The seats that put a 立直 stick on the table during this hand. */
+export function stickPayers(game: MahjongState): number[] {
+  const { result } = game
+  if (!result) return []
+  return [0, 1, 2, 3].filter((seat) => game.dealt.points[seat] + result.deltas[seat] - game.players[seat].points === RIICHI_STICK)
+}
+
+/** What a win was worth by itself. The first winner also takes every 立直 stick on the table, which is not the hand's worth. */
+export function winWorth(game: MahjongState, win: Win): number {
+  const first = game.result?.kind === "win" && game.result.wins[0].seat === win.seat
+  return win.deltas[win.seat] - (first ? (game.dealt.sticks + stickPayers(game).length) * RIICHI_STICK : 0)
+}
+
+/** 桌上 2 根立直棒（下家、对家立直时各付 1,000）归对家。, or null when there were none. */
+export function sticksLine(game: MahjongState): string | null {
+  const { result } = game
+  if (!result) return null
+  const payers = stickPayers(game)
+  const carried = game.dealt.sticks
+  const total = carried + payers.length
+  if (total === 0) return null
+  const paid = payers.length > 0 ? `${payers.map((seat) => SEAT_NAMES[seat]).join("、")}立直时${payers.length > 1 ? "各" : ""}付 ${points(RIICHI_STICK)}` : ""
+  const left = carried === 0 ? "" : payers.length > 0 ? `${carried} 根是之前流局留下的` : "之前流局留下的"
+  const where = result.kind === "win" ? `归${SEAT_NAMES[result.wins[0].seat]}` : "留给下一局和牌的人"
+  return `桌上 ${total} 根立直棒（${[paid, left].filter(Boolean).join("，")}）${where}。`
 }
 
 /** +3,900 or -1,000. */

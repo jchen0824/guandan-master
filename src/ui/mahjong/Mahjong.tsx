@@ -14,7 +14,7 @@ import { byKind, kindName, points } from "../../mahjong/tiles"
 import type { Kind, Tile } from "../../mahjong/tiles"
 import { useSaved } from "../useSaved"
 import { useMahjong } from "./useMahjong"
-import { actionLabel, ranking, resultTitle, signed, statusLine, tileImage, windOf, winTitle, worthLine, yakuLine } from "./words"
+import { actionLabel, handChanges, ranking, resultTitle, signed, statusLine, sticksLine, tileImage, windOf, winTitle, winWorth, worthLine, yakuLine } from "./words"
 
 const OPPONENTS = [1, 2, 3]
 const MELD_NAMES: Record<Meld["type"], string> = { chi: "吃", pon: "碰", minkan: "杠", ankan: "暗杠", kakan: "杠" }
@@ -164,6 +164,8 @@ function Result({ game }: { game: MahjongState }) {
   const { result } = game
   if (!result) return null
   const places = ranking(game)
+  const changes = handChanges(game)
+  const sticks = sticksLine(game)
   return (
     <section data-slot="mj-result" role="status" aria-label="这一局的结果">
       <h2>{resultTitle(game)}</h2>
@@ -174,17 +176,18 @@ function Result({ game }: { game: MahjongState }) {
               <WinningHand game={game} win={win} />
               <p data-slot="mj-yaku">{yakuLine(win)}</p>
               <p data-slot="mj-worth">
-                <b>{worthLine(win)}</b> {signed(win.deltas[win.seat])}
+                <b>{worthLine(win)}</b> {signed(winWorth(game, win))}
               </p>
             </div>
           ))
         : null}
+      {sticks ? <p data-slot="mj-sticks">{sticks}</p> : null}
       <ul data-slot="mj-deltas" aria-label="点数变化">
         {game.players.map((player, seat) => (
-          <li key={SEAT_NAMES[seat]} data-up={result.deltas[seat] > 0 ? "" : undefined} data-down={result.deltas[seat] < 0 ? "" : undefined}>
+          <li key={SEAT_NAMES[seat]} data-up={changes[seat] > 0 ? "" : undefined} data-down={changes[seat] < 0 ? "" : undefined}>
             <span>{SEAT_NAMES[seat]}</span>
             <b>{points(player.points)}</b>
-            <span>{result.deltas[seat] === 0 ? "不变" : signed(result.deltas[seat])}</span>
+            <span>{changes[seat] === 0 ? "不变" : signed(changes[seat])}</span>
           </li>
         ))}
       </ul>

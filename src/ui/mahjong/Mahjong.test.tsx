@@ -1,6 +1,9 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import sticksCarried from "../../../e2e/fixtures/mahjong-sticks-carried.json?raw"
+import sticksDraw from "../../../e2e/fixtures/mahjong-sticks-draw.json?raw"
+import sticksResult from "../../../e2e/fixtures/mahjong-sticks-result.json?raw"
 import { seeded } from "../../mahjong/testing"
 import { Mahjong } from "./Mahjong"
 
@@ -229,6 +232,34 @@ describe("the mahjong table", () => {
     ])
     // The rules no longer say what 一索 looks like; the tiles show it.
     expect(rules.textContent).not.toContain("鸟")
+  })
+
+  it("shows a win's own worth, where the 立直 sticks went, and changes that add up to zero", () => {
+    // 下家 and 对家 each declared 立直 and paid a stick; 对家 won by 自摸, worth 2,700, and took both sticks.
+    localStorage.setItem("guandan.mahjong.match", sticksResult)
+    render(<Mahjong onHome={() => {}} />)
+    const result = screen.getByRole("status", { name: "这一局的结果" })
+    expect(result.querySelector('[data-slot="mj-worth"]')?.textContent).toBe("20 符 3 番 +2,700")
+    expect(result.querySelector('[data-slot="mj-sticks"]')?.textContent).toBe("桌上 2 根立直棒（下家、对家立直时各付 1,000）归对家。")
+    const changes = [...result.querySelectorAll('[data-slot="mj-deltas"] li > span:last-child')].map((cell) => cell.textContent)
+    expect(changes).toEqual(["-700", "-2,300", "+3,700", "-700"])
+    expect(changes.reduce((sum, text) => sum + Number((text ?? "0").replace(/,/g, "")), 0)).toBe(0)
+  })
+
+  it("says where a 立直 stick went when the wall runs out, or when a later win takes one left over", () => {
+    const panel = (save: string) => {
+      localStorage.setItem("guandan.mahjong.match", save)
+      render(<Mahjong onHome={() => {}} />)
+      const result = screen.getByRole("status", { name: "这一局的结果" })
+      const read = { sticks: result.querySelector('[data-slot="mj-sticks"]')?.textContent, changes: [...result.querySelectorAll('[data-slot="mj-deltas"] li > span:last-child')].map((cell) => cell.textContent) }
+      cleanup()
+      localStorage.clear()
+      return read
+    }
+    // 上家 declared and was the only seat 听牌 when the wall ran out: +3,000 from the others, less its stick, which stays on the table.
+    expect(panel(sticksDraw)).toEqual({ sticks: "桌上 1 根立直棒（上家立直时付 1,000）留给下一局和牌的人。", changes: ["-1,000", "-1,000", "-1,000", "+2,000"] })
+    // The next win takes a stick left over from that draw.
+    expect(panel(sticksCarried)).toEqual({ sticks: "桌上 1 根立直棒（之前流局留下的）归上家。", changes: ["不变", "-8,000", "不变", "+9,000"] })
   })
 
   it("goes home from the button at the left of the top bar", () => {

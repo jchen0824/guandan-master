@@ -503,7 +503,8 @@
   width: calc(var(--tw) * 0.3);
 }
 
-[data-slot="mj-yaku"] {
+[data-slot="mj-yaku"],
+[data-slot="mj-sticks"] {
   color: var(--cream-soft);
 }
 

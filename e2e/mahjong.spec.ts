@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test"
 import type { Page } from "@playwright/test"
-import { MAHJONG_SAVE_EXHAUSTED_WAIT, MAHJONG_SAVE_FOUR_CALLS, MAHJONG_SAVE_MANY_CALLS, MAHJONG_SAVE_NO_SAFE_TILE, MAHJONG_SAVE_THREE_INDICATORS, dealMahjongExactly, expectLayoutToHold, openHome, openMahjong, playMahjongHand, playMahjongMove, screen, waitForNextMove } from "./helpers"
+import { MAHJONG_SAVE_EXHAUSTED_WAIT, MAHJONG_SAVE_STICKS_RESULT, MAHJONG_SAVE_FOUR_CALLS, MAHJONG_SAVE_MANY_CALLS, MAHJONG_SAVE_NO_SAFE_TILE, MAHJONG_SAVE_THREE_INDICATORS, dealMahjongExactly, expectLayoutToHold, openHome, openMahjong, playMahjongHand, playMahjongMove, screen, waitForNextMove } from "./helpers"
 
 // The rules of mahjong are tested in src/mahjong. These tests ask what the other two games' tests ask:
 // on a real browser at this screen size, can a player see and reach everything?
@@ -280,6 +280,16 @@ test("on an upright phone an opponent's four calls fit in their corner of the �
     expect(await offTheFelt(page, UPRIGHT), `what is off the felt at ${size.width}×${size.height}`).toEqual([])
     await expectLayoutToHold(page, `with four calls in a corner at ${size.width}×${size.height}`)
   }
+})
+
+test("the result of a hand says where the 立直 sticks went, and its changes add up to zero", async ({ page }) => {
+  // The winner's +4,700 used to include two sticks that no column paid for.
+  await openMahjong(page, { save: MAHJONG_SAVE_STICKS_RESULT })
+  const result = page.getByRole("status", { name: "这一局的结果" })
+  await expect(result.locator('[data-slot="mj-worth"]')).toHaveText("20 符 3 番 +2,700")
+  await expect(result.locator('[data-slot="mj-sticks"]')).toHaveText("桌上 2 根立直棒（下家、对家立直时各付 1,000）归对家。")
+  await expect(result.locator('[data-slot="mj-deltas"] li > span:last-child')).toHaveText(["-700", "-2,300", "+3,700", "-700"])
+  await expectLayoutToHold(page, "with the 立直 sticks explained in the result")
 })
 
 test("the rules and the settings fit on the screen", async ({ page }) => {
