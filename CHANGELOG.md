@@ -2,6 +2,15 @@
 
 What changed in each release of 掼蛋教练. The newest release is first. Versions follow [Semantic Versioning](https://semver.org/): the middle number rises for a new feature, the last for a fix. How to cut a release is in [CONTRIBUTING.md](CONTRIBUTING.md#releases).
 
+## [0.9.0] - 2026-11-22
+
+Mahjong shows who has declared 立直, and where the 立直 sticks go.
+
+### Changed
+
+- A seat that has declared 立直 has a red 立直 tag beside its wind in the centre of the mahjong table, on every screen size. Phones used to hide the word and leave only a thin ring round the wind.
+- The result of a mahjong hand says where the 立直 sticks went, for example "桌上 2 根立直棒（下家、对家立直时各付 1,000）归对家。" The win line shows what the win itself is worth, and each seat's change covers the whole hand, its own stick included. Before, the winner's points included sticks that no seat was shown paying.
+
 ## [0.8.0] - 2026-11-22
 
 Bigger mahjong tiles on a phone, and mahjong rules that are quick to read.
