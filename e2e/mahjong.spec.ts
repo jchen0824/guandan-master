@@ -140,7 +140,7 @@ function offTheFelt(page: Page, felt: Felt) {
     const top = box.top + box.height / 2 - high / 2
     const inset = (y: number) => f.insetTop + ((f.insetBottom - f.insetTop) * ((y - top) / high - f.top)) / (f.bottom - f.top)
     const problems: string[] = []
-    for (const el of document.querySelectorAll('[data-slot="mj-wall-side"], [data-slot="mj-river"], [data-slot="mj-grid"] [data-slot="mj-melds"]')) {
+    for (const el of document.querySelectorAll('[data-slot="mj-wall-side"], [data-slot="mj-river"], [data-slot="mj-grid"] [data-slot="mj-melds"], [data-slot="mj-held"]')) {
       const r = el.getBoundingClientRect()
       const name = el.getAttribute("aria-label") ?? el.getAttribute("data-side") ?? ""
       if (r.top < top + f.top * high - 2 || r.bottom > top + f.bottom * high + 2) problems.push(`${name} is above or below the felt`)
@@ -302,6 +302,41 @@ test("a seat in 立直 shows a red 立直 tag at every screen size", async ({ pa
     await expect(tag).toHaveText("立直")
   }
   await expectLayoutToHold(page, "with two 立直 tags in the centre panel")
+})
+
+test("every screen shows how many tiles each opponent holds", async ({ page }) => {
+  // 下家 has called four times and holds one tile; 对家 holds seven, 上家 ten.
+  await openMahjong(page, { save: MAHJONG_SAVE_FOUR_CALLS })
+  const onItsSide = (page.viewportSize()?.height ?? 0) <= 480
+  if (onItsSide) {
+    await expect(page.locator('[data-slot="mj-count"]')).toHaveText([/^\s*1 张$/, /^\s*7 张$/, /^\s*10 张$/])
+  } else {
+    for (const [label, backs] of [["下家手里 1 张牌", 1], ["对家手里 7 张牌", 7], ["上家手里 10 张牌", 10]] as const) {
+      const row = page.getByRole("img", { name: label, exact: true })
+      await expect(row).toBeVisible()
+      await expect(row.locator('[data-slot="mj-back"]')).toHaveCount(backs)
+    }
+  }
+  await expectLayoutToHold(page, "with the opponents' hands shown")
+})
+
+test("an opponent's tile backs never lie on the 牌山 and stay on the felt, at any shape of window", async ({ page }, info) => {
+  test.skip(info.project.name !== "desktop-chromium", "one browser is enough for a rule of the stylesheet")
+  const sizes = [[402, 874], [393, 745], [360, 740], [375, 550], [430, 932], [1280, 720], [763, 639], [1000, 900], [1600, 620]]
+  for (const [width, height] of sizes) {
+    await page.setViewportSize({ width, height })
+    await openMahjong(page, { save: MAHJONG_SAVE_FOUR_CALLS })
+    const onWall = await page.evaluate(() => {
+      const cross = (a: DOMRect, b: DOMRect) => Math.min(a.right, b.right) - Math.max(a.left, b.left) > 0.5 && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 0.5
+      const walls = [...document.querySelectorAll('[data-slot="mj-wall-side"]')]
+      return [...document.querySelectorAll('[data-slot="mj-held"]')].flatMap((row) =>
+        walls.filter((wall) => cross(row.getBoundingClientRect(), wall.getBoundingClientRect())).map((wall) => `${row.getAttribute("aria-label")} lies on the ${wall.getAttribute("data-side")} wall`),
+      )
+    })
+    expect(onWall, `at ${width}×${height}`).toEqual([])
+    const upright = width >= 360 && width <= 739 && height >= (width * 4) / 3
+    expect(await offTheFelt(page, upright ? UPRIGHT : LANDSCAPE), `what is off the felt at ${width}×${height}`).toEqual([])
+  }
 })
 
 test("the rules and the settings fit on the screen", async ({ page }) => {

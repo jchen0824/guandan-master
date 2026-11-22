@@ -111,6 +111,25 @@ function Walls({ game }: { game: MahjongState }) {
   )
 }
 
+/**
+ * Each opponent's concealed tiles, backs up, in a band outside its side of the wall: 13 less 3 for each call, and one
+ * more while it is that seat's turn. How many tiles a seat holds is public, so this shows nothing a player at the
+ * table could not count.
+ */
+function Hidden({ game }: { game: MahjongState }) {
+  return (
+    <div data-slot="mj-hidden">
+      {OPPONENTS.map((seat) => (
+        <span key={seat} data-slot="mj-held" data-seat={seat} role="img" aria-label={`${SEAT_NAMES[seat]}手里 ${game.players[seat].hand.length} 张牌`}>
+          {game.players[seat].hand.map((tile) => (
+            <span key={tile.id} data-slot="mj-back" />
+          ))}
+        </span>
+      ))}
+    </div>
+  )
+}
+
 function Centre({ game }: { game: MahjongState }) {
   return (
     <div data-slot="mj-centre">
@@ -130,7 +149,10 @@ function Centre({ game }: { game: MahjongState }) {
         >
           <span data-slot="mj-wind">{windOf(game, seat)}</span>
           {player.riichi > 0 ? <span data-slot="mj-riichi">立直</span> : null}
-          <span data-slot="mj-name">{SEAT_NAMES[seat]}</span>
+          <span data-slot="mj-name">
+            {SEAT_NAMES[seat]}
+            {seat === HERO ? null : <span data-slot="mj-count"> {player.hand.length} 张</span>}
+          </span>
           <b>{points(player.points)}</b>
         </p>
       ))}
@@ -610,6 +632,7 @@ function Mahjong({ onHome }: { onHome: () => void }) {
       <div data-slot="mj-table">
         <div data-slot="mj-ring">
         <Walls game={game} />
+        <Hidden game={game} />
         <div data-slot="mj-grid">
           {game.players.map((_, seat) => (
             <River key={SEAT_NAMES[seat]} game={game} seat={seat} last={last} />

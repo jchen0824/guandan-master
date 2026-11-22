@@ -167,31 +167,89 @@
 }
 
 /* Three bands of 牌河 round the centre panel. A band holds --rows rows of six tiles, with room for one lying on its side. */
-/* 牌山 stands round the 牌河: a side of seventeen stacks above, below and at each side of the grid. */
+/* 牌山 stands round the 牌河: a side of seventeen stacks above, below and at each side of the grid. Outside the wall,
+   on the three opponents' sides, a band holds each opponent's concealed tiles as backs. */
 [data-slot="mj-ring"] {
   /* A tile is as wide as the box allows, and no wider than the felt in the picture allows. The felt is 0.388 of
      the picture's width from its far edge to its near one, and at the height where the side walls begin it is
-     about 0.6 of the picture's width across; its middle is a little above the picture's. */
+     about 0.6 of the picture's width across; its middle is a little above the picture's. The ring is 23.2 tiles
+     across, the hands' bands at the sides included, and 4 * rows + 4.3 tiles deep. */
   --tw: min(
     38px,
-    (100cqw - 36px) / 21.4,
-    (100cqh - 52px) / (4 * var(--rows) + 3.4),
-    var(--pw) * 0.028 - 2px,
-    (var(--pw) * 0.388 - 52px) / (4 * var(--rows) + 3.4)
+    (100cqw - 36px) / 23.2,
+    (100cqh - 52px) / (4 * var(--rows) + 4.3),
+    var(--pw) * 0.0259 - 2px,
+    (var(--pw) * 0.388 - 52px) / (4 * var(--rows) + 4.3)
   );
   translate: 0 calc(var(--pw) * -0.008);
   /* A stack in the wall is drawn smaller than a discard, so a side of seventeen is no longer than the grid. */
   --sw: calc(var(--tw) * 0.7);
+  /* A tile back in an opponent's hand, and the depth of the band that holds them, a gap from the wall included. */
+  --hb: calc(var(--sw) * 0.8);
+  --hd: calc(var(--hb) * 1.3 + var(--sw) * 0.3);
   position: relative;
   display: grid;
   place-items: center;
   gap: calc(var(--tw) * 0.3);
-  padding: calc(var(--sw) * 2.25) calc(var(--sw) * 1.75);
+  padding: calc(var(--sw) * 2.25 + var(--hd)) calc(var(--sw) * 1.75 + var(--hd)) calc(var(--sw) * 2.25);
 }
 
+/* The wall stands inside the hands' band, so a hand never lies on it. */
 [data-slot="mj-walls"] {
   position: absolute;
+  inset: var(--hd) var(--hd) 0;
+}
+
+[data-slot="mj-hidden"] {
+  position: absolute;
   inset: 0;
+  pointer-events: none;
+}
+[data-slot="mj-held"] {
+  position: absolute;
+  display: flex;
+  gap: 1px;
+}
+[data-slot="mj-held"][data-seat="2"] {
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+[data-slot="mj-held"][data-seat="1"],
+[data-slot="mj-held"][data-seat="3"] {
+  top: 50%;
+  flex-direction: column;
+  transform: translateY(-50%);
+}
+[data-slot="mj-held"][data-seat="1"] {
+  right: 0;
+}
+[data-slot="mj-held"][data-seat="3"] {
+  left: 0;
+}
+/* A standing tile seen from behind: its green back, and the edge of its ivory face toward the table's centre. */
+[data-slot="mj-back"] {
+  flex: none;
+  width: var(--hb);
+  height: calc(var(--hb) * 1.3);
+  border-radius: calc(var(--hb) * 0.15);
+  background: linear-gradient(#3fa77f, #2c7d5d);
+  box-shadow: inset 0 calc(var(--hb) * -0.2) 0 #e9e2cc, 0 1px 1px rgb(0 0 0 / 0.5);
+}
+[data-slot="mj-held"][data-seat="1"] [data-slot="mj-back"],
+[data-slot="mj-held"][data-seat="3"] [data-slot="mj-back"] {
+  width: calc(var(--hb) * 1.3);
+  height: var(--hb);
+}
+[data-slot="mj-held"][data-seat="1"] [data-slot="mj-back"] {
+  box-shadow: inset calc(var(--hb) * 0.2) 0 0 #e9e2cc, 0 1px 1px rgb(0 0 0 / 0.5);
+}
+[data-slot="mj-held"][data-seat="3"] [data-slot="mj-back"] {
+  box-shadow: inset calc(var(--hb) * -0.2) 0 0 #e9e2cc, 0 1px 1px rgb(0 0 0 / 0.5);
+}
+/* Only a phone on its side, which has no room for the hands' band, says the count in the centre panel. */
+[data-slot="mj-count"] {
+  display: none;
 }
 
 [data-slot="mj-wall-side"] {
@@ -807,14 +865,15 @@
       transparent calc(50% + var(--edge))
     );
   }
-  /* The ring is 2.67 * rows + 9.6 tiles across (a side band is rows tiles deep, the middle band 6.33 tiles, the
-     wall's padding 2.45) and 0.7 of a tile more from top to bottom, where the wall's padding is deeper. */
+  /* The ring is 2.67 * rows + 11.4 tiles across (a side band is rows tiles deep, the middle band 6.33 tiles, the
+     wall's padding 2.45, the hands' bands 1.8) and 11.2 deep, where the wall's padding is deeper and the hands'
+     band is on one side only. */
   [data-slot="mj-ring"] {
     --tw: min(
       38px,
-      (var(--pw) * 0.76 - 44px) / (2.67 * var(--rows) + 9.6),
-      (var(--pw) * 0.708 - 56px) / (2.67 * var(--rows) + 10.3),
-      (100cqh - 56px) / (2.67 * var(--rows) + 10.3)
+      (var(--pw) * 0.76 - 44px) / (2.67 * var(--rows) + 11.4),
+      (var(--pw) * 0.708 - 56px) / (2.67 * var(--rows) + 11.2),
+      (100cqh - 56px) / (2.67 * var(--rows) + 11.2)
     );
     translate: 0 calc(var(--pw) * -0.041);
   }
@@ -875,9 +934,15 @@
   [data-slot="mj-ring"] {
     translate: none;
   }
-  /* No room for the wall round a table this low: the centre panel says how many tiles are left. */
-  [data-slot="mj-walls"] {
+  /* No room for the wall or the hands round a table this low: the centre panel says how many tiles are left in
+     the wall and in each opponent's hand. */
+  [data-slot="mj-walls"],
+  [data-slot="mj-hidden"] {
     display: none;
+  }
+  [data-slot="mj-count"] {
+    display: inline;
+    color: var(--cream-soft);
   }
   [data-slot="mj-ring"] {
     padding: 0;
