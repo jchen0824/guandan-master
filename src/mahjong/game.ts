@@ -11,7 +11,8 @@ export const HERO = 0
 /** Seats in turn order. 下家 plays after the player and 上家 before, so the player may 吃 only from 上家. */
 export const SEAT_NAMES = ["你", "下家", "对家", "上家"]
 export const START_POINTS = 25000
-const RIICHI_STICK = 1000
+/** What a 立直 costs: one stick on the table, for the next winner. */
+export const RIICHI_STICK = 1000
 const NOTEN_PENALTY = 3000
 
 /** Rounds in a match: 1 is 东风战, 2 is 半庄战. */
