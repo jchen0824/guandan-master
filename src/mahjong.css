@@ -424,14 +424,24 @@
   color: var(--brass);
 }
 
+/* A seat in 立直 says so in a red tag beside its wind, at every size, so the table shows at a glance who must be
+   played around. The wind badges are left as they are: the dealer's is already red. */
 [data-slot="mj-riichi"] {
-  color: var(--brass);
+  padding: 0 4px;
+  border-radius: 4px;
+  background: #c4222b;
+  color: #fff;
   font-weight: 700;
 }
-
-/* A small centre panel has no room for the word, so a seat in 立直 gets a brass wind badge there. */
-[data-slot="mj-seat"][data-riichi] [data-slot="mj-wind"] {
-  box-shadow: 0 0 0 1.5px var(--brass);
+/* A phone narrower than 360px draws the centre panel too small for a third line at the sides, so there the tag
+   gives way to a red ring round the seat's wind. */
+@container mj-table (max-width: 359px) {
+  [data-slot="mj-riichi"] {
+    display: none;
+  }
+  [data-slot="mj-seat"][data-riichi] [data-slot="mj-wind"] {
+    box-shadow: 0 0 0 2px #e0414a;
+  }
 }
 
 /* A low table draws small tiles and so a small centre panel: it keeps the wind and the points, as on a phone, and
@@ -444,8 +454,7 @@
     [data-slot="mj-seat"] {
       gap: 2px;
     }
-    [data-slot="mj-name"],
-    [data-slot="mj-riichi"] {
+    [data-slot="mj-name"] {
       display: none;
     }
   }
@@ -734,9 +743,8 @@
   [data-slot="mj-seat"] {
     gap: 2px;
   }
-  /* Where a seat sits says who it is, so a small panel keeps the wind and the points. */
-  [data-slot="mj-name"],
-  [data-slot="mj-riichi"] {
+  /* Where a seat sits says who it is, so a small panel keeps the wind, the points and any 立直 tag. */
+  [data-slot="mj-name"] {
     display: none;
   }
   [data-slot="mj-controls"] {

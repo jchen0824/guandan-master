@@ -129,9 +129,9 @@ function Centre({ game }: { game: MahjongState }) {
           aria-label={`${SEAT_NAMES[seat]}，${windOf(game, seat)}家，${points(player.points)} 点${player.riichi > 0 ? "，已立直" : ""}`}
         >
           <span data-slot="mj-wind">{windOf(game, seat)}</span>
+          {player.riichi > 0 ? <span data-slot="mj-riichi">立直</span> : null}
           <span data-slot="mj-name">{SEAT_NAMES[seat]}</span>
           <b>{points(player.points)}</b>
-          {player.riichi > 0 ? <span data-slot="mj-riichi">立直</span> : null}
         </p>
       ))}
     </div>

@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import manyCalls from "../../../e2e/fixtures/mahjong-many-calls.json?raw"
 import { seeded } from "../../mahjong/testing"
 import { Mahjong } from "./Mahjong"
 
@@ -229,6 +230,19 @@ describe("the mahjong table", () => {
     ])
     // The rules no longer say what 一索 looks like; the tiles show it.
     expect(rules.textContent).not.toContain("鸟")
+  })
+
+  it("marks every seat in 立直 with a 立直 tag beside its wind, and no other seat", () => {
+    // A saved hand where 下家 and 上家 have declared 立直.
+    localStorage.setItem("guandan.mahjong.match", manyCalls)
+    render(<Mahjong onHome={() => {}} />)
+    const seats = [...document.querySelectorAll<HTMLElement>('[data-slot="mj-seat"]')]
+    const tagged = seats.filter((seat) => seat.querySelector('[data-slot="mj-riichi"]'))
+    expect(tagged.map((seat) => seat.getAttribute("aria-label"))).toEqual(["下家，南家，24,000 点，已立直", "上家，北家，25,000 点，已立直"])
+    for (const seat of tagged) {
+      const wind = seat.querySelector('[data-slot="mj-wind"]')
+      expect(wind?.nextElementSibling?.textContent).toBe("立直")
+    }
   })
 
   it("goes home from the button at the left of the top bar", () => {
